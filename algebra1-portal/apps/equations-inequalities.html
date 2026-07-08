@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  :root{
+    --bg:#f7f9fc; --ink:#0f172a; --muted:#6b7280; --border:#e6eaf2; --card:#ffffff;
+    --band-indigo:#eef2ff; --band-teal:#ecfdf5;
+    --chip-easy-bg:#ecfdf5;   /* green */
+    --chip-med-bg:#eff6ff;    /* blue */
+    --chip-hard-bg:#ffe692;   /* GOLD */
+    --chip-beast-bg:#fee2e2;  /* red */
+    --ring:0 0 0 3px rgba(79,70,229,.22); --shadow:0 8px 28px rgba(15,23,42,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial}
+  .topbar{position:sticky;top:0;z-index:5;background:#fff;border-bottom:1px solid var(--border)}
+  .topbar .inner{max-width:1100px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;gap:10px}
+  .brand{font-weight:900;letter-spacing:.3px}
+
+  #fx{position:fixed;inset:0;pointer-events:none}
+
+  .wrap{max-width:1100px;margin:16px auto 56px;padding:0 16px}
+  .problem-card{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:14px}
+  .problem-band{display:flex;align-items:center;gap:8px;background:var(--band-indigo);color:#3730a3;border-radius:12px;padding:8px 10px;font-weight:800;margin-bottom:10px;flex-wrap:wrap}
+  .pb-title{flex:0 0 auto}
+  .pb-controls{margin-left:auto;display:flex;align-items:center;gap:6px;row-gap:6px;flex-wrap:wrap}
+  .chip-s{font-size:12px;padding:5px 9px;border-radius:16px;background:#fff;border:1px solid var(--border);color:#111827;cursor:pointer;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,.03)}
+  .chip-s[aria-pressed="true"]{box-shadow:var(--ring);border-color:#d5dcff;background:#eef2ff}
+  .chip-eq[aria-pressed="true"]{background:#e8edff;border-color:#cbd5ff}
+  .chip-ineq[aria-pressed="true"]{background:#fff7ed;border-color:#fed7aa}
+  .chip-easy[aria-pressed="true"]{background:var(--chip-easy-bg);border-color:#bbf7d0}
+  .chip-med[aria-pressed="true"]{background:var(--chip-med-bg);border-color:#bfdbfe}
+  .chip-hard[aria-pressed="true"]{background:var(--chip-hard-bg);border-color:#f5bf42}
+  .chip-beast[aria-pressed="true"]{background:var(--chip-beast-bg);border-color:#fecaca}
+  .sep{width:1px;height:18px;background:#dbe3ef;display:inline-block}
+
+  .problem-box{display:flex;align-items:center;justify-content:center;min-height:140px;padding:10px;border-radius:12px;background:#fff;border:1px dashed #d9e1ef}
+  #problemText{width:100%;text-align:center;font-weight:900;line-height:1;white-space:nowrap;overflow:hidden;text-overflow:clip;font-size:72px}
+
+  .grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:16px}
+  @media (max-width:980px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:12px}
+  .band{border-radius:12px;padding:8px 10px;margin:-2px 0 10px;font-weight:800}
+  .band.teal{background:var(--band-teal);color:#065f46}
+
+  .answer-card .answer-box{border-radius:12px;background:#fff;border:1px dashed #d9e1ef;padding:12px}
+  .op-seg{display:flex;gap:6px;background:#fff;border:1px solid var(--border);padding:6px;border-radius:999px;justify-content:center;margin-bottom:10px}
+  .op-seg .pill{min-width:40px;padding:7px 11px;border-radius:999px;border:1px solid transparent;font-weight:800;background:transparent;color:var(--ink);cursor:pointer}
+  .op-seg .pill[aria-pressed="true"]{box-shadow:var(--ring);border-color:#d5dcff;background:#eef2ff}
+
+  .ans-grid{display:grid;grid-template-columns:1fr auto;column-gap:10px;align-items:start}
+  .ans-left{display:flex;align-items:center;gap:10px}
+  .ans-symbol{font-weight:900;font-size:42px}
+  .val{flex:0 1 320px;max-width:340px;min-width:140px;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:16px 16px;font-weight:900;font-size:40px;color:#0f172a;outline:none}
+  .val::placeholder{color:#9aa4b2}
+  .action-stack{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+  .submit-inline{padding:10px 14px;border-radius:12px;border:none;background:linear-gradient(180deg,#6366f1,#4f46e5);color:#fff;font-weight:900;cursor:pointer;align-self:start}
+  .next-inline{padding:9px 12px;border-radius:12px;border:1px solid #bbf7d0;background:linear-gradient(180deg,#34d399,#16a34a);color:#fff;font-weight:900;cursor:pointer}
+
+  .kbd-row{display:flex;justify-content:center;margin-top:8px}
+  .kbd-btn{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid var(--border);border-radius:999px;background:#fff;font-weight:800;cursor:pointer}
+
+  .keypad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .key{padding:14px 0;border-radius:12px;border:1px solid var(--border);background:#ffffff;font-weight:800;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.03)}
+  .key.action{background:#f3f4f6}
+  .keypad.hidden{display:none}
+
+  .module{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .module.band-indigo{background:var(--band-indigo)}
+  .module.band-teal{background:var(--band-teal)}
+  .hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#6b7280;font-weight:800}
+  .hdr.toggle{cursor:pointer}
+  .pill-mini{padding:6px 10px;border-radius:999px;background:#fff;border:1px solid var(--border);font-weight:700;cursor:pointer}
+  .pill-mini[aria-pressed="true"]{box-shadow:var(--ring);border-color:#d5dcff;background:#fff}
+  .pill-mini[disabled]{opacity:.5;cursor:not-allowed}
+
+  .scores{display:flex;flex-wrap:wrap;gap:8px}
+  .chip-score{display:flex;flex-direction:column;gap:4px;min-width:120px;padding:8px 10px;border-radius:10px;background:#fff;border:1px solid var(--border);font-weight:800;box-shadow:0 1px 4px rgba(0,0,0,.03);font-size:13px}
+  .chip-score b{font-size:16px;font-weight:900}
+
+  .chip-big{display:inline-block;margin-top:8px;padding:10px 14px;border-radius:999px;font-weight:900}
+  .chip-big.ok{background:#dcfce7;color:#065f46;border:1px solid #bbf7d0}
+  .chip-big.err{background:#fee2e2;color:#7f1d1d;border:1px solid #fecaca}
+
+  .nl-wrap{border:1px dashed #d9e1ef;background:#fff;border-radius:12px;padding:4px 8px;margin-top:8px}
+  .nl-title{font-weight:800;color:#4b5563;margin:0 0 4px 2px}
+  #nlUser,#nlAns{display:block;width:100%;height:72px !important}
+
+  /* Step modal (already working) */
+  #stepModal{position:fixed;inset:0;display:none;place-items:center;background:rgba(15,23,42,.45);z-index:60}
+  #stepModal.open{display:grid}
+  .step-sheet{max-width:740px;width:calc(100% - 32px);background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:18px}
+  .step-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+  #stepTitle{font-weight:900;font-size:22px}
+  #stepClose{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:#f8fafc;font-weight:900;cursor:pointer}
+  .step-hint{font-weight:800;color:#4b5563;margin:4px 0 10px}
+  .bfaf{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%}
+  .panel{border:1px dashed #e6eaf2;border-radius:14px;padding:16px;min-height:150px;display:flex;align-items:center;justify-content:center;background:#fff}
+  .p-title{font-weight:900;color:#475569;margin-bottom:6px}
+  .eq{font-weight:900;font-size:22px;line-height:1.2;text-align:center;word-break:break-word}
+  .step-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+  .step-next{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#eef2ff;font-weight:900;cursor:pointer}
+
+
+/* Steps list UI (to match screenshot) */
+#stepsBody {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.step-line {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgba(0,0,0,.04);
+  transition: background 0.15s, transform 0.1s;
+}
+.step-line:hover {
+  background: #f9fafb;
+  transform: translateY(-1px);
+}
+.step-label {
+  flex: 1;
+}
+.step-line .chev {
+  font-size: 18px;
+  color: var(--muted);
+  margin-left: 10px;
+}
+
+
+  /* NEW: Summary modal (restored to overlay) */
+  #summaryModal{position:fixed;inset:0;display:none;place-items:center;background:rgba(15,23,42,.45);z-index:70}
+  #summaryModal.open{display:grid}
+  #summaryModal .sheet{max-width:920px;width:calc(100% - 32px);background:#fff;border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow);padding:18px}
+  #summaryModal h2{margin:0 0 6px;font-size:24px;font-weight:900}
+  #summaryModal .row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+  #summaryModal .name-field{min-width:220px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);font-weight:800}
+  #summaryModal .btn{padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:#f8fafc;font-weight:900;cursor:pointer}
+  #summaryModal .btn.primary{background:#eef2ff;border-color:#c7d2fe}
+  #summaryModal .btn.danger{background:#fee2e2;border-color:#fecaca}
+
+
+/* === Chromebook & Mobile Safety Overrides (EQ APP) === */
+
+/* Fit inside Google Sites iframes and allow vertical scrolling on short screens */
+html, body { height:auto; min-height:100dvh; }
+body { overflow:auto; }
+.wrap { width:min(1100px, 100%); }
+
+/* Keep everything reachable on short displays (Chromebooks, split view, landscape phones) */
+@media (max-height: 820px){
+  .grid { grid-template-columns: 1fr; }       /* stack left/right to avoid clipping */
+  #rightCol { margin-top: 10px; }
+  /* Keep Submit/Next visible while scrolling the answer area */
+  .action-stack { position: sticky; top: 8px; z-index: 2; }
+  /* Keep the problem controls handy without covering content */
+  .problem-card .problem-band { position: sticky; top: 0; z-index: 3; }
+}
+
+/* On narrower screens, keep controls from wrapping off-screen */
+@media (max-width: 980px){
+  .grid { grid-template-columns: 1fr; }       /* single column on tablets/phones */
+  .pb-controls { flex-wrap: wrap; row-gap: 6px; }
+  .ans-grid { grid-template-columns: 1fr; row-gap: 8px; }
+  .action-stack { flex-direction: row; flex-wrap: wrap; gap: 8px; }
+  .submit-inline, .next-inline { flex: 1 1 180px; }
+}
+
+/* Inputs, badges, and table text scale down gracefully so buttons don’t get pushed off */
+.val { font-size: clamp(22px, 3.8vw, 40px); padding: 14px; }
+.ans-symbol { font-size: clamp(26px, 4.2vw, 42px); }
+#problemText { font-size: clamp(24px, 9vw, 112px); }  /* JS still fine-tunes; this is a safety net */
+
+/* Keypad comfort on phones */
+.keypad { position: sticky; bottom: 6px; background: #fff; padding: 8px; border-radius: 12px; }
+.key { min-width: 40px; }
+@media (max-width: 420px){
+  .key { min-width: 36px; padding: 12px 0; }
+}
+
+/* Modals: never run off-screen; inner content scrolls if needed */
+#summaryModal .sheet,
+#stepModal .step-sheet { max-height: 92dvh; display: flex; flex-direction: column; }
+
+#summaryModal .sheet .row { flex-wrap: wrap; }
+
+#stepModal .bfaf { flex: 1 1 auto; overflow: auto; }
+#stepModal .panel { min-height: 120px; }
+#stepModal .step-foot { position: sticky; bottom: 0; background: #fff; padding-top: 8px; }
+
+/* Optional: make the two main columns an exact 50/50 split on wide screens
+   (leave as-is if you like your current .85/.1.15 ratio) */
+@media (min-width: 981px){
+  .grid { grid-template-columns: 1fr 1fr; }   /* <- comment out if you prefer original ratio */
+}
+
+
+</style>
+</head>
+<body>
+
+<canvas id="fx"></canvas>
+
+<div class="wrap">
+  <!-- Problem -->
+  <section class="problem-card">
+    <div class="problem-band">
+      <span class="pb-title">Problem</span>
+      <div class="pb-controls" id="pbControls">
+        <button class="chip-s chip-eq"  id="modeEq"  aria-pressed="true" type="button">Equation</button>
+        <button class="chip-s chip-ineq" id="modeIneq" aria-pressed="false" type="button">Inequality</button>
+        <span class="sep" role="separator" aria-orientation="vertical"></span>
+        <button class="chip-s chip-easy"  id="diffEasy"  aria-pressed="true"  type="button">Easy</button>
+        <button class="chip-s chip-med"   id="diffMed"   aria-pressed="false" type="button">Medium</button>
+        <button class="chip-s chip-hard"  id="diffHard"  aria-pressed="false" type="button">Hard</button>
+        <button class="chip-s chip-beast" id="diffBeast" aria-pressed="false" type="button">Beast</button>
+        <span class="sep" role="separator" aria-orientation="vertical"></span>
+        <button id="summaryBtn" class="chip-s" title="View summary" type="button">📄 Summary</button>
+      </div>
+    </div>
+    <div class="problem-box"><div id="problemText"></div></div>
+  </section>
+
+  <!-- GRID -->
+  <div class="grid">
+    <!-- LEFT -->
+    <section class="card answer-card">
+      <div class="band teal">Answer</div>
+      <div class="answer-box">
+        <div id="opPills" class="op-seg" role="group" aria-label="Inequality operator" style="display:none">
+          <button class="pill" data-op="<" aria-pressed="true"  type="button">&lt;</button>
+          <button class="pill" data-op=">" aria-pressed="false" type="button">&gt;</button>
+          <button class="pill" data-op="≤" aria-pressed="false" type="button">≤</button>
+          <button class="pill" data-op="≥" aria-pressed="false" type="button">≥</button>
+        </div>
+
+        <div class="ans-grid">
+          <div class="ans-left">
+            <span class="ans-symbol">x</span>
+            <span id="eqBadge" class="ans-symbol">=</span>
+            <span id="ineqBadge" class="ans-symbol" style="display:none;">&lt;</span>
+            <input id="val" class="val" type="text" inputmode="decimal" placeholder="0" aria-label="Value">
+          </div>
+
+        <div class="action-stack">
+          <button id="submitInline" class="submit-inline" type="button">Submit</button>
+          <button id="nextInline" class="next-inline" title="New problem (same mode & difficulty)" type="button">Next</button>
+        </div>
+        </div>
+
+        <div class="kbd-row">
+          <button id="kbdToggle" class="kbd-btn" aria-pressed="false" title="Toggle keypad" type="button"><span aria-hidden="true">⌨️</span> Keyboard</button>
+        </div>
+
+        <div id="keypad" class="keypad hidden">
+          <button class="key" data-k="7" type="button">7</button><button class="key" data-k="8" type="button">8</button><button class="key" data-k="9" type="button">9</button><button class="key action" data-act="back" type="button">⌫</button>
+          <button class="key" data-k="4" type="button">4</button><button class="key" data-k="5" type="button">5</button><button class="key" data-k="6" type="button">6</button><button class="key action" data-act="clear" type="button">C</button>
+          <button class="key" data-k="1" type="button">1</button><button class="key" data-k="2" type="button">2</button><button class="key" data-k="3" type="button">3</button><button class="key action" data-act="sign" type="button">±</button>
+          <button class="key" data-k="0" type="button">0</button><button class="key" id="decKey" data-k="." type="button">.</button><button class="key action" data-act="left" type="button">←</button><button class="key action" data-act="right" type="button">→</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <aside class="card" id="rightCol">
+      <div class="module band-indigo" id="stepsMod">
+        <div id="stepsHeader" class="hdr toggle" aria-controls="stepsBody" aria-expanded="false" title="Click steps below to see Before/After details">
+          <span>Steps</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:#4b5563;font-weight:800">Submit answer then click step to see details</span>
+            <button id="stepsToggle" class="pill-mini" aria-pressed="false" disabled aria-disabled="true" type="button">Show</button>
+          </div>
+        </div>
+        <div id="stepsBody"></div>
+      </div>
+
+      <div class="module band-teal" id="solutionModule">
+        <div class="hdr">
+          <span>Solution</span>
+          <button id="compactToggle" class="pill-mini" aria-pressed="false" title="Make graphs slimmer and hide labels (great on mobile)" type="button">Compact graphs</button>
+        </div>
+        <div style="font-size:12px;color:#64748b;margin:6px 0 4px">Tip: On phones, turn on “Compact graphs” for extra space.</div>
+        <div id="solutionBox" style="font-weight:900;font-size:1.2rem"></div>
+        <div id="resultChip" style="margin-top:6px"></div>
+
+        <div id="nlUserWrap" class="nl-wrap" style="display:none">
+          <div class="nl-title">Your graph</div>
+          <canvas id="nlUser" width="720" height="90"></canvas>
+        </div>
+        <div id="nlAnsWrap" class="nl-wrap" style="display:none">
+          <div class="nl-title">Answer</div>
+          <canvas id="nlAns" width="720" height="90"></canvas>
+        </div>
+      </div>
+
+      <div class="module">
+        <div class="hdr"><span>Scores</span></div>
+        <div class="scores">
+          <div class="chip-score">Correct: <b id="spC">0</b></div>
+          <div class="chip-score">Incorrect: <b id="spI">0</b></div>
+          <div class="chip-score">Longest Streak: <b id="spLS">0</b></div>
+        </div>
+      </div>
+
+      <div class="module">
+        <div class="hdr"><span>Streak & History</span></div>
+        <div style="margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <span id="streakPill" class="pill-mini">Streak: 0</span>
+          <div id="history" style="font-weight:800;color:var(--muted)"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Summary modal (overlay restored) -->
+<div id="summaryModal" class="modal" aria-hidden="true" aria-labelledby="sumTitle" role="dialog">
+  <div class="sheet" role="document">
+    <h2 id="sumTitle">Session Summary</h2>
+    <div id="sumBody"></div>
+    <div class="row" style="align-items:center;justify-content:space-between">
+      <input id="sumName" class="name-field" type="text" placeholder="Student name (optional)" aria-label="Student name">
+      <div style="display:flex;gap:8px;margin-left:auto">
+        <button id="sumPrint" class="btn primary" title="Print certificate with name" type="button">Print Certificate</button>
+        <button id="sumContinue" class="btn" type="button">Continue</button>
+        <button id="sumReset" class="btn danger" type="button">Start over</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Step modal -->
+<div id="stepModal" role="dialog" aria-modal="true" aria-labelledby="stepTitle" tabindex="-1">
+  <div class="step-sheet">
+    <div class="step-head">
+      <div id="stepTitle">Step</div>
+      <button id="stepClose" type="button">Close</button>
+    </div>
+    <div id="stepExplain" class="step-hint"></div>
+    <div class="bfaf">
+      <div>
+        <div class="p-title">Before</div>
+        <div id="bfBox" class="panel"><div id="bfEq" class="eq"></div></div>
+      </div>
+      <div>
+        <div class="p-title">After</div>
+        <div id="afBox" class="panel"><div id="afEq" class="eq"></div></div>
+      </div>
+    </div>
+    <div class="step-foot">
+      <button id="stepPrev" class="step-next" type="button">← Previous</button>
+      <button id="stepNext" class="step-next" type="button">Next step →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===== Basic state ===== */
+let gameMode='equation', difficulty='easy';
+let A=0,B=0,C=0,D=0,op='=';
+let coeffX=0, constant=0, answered=false;
+let spCorrect=0, spIncorrect=0, streak=0, longestStreak=0, lastCelebrated=0;
+let history=[], pendingStepsHTML='', currentStepsMeta=[], compactMode=false, keypadOpen=false;
+const diffStats={easy:{attempts:0,correct:0},medium:{attempts:0,correct:0},hard:{attempts:0,correct:0},beast:{attempts:0,correct:0}};
+const diffModeStats={
+  easy:{equation:{attempts:0,correct:0},inequality:{attempts:0,correct:0}},
+  medium:{equation:{attempts:0,correct:0},inequality:{attempts:0,correct:0}},
+  hard:{equation:{attempts:0,correct:0},inequality:{attempts:0,correct:0}},
+  beast:{equation:{attempts:0,correct:0},inequality:{attempts:0,correct:0}}
+};
+let stepModalIndex=0;
+
+/* ===== Confetti ===== */
+const fx = document.getElementById('fx'); const fctx = fx.getContext('2d');
+function resizeFX(){ fx.width=innerWidth*devicePixelRatio; fx.height=innerHeight*devicePixelRatio; fctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0); }
+resizeFX(); addEventListener('resize', resizeFX);
+function burstConfetti(n=90){
+  const parts = Array.from({length:n},(_,i)=>({x:Math.random()*innerWidth,y:-10-Math.random()*60,vx:(Math.random()-.5)*2,vy:2+Math.random()*2,r:2+Math.random()*3,a:Math.random()*6.283,
+    c:['#f59e0b','#10b981','#3b82f6','#ef4444'][i%4]}));
+  (function loop(){ fctx.clearRect(0,0,fx.width,fx.height); parts.forEach(p=>{ p.x+=p.vx*4; p.y+=p.vy*4; p.a+=0.1; fctx.fillStyle=p.c; fctx.save(); fctx.translate(p.x,p.y); fctx.rotate(p.a); fctx.fillRect(-p.r,-p.r,p.r*2,p.r*2); fctx.restore();}); if(parts.some(p=>p.y<innerHeight+20)) requestAnimationFrame(loop);})();
+}
+
+/* ===== Helpers ===== */
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const setPressed=(el,v)=>el.setAttribute('aria-pressed', v?'true':'false');
+const round2=n=>Math.round(n*100)/100;
+const randInt=(a,b)=>(Math.random()*(b-a+1)|0)+a;
+const fmtAx=a=>a===1?'x':a===-1?'-x':`${a}x`;
+const fmtAxB=(a,b)=>{
+  if(a===0) return String(b);
+  const x=fmtAx(a);
+  if(b===0) return x;
+  return b>0?`${x} + ${b}`:`${x} - ${Math.abs(b)}`;
+};
+const fmtVal=n=> (difficulty==='easy'||difficulty==='medium')?String(Math.round(n)):n.toFixed(2);
+const flipOp=o=>o==='<'?'>':o==='>'?'<':o==='≤'?'≥':o==='≥'?'≤':o;
+const tintFor=d=> d==='easy' ? 'var(--chip-easy-bg)' : d==='medium' ? 'var(--chip-med-bg)' : d==='hard' ? 'var(--chip-hard-bg)' : 'var(--chip-beast-bg)';
+function trimHist(){if(history.length>3) history=history.slice(-3);}
+
+function divisors(n){n=Math.trunc(n); const a=Math.abs(n); const out=[]; if(a===0) return [1]; for(let i=1;i<=a;i++){ if(a%i===0){ out.push(i);} } return out; }
+
+/* ===== Normalizer ===== */
+function normEq(s){
+  return s.replace(/\s+/g,'').replace(/\+\-/g,'-').replace(/\-\-/g,'+');
+}
+
+/* ===== Distribution (robust) ===== */
+function expandSigned(k, inner){
+  const m = inner.replace(/\s+/g,'').match(/^([+\-]?\d*)x([+\-])(\d+)$/);
+  if(!m){ const sign=k<0?'-':''; return `${sign}${Math.abs(k)}(${inner})`; }
+  let q = m[1]; if(q===''||q==='+') q='1'; if(q==='-') q='-1';
+  const qn=parseInt(q,10), cn=(m[2]==='-'?-1:1)*parseInt(m[3],10);
+  const ax=k*qn, bc=k*cn;
+  const axStr=fmtAx(ax);
+  if(bc===0) return axStr;
+  return bc>0?`${axStr} + ${Math.abs(bc)}`:`${axStr} - ${Math.abs(bc)}`;
+}
+function expandSide(side){
+  const re = /(^|\s)([+\-])?\s*(\d+)\s*\(([^)]+)\)/g;
+  let out='', last=0, changed=false, pieces=[], m;
+  while((m=re.exec(side))!==null){
+    const [full, , signChar, digits, inner] = m;
+    const start=m.index; out+=side.slice(last,start);
+    const kSigned=(signChar==='-'?-1:1)*parseInt(digits,10);
+    const expanded=expandSigned(kSigned, inner);
+    if(start===0) out+=expanded;
+    else out+= (expanded.startsWith('-')?` - ${expanded.slice(1)}`:` + ${expanded}`);
+    pieces.push({factor:kSigned, inner, expanded});
+    changed=true; last=start+full.length;
+  }
+  out+=side.slice(last);
+  return {text:out, changed, pieces};
+}
+function distributeInEquation(eqStr){
+  const opMatch = eqStr.match(/\s(=|<|>|≤|≥)\s/); const opChar = opMatch?opMatch[1]:'=';
+  const [L,R]=eqStr.split(` ${opChar} `);
+  const Lexp=expandSide(L), Rexp=expandSide(R);
+  return { text:`${Lexp.text} ${opChar} ${Rexp.text}`, changed:(Lexp.changed||Rexp.changed), pieces:[...Lexp.pieces,...Rexp.pieces] };
+}
+const tokensFromInner=inner=>inner.replace(/\s+/g,'').replace(/-/g,'+-').split('+').filter(Boolean).map(t=>`(${t})`);
+
+/* ===== Fit problem text ===== */
+function fitProblemText(){
+  const box=$('.problem-box'), el=$('#problemText'); const max=112,min=24,safety=18;
+  let lo=min,hi=max,best=min; while(lo<=hi){const mid=(lo+hi>>1); el.style.fontSize=mid+'px'; if(el.scrollWidth<=box.clientWidth-safety){best=mid;lo=mid+1}else{hi=mid-1}}
+  el.style.fontSize=best+'px'; el.style.letterSpacing=(best>=84)?'-0.3px':'0px'; el.style.whiteSpace='nowrap';
+}
+
+/* ===== Scores / streak / history ===== */
+function updateTotals(){ $('#spC').textContent=spCorrect; $('#spI').textContent=spIncorrect; $('#spLS').textContent=longestStreak; }
+function updateStreak(){ $('#streakPill').textContent='Streak: '+streak; }
+function updateHistory(){
+  const arr = history.slice(-3);
+  const html = arr.map(h=>{
+    const mark = h.ok ? '✓' : '✗';
+    return `<span style="background:${tintFor(h.diff)};padding:4px 8px;border-radius:10px;border:1px solid var(--border);margin-right:6px">${mark} ${h.text}</span>`;
+  }).join('');
+  $('#history').innerHTML = html || '';
+}
+function celebrateStreakIfNeeded(){ [3,5,10,20].forEach(t=>{ if(streak===t && lastCelebrated<t){ lastCelebrated=t; burstConfetti(120); } }); }
+
+/* ===== Mode / Difficulty ===== */
+function setMode(m){
+  gameMode=m;
+  setPressed($('#modeIneq'),m==='inequality'); setPressed($('#modeEq'),m==='equation');
+  $('#opPills').style.display=(m==='inequality')?'flex':'none';
+  $('#eqBadge').style.display=(m==='equation')?'inline-block':'none';
+  $('#ineqBadge').style.display=(m==='inequality')?'inline-block':'none';
+  const showNL=(m==='inequality');
+  $('#nlUserWrap').style.display=showNL?'block':'none';
+  $('#nlAnsWrap').style.display=showNL?'block':'none';
+  generateProblem();
+}
+function setDifficulty(d){
+  difficulty=d;
+  setPressed($('#diffEasy'),d==='easy'); setPressed($('#diffMed'),d==='medium'); setPressed($('#diffHard'),d==='hard'); setPressed($('#diffBeast'),d==='beast');
+  $('#val').placeholder=(d==='easy'||d==='medium')?'0':'0.00';
+  $('#decKey').disabled=(d==='easy'||d==='medium');
+  generateProblem();
+}
+
+/* ===== Generator ===== */
+function pickStyles(d){
+  if(d==='easy'){ return Math.random()<0.5?{L:'ax',R:'const'}:{L:'const',R:'ax'}; }
+  if(d==='medium'){
+    const r=Math.random();
+    if(r<0.8) return Math.random()<0.5?{L:'dist5', R:'ax+b'}:{L:'ax+b', R:'dist5'};
+    return {L:'ax+b', R:'ax+b'};
+  }
+  if(d==='hard'){ const L=(Math.random()<0.5)?'ax+b':'dist'; const R=(Math.random()<0.5)?'ax+b':'dist'; return {L,R}; }
+  return {L:'dist',R:'dist'};
+}
+function denom2(x){if(Number.isInteger(x))return 1;const m=String(x).match(/\.(\d+)/);return m?Math.pow(10,Math.min(2,m[1].length)):1;}
+function pickM(d,xStar){let Ms=(d==='easy'||d==='medium')?[2,3,4,5,6,8,10,12]:[3,4,5,6,8,10,12,15,16,20];let m=Ms[(Math.random()*Ms.length)|0];if(!(d==='easy'||d==='medium')){const den=denom2(xStar); const g=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a||1}; if(m%den!==0){ m*= den/g(m,den); if(m>40)m=den; }} return Math.max(2,Math.abs(m));}
+function pickA(d){return (Math.random()<0.5?-1:1)*(d==='hard'||d==='beast'?randInt(2,14):randInt(2,10));}
+
+function dist5Decompose(a,b){
+  const ds = divisors(a);
+  const choices=[];
+  ds.forEach(d=>{
+    [d,-d].forEach(p=>{
+      if(p===0) return;
+      if(b % p === 0){
+        const q=a/p, c=b/p;
+        if(Number.isInteger(q)&&Number.isInteger(c) && Math.abs(c)<=9 && Math.abs(q)<=12){
+          choices.push({p,q,c});
+        }
+      }
+    });
+  });
+  if(choices.length) return choices[(Math.random()*choices.length)|0];
+  return {p:a,q:1,c:b};
+}
+function renderSide(a,b,style){
+  if(style==='const') return String(b);
+  if(style==='ax') return fmtAx(a);
+  if(style==='ax+b') return fmtAxB(a,b);
+  if(style==='dist5'){
+    const {p,q,c}=dist5Decompose(a,b);
+    const inner=`${fmtAx(q)} ${c>=0?'+':'-'} ${Math.abs(c)}`;
+    return `${p}(${inner})`;
+  }
+  if(style==='dist'){
+    const [p,q]=factorChoice(a);
+    const c=randInt(-9,9)||1;
+    const d=b-p*c;
+    const inner=`${fmtAx(q)} ${c>=0?'+':'-'} ${Math.abs(c)}`;
+    return d===0?`${p}(${inner})`:(d>0?`${p}(${inner}) + ${d}`:`${p}(${inner}) - ${Math.abs(d)}`);
+  }
+  return fmtAxB(a,b);
+}
+function factorChoice(n){const abs=Math.abs(n)||1,s=Math.sign(n)||1;let pairs=[];for(let i=1;i<=abs;i++) if(abs%i===0){pairs.push([s*i,abs/i]);pairs.push([s*(abs/i),i]);} return pairs[(Math.random()*pairs.length)|0]||[n,1];}
+
+function generateProblem(){
+  const ops=(gameMode==='inequality')?['<','>','≤','≥']:['=']; op=ops[(Math.random()*ops.length)|0];
+  const st=pickStyles(difficulty);
+
+  // Choose target solution
+  let xStar;
+  if(difficulty==='easy'||difficulty==='medium'){ xStar=randInt(-12,12); }
+  else{ if(Math.random()<0.5)xStar=randInt(-15,15); else {const den=[2,4,5,8,10,20][(Math.random()*6)|0]; xStar=randInt(-15*den,15*den)/den;} }
+
+  // Choose slope difference m and place x-terms
+  let m=pickM(difficulty,xStar);
+  const leftHasX=st.L!=='const', rightHasX=st.R!=='const';
+  if(leftHasX && !rightHasX){C=0;A=m;} 
+  else if(!leftHasX && rightHasX){A=0;C=-m;} 
+  else if(leftHasX && rightHasX){A=pickA(difficulty);C=A-m;if(A===0&&C===0){A=m;C=0;}} 
+  else {C=0;A=m;}
+  if(st.L==='ax') B=0; if(st.R==='ax') D=0; if(st.L==='const') A=0; if(st.R==='const') C=0;
+
+  const need=m*xStar;
+
+  // Base constants
+  if(st.R==='ax'){ D=0; B=-need; }
+  else if(st.L==='ax'){ B=0; D=need; }
+  else { B=randInt(-10,10); D=B+need; }
+
+  // Enforce dist5 exactness
+  function chooseP(a){
+    const ds=divisors(a).filter(v=>v!==0);
+    const good=ds.filter(d=>Math.abs(d)>1);
+    const base=(good.length?good:ds);
+    const pick=base[(Math.random()*base.length)|0];
+    return Math.random()<0.5?pick:-pick;
+  }
+  if(st.L==='dist5'){
+    const p=chooseP(A);
+    let c=randInt(-9,9)||1;
+    B=p*c;
+    if(st.R==='ax'){ D=0; B=-need; } else { D=B+need; }
+  }
+  if(st.R==='dist5'){
+    const p=chooseP(C);
+    let c=randInt(-9,9)||1;
+    D=p*c;
+    if(st.L==='ax'){ B=0; D=need; } else { B=D-need; }
+  }
+
+  const leftStr=renderSide(A,B,st.L), rightStr=renderSide(C,D,st.R);
+  $('#problemText').textContent=`${leftStr} ${op} ${rightStr}`;
+  fitProblemText();
+
+  // Reset UI
+  $('#val').value=''; $('#solutionBox').textContent=''; $('#resultChip').innerHTML='';
+  const steps=buildStepsPretty(A,B,C,D,op);
+  pendingStepsHTML=steps.html; currentStepsMeta=steps.meta;
+
+  $('#stepsBody').style.display='none'; $('#stepsBody').innerHTML='';
+  $('#stepsToggle').disabled=true; $('#stepsToggle').setAttribute('aria-disabled','true'); $('#stepsToggle').textContent='Show';
+  $('#stepsHeader').setAttribute('aria-expanded','false'); answered=false;
+
+  if(gameMode==='inequality'){
+    $$('#opPills .pill').forEach((p,i)=>setPressed(p,i===0));
+    $('#ineqBadge').textContent='<';
+    $('#nlUserWrap').style.display='block'; $('#nlAnsWrap').style.display='none';
+    drawNumberLine($('#nlUser'), '<', null, true);
+  } else { $('#nlUserWrap').style.display='none'; $('#nlAnsWrap').style.display='none'; }
+
+  coeffX=A-C; constant=D-B;
+}
+
+/* ===== Steps ===== */
+function buildStepsPretty(a,b,c,d, originalOp){
+  const meta=[], lines=[], push=(kind,label,payload)=>{lines.push(
+    `<div class="step-line" data-kind="${kind}"><span class="step-label">${label}</span><span class="chev">›</span></div>`
+  ); meta.push({kind,payload,label});};
+
+  const original=$('#problemText').textContent.trim();
+  const opBeforeDivide = (gameMode==='equation')?'=':originalOp;
+
+  const distributed=distributeInEquation(original);
+  const combinedStr=`${fmtAxB(a,b)} ${opBeforeDivide} ${fmtAxB(c,d)}`;
+  const m=a-c, k=d-b;
+
+  /* Decide whether we actually need a rearrange:
+     If, after combining, one side is a single x-term and the other side a single constant,
+     divide directly from THAT side (don’t force x to the left). */
+  const leftIsJustX  = (a!==0 && b===0);
+  const rightIsJustX = (c!==0 && d===0);
+  const leftIsConst  = (a===0);
+  const rightIsConst = (c===0);
+
+  const canDirectDivideLeft  = leftIsJustX  && rightIsConst;
+  const canDirectDivideRight = rightIsJustX && leftIsConst;
+
+  const opAfterDivide_default = (gameMode==='inequality' && m<0) ? flipOp(opBeforeDivide) : opBeforeDivide;
+
+  if(distributed.changed){
+    push('distribute','Distribute (expand parentheses)',{
+      before:original, after:distributed.text, pieces:distributed.pieces||[]
+    });
+  }
+  const needCombine = normEq(distributed.text) !== normEq(combinedStr);
+  if(needCombine){
+    push('combine','Combine like terms',{
+      before:distributed.text, after:combinedStr
+    });
+  }
+
+  const beforeRearr = needCombine?combinedStr:distributed.text;
+
+  if(canDirectDivideLeft){
+    // ax = k  →  x (flip if a<0 for INEQ) value
+    const coef = a;
+    const num  = d;
+    const opAfterDivide = (gameMode==='inequality' && coef<0) ? flipOp(opBeforeDivide) : opBeforeDivide;
+    const val = fmtVal(num/coef);
+    push('divide',`Divide both sides by ${coef}: x ${opAfterDivide} ${val}`,{
+      before: beforeRearr, coef, num, result:val, op:opAfterDivide, after:`x ${opAfterDivide} ${val}`
+    });
+    return {html:lines.join(''), meta};
+  }
+
+  if(canDirectDivideRight){
+    // k = cx  →  x (flip if c<0 for INEQ) value
+    const coef = c;
+    const num  = b;
+    const opAfterDivide = (gameMode==='inequality' && coef<0) ? flipOp(opBeforeDivide) : opBeforeDivide;
+    const val = fmtVal(num/coef);
+    push('divide',`Divide both sides by ${coef}: x ${opAfterDivide} ${val}`,{
+      before: beforeRearr, coef, num, result:val, op:opAfterDivide, after:`x ${opAfterDivide} ${val}`
+    });
+    return {html:lines.join(''), meta};
+  }
+
+  // Otherwise, keep existing behavior (collect x-terms to one side, then divide)
+  const rearranged=`${fmtAx(m)} ${opBeforeDivide} ${k}`;
+  const rearrangeNeeded = normEq(beforeRearr)!==normEq(rearranged);
+  if(rearrangeNeeded){
+    push('rearrange','Move variables to one side & constants to the other',{
+      before: beforeRearr, after:rearranged, A:a,B:b,C:c,D:d
+    });
+  }
+  const beforeDivide = rearrangeNeeded ? rearranged : beforeRearr;
+  const opAfterDivide = opAfterDivide_default;
+  const finalVal=fmtVal(k/m);
+  push('divide',`Divide both sides by ${m}: x ${opAfterDivide} ${finalVal}`,{
+    before:beforeDivide, coef:m, num:k, result:finalVal, op:opAfterDivide, after:`x ${opAfterDivide} ${finalVal}`
+  });
+  return {html:lines.join(''), meta};
+}
+
+/* ===== Keypad / input ===== */
+function setCaret(pos){const el=$('#val'); el.focus(); if(el.setSelectionRange) el.setSelectionRange(pos,pos);}
+function getCaret(){const el=$('#val'); return el.selectionStart ?? el.value.length;}
+function insertAtCaret(ch){const el=$('#val'); const i=getCaret(); if((difficulty==='easy'||difficulty==='medium')&&ch==='.')return; if(ch==='.'&&el.value.includes('.'))return; el.value=el.value.slice(0,i)+ch+el.value.slice(i); setCaret(i+ch.length); livePreview();}
+function backspaceAtCaret(){const el=$('#val'); const i=getCaret(); if(i===0)return; el.value=el.value.slice(0,i-1)+el.value.slice(i); setCaret(i-1); livePreview();}
+function clearInput(){ $('#val').value=''; setCaret(0); livePreview(); }
+function toggleSign(){const el=$('#val'); if(el.value.startsWith('-')) el.value=el.value.slice(1); else el.value = el.value?('-'+el.value):'-'; setCaret(el.value.length); livePreview(); }
+$('#keypad').addEventListener('click', e=>{
+  const k=e.target.closest('.key'); if(!k) return;
+  const ch=k.dataset.k, act=k.dataset.act;
+  if(ch){ insertAtCaret(ch); return; }
+  if(act==='back') backspaceAtCaret();
+  if(act==='clear') clearInput();
+  if(act==='sign') toggleSign();
+  if(act==='left') setCaret(Math.max(0,getCaret()-1));
+  if(act==='right'){const el=$('#val'); setCaret(Math.min(el.value.length,getCaret()+1));}
+});
+
+/* ===== Mode/difficulty ===== */
+$('#modeIneq').addEventListener('click',()=>setMode('inequality'));
+$('#modeEq').addEventListener('click',()=>setMode('equation'));
+$('#diffEasy').addEventListener('click',()=>setDifficulty('easy'));
+$('#diffMed').addEventListener('click',()=>setDifficulty('medium'));
+$('#diffHard').addEventListener('click',()=>setDifficulty('hard'));
+$('#diffBeast').addEventListener('click',()=>setDifficulty('beast'));
+
+/* Keyboard toggle */
+$('#kbdToggle').addEventListener('click', ()=>{
+  keypadOpen=!keypadOpen; $('#keypad').classList.toggle('hidden', !keypadOpen); setPressed($('#kbdToggle'), keypadOpen);
+});
+
+/* Inequality operator pills */
+$('#opPills').addEventListener('click', e=>{
+  const pill=e.target.closest('.pill'); if(!pill) return;
+  $$('#opPills .pill').forEach(p=>setPressed(p,false)); setPressed(pill,true);
+  $('#ineqBadge').textContent = pill.dataset.op;
+  livePreview();
+});
+
+/* Live preview (inequality only) */
+function livePreview(){
+  if(gameMode!=='inequality') return;
+  const pressed=$$('#opPills .pill').find(p=>p.getAttribute('aria-pressed')==='true');
+  const sel = pressed ? pressed.dataset.op : '<';
+  let v = parseFloat($('#val').value.trim());
+  if(Number.isNaN(v)){ drawNumberLine($('#nlUser'), sel, null, true); return; }
+  if(!(difficulty==='easy'||difficulty==='medium')) v=round2(v);
+  drawNumberLine($('#nlUser'), sel, v);
+}
+
+/* ===== Check Answer ===== */
+function checkAnswer(){
+  let userStr=$('#val').value.trim();
+  if(userStr===''){ showChip(false,true,'Please enter a number.'); return; }
+  let user=parseFloat(userStr); if(Number.isNaN(user)){ showChip(false,true,'Invalid number.'); return; }
+  if(!(difficulty==='easy'||difficulty==='medium')) user=round2(user);
+
+  const expectedOp = (gameMode==='equation') ? '=' : (coeffX<0 ? flipOp(op) : op);
+
+  let selectedOp='=';
+  if(gameMode==='inequality'){
+    const pressed=$$('#opPills .pill').find(p=>p.getAttribute('aria-pressed')==='true');
+    selectedOp=pressed?pressed.dataset.op:'<';
+  }
+
+  const correct=round2(constant/coeffX);
+  const valueOK=(user===correct);
+  const opOK=(gameMode==='equation')?true:(selectedOp===expectedOp);
+  const isCorrect = valueOK && opOK;
+
+  const disp = `x ${expectedOp} ${fmtVal(correct)}`;
+  $('#solutionBox').textContent = disp;
+
+  if(gameMode==='inequality'){
+    answered=true; $('#nlAnsWrap').style.display='block'; drawNumberLine($('#nlAns'), expectedOp, correct);
+  }
+
+  diffStats[difficulty].attempts++; if(isCorrect) diffStats[difficulty].correct++;
+  diffModeStats[difficulty][gameMode].attempts++; if(isCorrect) diffModeStats[difficulty][gameMode].correct++;
+
+  if(isCorrect){ spCorrect++; streak++; longestStreak=Math.max(longestStreak,streak); celebrateStreakIfNeeded(); }
+  else{ spIncorrect++; streak=0; }
+  updateTotals(); updateStreak();
+  history.push({ok:isCorrect, text:disp, diff:difficulty, mode:gameMode});
+  trimHist(); updateHistory();
+
+  $('#resultChip').innerHTML = isCorrect ? '<span class="chip-big ok">Correct ✓</span>' : '<span class="chip-big err">Incorrect ✗</span>';
+
+  // reveal steps
+  $('#stepsBody').innerHTML = pendingStepsHTML;
+  $('#stepsBody').style.display='block';
+  $('#stepsToggle').disabled = false; $('#stepsToggle').removeAttribute('aria-disabled');
+  $('#stepsHeader').setAttribute('aria-expanded','true'); $('#stepsToggle').textContent='Hide';
+}
+$('#submitInline').addEventListener('click', checkAnswer);
+$('#nextInline').addEventListener('click', ()=>generateProblem());
+$('#val').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); checkAnswer(); } livePreview(); });
+$('#val').addEventListener('input', livePreview);
+
+/* Steps toggle & click */
+$('#stepsHeader').addEventListener('click', ()=>{
+  if($('#stepsToggle').disabled) return;
+  const body=$('#stepsBody'); const showing=body.style.display!=='none';
+  body.style.display = showing ? 'none' : 'block';
+  $('#stepsToggle').textContent = showing ? 'Show' : 'Hide';
+  $('#stepsHeader').setAttribute('aria-expanded', (!showing).toString());
+});
+$('#stepsToggle').addEventListener('click', (e)=>{ e.stopPropagation(); $('#stepsHeader').click(); });
+
+document.getElementById('stepsBody').addEventListener('click', (e)=>{
+  const el=e.target.closest('.step-line'); if(!el) return;
+  const idx=Array.from(document.querySelectorAll('#stepsBody .step-line')).indexOf(el);
+  if(idx<0) return; openStepModalByIndex(idx);
+});
+
+/* ===== Number line drawing ===== */
+const lastCanvasW=new WeakMap(), GRAPH_H_DEFAULT=72, GRAPH_H_COMPACT=56, TICKS=9;
+function drawNumberLine(canvasEl, op, val, axisOnly=false){
+  if(!canvasEl) return;
+  const ctx = canvasEl.getContext('2d'); const dpr=Math.max(1,window.devicePixelRatio||1);
+  let Wcss=(canvasEl.parentElement&&canvasEl.parentElement.clientWidth)||lastCanvasW.get(canvasEl)||720; if(Wcss<200) Wcss=lastCanvasW.get(canvasEl)||720; lastCanvasW.set(canvasEl,Wcss);
+  const Hcss=compactMode?GRAPH_H_COMPACT:GRAPH_H_DEFAULT;
+  canvasEl.width=Math.floor(Wcss*dpr); canvasEl.height=Math.floor(Hcss*dpr); canvasEl.style.height=Hcss+'px'; ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,Wcss,Hcss);
+  const left=36,right=36,y=Math.floor(Hcss/2);
+  ctx.strokeStyle='#111827'; ctx.fillStyle='#111827'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(left,y); ctx.lineTo(Wcss-right,y); ctx.stroke();
+  const usable=Wcss-left-right; const mid=(typeof val==='number')?val:0; const half=Math.floor(TICKS/2); const start=Math.round(mid)-half; const end=start+TICKS-1;
+  ctx.font='12px ui-sans-serif';
+  for(let i=start;i<=end;i++){ const t=(i-start)/(TICKS-1); const x=left+t*usable; ctx.beginPath(); ctx.moveTo(x,y-5); ctx.lineTo(x,y+5); ctx.stroke(); if(!compactMode) ctx.fillText(String(i), x-4, y+18); }
+  if(axisOnly||typeof val!=='number') return;
+  const t0=(val-start)/(TICKS-1); const x0=left+Math.max(0,Math.min(1,t0))*usable; const inclusive=(op==='≤'||op==='≥'||op==='=');
+  ctx.strokeStyle='#ef4444'; ctx.fillStyle='#ef4444'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(x0,y,6,0,Math.PI*2); inclusive?ctx.fill():ctx.stroke();
+  ctx.beginPath(); if(op==='<'||op==='≤'){ ctx.moveTo(x0,y); ctx.lineTo(left,y); } else { ctx.moveTo(x0,y); ctx.lineTo(Wcss-right,y); } ctx.stroke();
+  ctx.beginPath(); if(op==='<'||op==='≤'){ ctx.moveTo(left,y); ctx.lineTo(left+9,y-5); ctx.lineTo(left+9,y+5); } else { ctx.moveTo(Wcss-right,y); ctx.lineTo(Wcss-right-9,y-5); ctx.lineTo(Wcss-right-9,y+5); } ctx.closePath(); ctx.fill();
+}
+
+/* Compact graphs toggle */
+$('#compactToggle').addEventListener('click', ()=>{
+  compactMode=!compactMode; setPressed($('#compactToggle'), compactMode);
+  if(gameMode==='inequality'){
+    livePreview();
+    if(answered){ const correct=round2(constant/coeffX); drawNumberLine($('#nlAns'), (coeffX<0?flipOp(op):op), correct); }
+  }
+});
+
+/* ===== Summary (tinted history & per-diff + mode subtotals) ===== */
+const modal=$('#summaryModal');
+$('#summaryBtn').addEventListener('click', ()=>{
+  const total=spCorrect+spIncorrect; const acc=total?Math.round((spCorrect/total)*100):0;
+  const recentArr=history.slice(-10);
+  const histHTML = recentArr.map(h=>{
+    const mark = h.ok ? '✓' : '✗';
+    const tag  = h.mode === 'equation' ? 'EQ' : 'INEQ';
+    return `<span style="background:${tintFor(h.diff)};padding:4px 8px;border-radius:10px;border:1px solid var(--border);margin-right:6px;display:inline-flex;align-items:center;gap:6px">
+              <span class="mode-tag">${tag}</span>${mark} ${h.text}
+            </span>`;
+  }).join('');
+
+  const table = `
+    <div class="row" style="gap:8px;flex-wrap:wrap">
+      ${['easy','medium','hard','beast'].map(d=>{
+        const ds=diffStats[d];
+        const ms=diffModeStats[d];
+        const name=d[0].toUpperCase()+d.slice(1);
+        return `<div class="chip-score" style="background:${tintFor(d)}">
+          <div style="font-weight:900">${name}</div>
+          <div>Attempted: <b>${ds.attempts}</b></div>
+          <div>Correct: <b>${ds.correct}</b></div>
+          <div style="font-size:12px;color:#374151;margin-top:4px">EQ <b>${ms.equation.correct}/${ms.equation.attempts}</b> • INEQ <b>${ms.inequality.correct}/${ms.inequality.attempts}</b></div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  $('#sumBody').innerHTML = `
+    <div class="row">
+      <div class="chip-score">Correct: <b style="margin-left:6px">${spCorrect}</b></div>
+      <div class="chip-score">Incorrect: <b style="margin-left:6px">${spIncorrect}</b></div>
+      <div class="chip-score">Accuracy: <b style="margin-left:6px">${acc}%</b></div>
+      <div class="chip-score">Longest Streak: <b style="margin-left:6px">${longestStreak}</b></div>
+    </div>
+    ${table}
+    <div style="margin:8px 0 4px;font-weight:800;color:#4b5563">Recent:</div>
+    <div style="font-weight:800;color:#6b7280">${histHTML || '—'}</div>`;
+  modal.classList.add('open'); modal.setAttribute('aria-hidden','false'); burstConfetti(100);
+});
+$('#sumContinue').addEventListener('click', ()=>{ modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); });
+$('#sumReset').addEventListener('click', ()=>{
+  spCorrect=spIncorrect=0; streak=0; longestStreak=0; lastCelebrated=0; history=[];
+  for(const k in diffStats){ diffStats[k].attempts=0; diffStats[k].correct=0; }
+  for(const d of ['easy','medium','hard','beast']){
+    diffModeStats[d].equation.attempts=0; diffModeStats[d].equation.correct=0;
+    diffModeStats[d].inequality.attempts=0; diffModeStats[d].inequality.correct=0;
+  }
+  updateTotals(); updateStreak(); updateHistory();
+  modal.classList.remove('open'); modal.setAttribute('aria-hidden','true'); generateProblem();
+});
+
+/* ===== Certificate (colored by difficulty; EQ/INEQ tallies in header) ===== */
+function summarizeModeTotals(){
+  const out={equation:{attempts:0,correct:0},inequality:{attempts:0,correct:0}};
+  for(const d of ['easy','medium','hard','beast']){
+    out.equation.attempts+=diffModeStats[d].equation.attempts;
+    out.equation.correct +=diffModeStats[d].equation.correct;
+    out.inequality.attempts+=diffModeStats[d].inequality.attempts;
+    out.inequality.correct +=diffModeStats[d].inequality.correct;
+  }
+  return out;
+}
+function printCertificate(){
+  const name = ($('#sumName').value||'').trim() || 'Student';
+  const total=spCorrect+spIncorrect; const acc=total?Math.round((spCorrect/total)*100):0;
+  const date=new Date().toLocaleString();
+  const recentArr=history.slice(-10);
+  const chips = recentArr.map(h=>{
+    const mark=h.ok?'✓':'✗';
+    const tag = h.mode==='equation'?'EQ':'INEQ';
+    return `<span style="background:${tintFor(h.diff)};padding:4px 8px;border-radius:10px;border:1px solid #e6eaf2;margin-right:6px;display:inline-flex;align-items:center;gap:6px">
+              <span style="font-size:10px;font-weight:900;padding:2px 6px;border:1px solid #e6eaf2;border-radius:999px;background:#fff;color:#475569">${tag}</span>${mark} ${h.text}
+            </span>`;
+  }).join('') || '—';
+  const accent=tintFor(difficulty);
+  const rows = ['easy','medium','hard','beast'].map(d=>{
+    const ds=diffStats[d]; const ms=diffModeStats[d];
+    const name=d[0].toUpperCase()+d.slice(1);
+    return `<div class="stat" style="background:${tintFor(d)}">
+      <div class="k">${name}</div>
+      <div class="v">${ds.correct}/${ds.attempts}</div>
+      <div class="sub">EQ <b>${ms.equation.correct}/${ms.equation.attempts}</b></div>
+      <div class="sub">INEQ <b>${ms.inequality.correct}/${ms.inequality.attempts}</b></div>
+    </div>`;
+  }).join('');
+
+  const mt = summarizeModeTotals();
+
+  const w=window.open('','_blank');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Certificate</title>
+  <style>
+    @page{size:A4;margin:16mm}
+    html,body{margin:0;background:#ebf1ff;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial}
+    .bg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:
+      radial-gradient(1200px 800px at 100% -10%, #e7eaff 0%, transparent 60%),
+      radial-gradient(1200px 800px at -10% 110%, #dff7ef 0%, transparent 60%),
+      linear-gradient(180deg,#f5f8ff 0%,#f0f7ff 100%);}
+    .card{width:100%;max-width:780px;background:#fff;border-radius:22px;border:2px solid #e7ebf4;box-shadow:0 22px 66px rgba(15,23,42,.14);padding:30px}
+    .hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .title{font-weight:900;font-size:30px}
+    .badge{padding:10px 14px;border-radius:999px;border:1px solid #dbe3ef;background:${accent};font-weight:900}
+    .name{margin:8px 0 12px;font-size:40px;font-weight:900}
+    .muted{color:#64748b;font-weight:800}
+    .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:14px 0 12px}
+    .stat{border:1px solid #e6eaf2;border-radius:12px;padding:12px 14px;background:#fafbff}
+    .stat .k{font-size:12px;color:#6b7280;font-weight:800;margin-bottom:4px}
+    .stat .v{font-size:20px;font-weight:900}
+    .stat .sub{font-size:12px;color:#374151;margin-top:2px}
+    .recent{border:1px dashed #d9e1ef;border-radius:12px;padding:10px 12px;background:#ffffff}
+    .footer{display:flex;justify-content:space-between;margin-top:16px;color:#6b7280;font-weight:800}
+  </style></head><body>
+  <div class="bg"><div class="card">
+    <div class="hdr"><div class="title">Certificate of Practice</div>
+      <div class="badge">EQ <b>${mt.equation.correct}/${mt.equation.attempts}</b> • INEQ <b>${mt.inequality.correct}/${mt.inequality.attempts}</b></div>
+    </div>
+    <div class="muted">Awarded to</div>
+    <div class="name">${name}</div>
+    <div class="stats">
+      <div class="stat"><div class="k">Correct</div><div class="v">${spCorrect}</div></div>
+      <div class="stat"><div class="k">Incorrect</div><div class="v">${spIncorrect}</div></div>
+      <div class="stat"><div class="k">Accuracy</div><div class="v">${acc}%</div></div>
+      <div class="stat"><div class="k">Longest Streak</div><div class="v">${longestStreak}</div></div>
+    </div>
+    <div class="stats">${rows}</div>
+    <div class="recent"><div class="k" style="font-size:12px;color:#6b7280;font-weight:800;margin-bottom:6px">Recent</div>
+      <div style="font-weight:900">${chips}</div></div>
+    <div class="footer"><span>Date: ${date}</span><span>Teacher: ____________________</span></div>
+  </div></div>
+  <script>window.print();<\/script></body></html>`);
+  w.document.close();
+}
+document.getElementById('sumPrint').addEventListener('click', printCertificate);
+
+/* ===== Step modal with Prev/Next and improved explanations ===== */
+function openStepModalByIndex(idx){
+  stepModalIndex=idx;
+  const step=currentStepsMeta[idx];
+  const modal = document.getElementById('stepModal');
+  document.getElementById('stepTitle').textContent = step.label;
+  document.getElementById('bfEq').textContent = step.payload.before || '';
+  document.getElementById('afEq').textContent = step.kind==='divide'
+    ? (step.payload.after || `x ${step.payload.op||'='} ${step.payload.result}`)
+    : (step.payload.after || '');
+
+  const explain = document.getElementById('stepExplain');
+  if(step.kind==='distribute'){
+    const pcs = step.payload.pieces || [];
+    if(pcs.length){
+      const msg = pcs.map((p,i)=>{
+        const list=tokensFromInner(p.inner).join(', ');
+        return i===0
+          ? `Multiply the factor (${p.factor}) times all terms ${list} inside the parentheses.`
+          : `Then multiply the factor (${p.factor}) times all terms ${list} in the other parentheses.`;
+      }).join(' ');
+      explain.textContent = msg;
+    } else { explain.textContent='Distribute the factor to each term inside the parentheses.'; }
+  } else if(step.kind==='combine'){
+    explain.textContent = 'Combine like terms on each side to simplify by adding or subtracting coefficients and constants with the same kind of term.';
+  } else if(step.kind==='rearrange'){
+    const {A,B,C,D} = step.payload;
+    const xMove = C !== 0 ? (C > 0 ? `Subtract ${fmtAx(C)} from both sides` : `Add ${fmtAx(-C)} to both sides`) : null;
+    const cMove = B !== 0 ? (B > 0 ? `Subtract ${B} from both sides`       : `Add ${-B} to both sides`) : null;
+    const parts = [xMove, cMove].filter(Boolean);
+    explain.textContent = parts.length ? parts.join('. ') + '.' : 'Collect x-terms on one side and constants on the other.';
+  } else if(step.kind==='divide'){
+    if(gameMode==='inequality' && step.payload.coef<0){
+      explain.textContent=`Divide both sides by ${step.payload.coef}. Because it’s negative, flip the inequality to ${step.payload.op}.`;
+    }else{
+      explain.textContent=`Divide both sides by the coefficient of x (${step.payload.coef}).`;
+    }
+  } else { explain.textContent=''; }
+
+  const prevBtn = document.getElementById('stepPrev');
+  const nextBtn = document.getElementById('stepNext');
+  prevBtn.style.display = idx>0 ? 'inline-block' : 'none';
+  nextBtn.style.display = idx<currentStepsMeta.length-1 ? 'inline-block' : 'none';
+  prevBtn.onclick = () => openStepModalByIndex(idx-1);
+  nextBtn.onclick = () => openStepModalByIndex(idx+1);
+
+  modal.classList.add('open');
+  modal.focus();
+}
+document.getElementById('stepClose').addEventListener('click',()=>document.getElementById('stepModal').classList.remove('open'));
+document.getElementById('stepModal').addEventListener('click',(e)=>{ if(e.target.id==='stepModal') e.currentTarget.classList.remove('open'); });
+document.getElementById('stepModal').addEventListener('keydown', (e)=>{
+  if(e.key==='ArrowRight' && stepModalIndex < currentStepsMeta.length-1){ openStepModalByIndex(stepModalIndex+1); }
+  if(e.key==='ArrowLeft'  && stepModalIndex > 0){ openStepModalByIndex(stepModalIndex-1); }
+});
+
+/* Result chip helper */
+function showChip(ok,_,msg){
+  $('#resultChip').innerHTML = `<span class="chip-big ${ok?'ok':'err'}">${ok?'Correct ✓':'Incorrect ✗'}</span>` + (msg?` <span style="margin-left:6px;color:${ok?'#065f46':'#7f1d1d'};font-weight:800">${msg}</span>`:'');
+}
+
+/* ===== Boot ===== */
+function boot(){
+  updateTotals(); updateStreak(); updateHistory();
+  setMode('equation'); // generateProblem
+  setDifficulty('easy'); // adjust placeholders and regenerate
+}
+boot();
+
+/* Responsive fit */
+let resizeRAF=null;
+window.addEventListener('resize', ()=>{
+  if(resizeRAF) cancelAnimationFrame(resizeRAF);
+  resizeRAF=requestAnimationFrame(()=>{
+    fitProblemText();
+    if(gameMode==='inequality'){
+      livePreview();
+      if(answered){ const correct=round2(constant/coeffX); drawNumberLine($('#nlAns'), (coeffX<0?flipOp(op):op), correct); }
+    }
+  });
+});
+</script>
+</body>
+</html>

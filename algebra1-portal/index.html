@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Algebra 1 Practice Portal — EEHS Math</title>
+<style>
+  :root{
+    --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
+    --blue:#2f6cff; --vio:#8e78ff; --teal:#36c2a0; --gold:#f4a531;
+    --ok:#0b6b2f; --shadow:0 8px 20px rgba(25,40,80,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100dvh}
+  body{
+    margin:0; background:var(--bg); color:var(--ink); overflow:auto;
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  .wrap{width:min(1240px,100%); margin:18px auto; padding:0 12px;}
+
+  /* ---------- header ---------- */
+  .hdr{
+    background:var(--panel); border:1px solid var(--ui); border-radius:18px;
+    box-shadow:var(--shadow); padding:18px 20px; margin-bottom:14px;
+  }
+  .hdr .toprow{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap}
+  .hdr h1{margin:0; font-size:clamp(22px,3.4vw,30px); font-weight:900; letter-spacing:.2px}
+  .hdr .sub{color:var(--muted); font-weight:700; font-size:14px; margin-top:4px}
+  .nameBox{display:flex; align-items:center; gap:8px}
+  .nameBox input{
+    height:42px; border:2px solid var(--ui); border-radius:12px; padding:0 12px;
+    font-weight:900; font-size:16px; font-family:inherit; color:var(--ink); width:180px;
+  }
+  .pills{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; align-items:center}
+  .pill{
+    display:inline-block; padding:7px 14px; border-radius:999px; border:1px solid var(--ui);
+    background:#fff; font-weight:900; font-size:14px;
+  }
+  .pill b{color:var(--blue)}
+  .btn{
+    height:44px; border-radius:12px; border:1px solid var(--ui); background:#fff;
+    font-weight:900; padding:0 16px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink);
+  }
+  .btn.primary{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635}
+  .btn.info{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible, input:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
+
+  /* ---------- section grid ---------- */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  @media (max-width:900px){ .grid{grid-template-columns:1fr} }
+
+  .sec{
+    background:var(--panel); border:1px solid var(--ui); border-radius:18px;
+    box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column;
+    border-top:5px solid var(--accent);
+  }
+  .sec .head{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:6px}
+  .sec .eyebrow{font-size:12px; font-weight:900; letter-spacing:.8px; color:var(--muted); text-transform:uppercase}
+  .sec h2{margin:2px 0 0; font-size:20px; font-weight:900}
+  .sec .mcount{font-size:12px; font-weight:800; color:var(--muted); margin-top:3px}
+
+  /* progress ring */
+  .ring{width:64px; height:64px; flex:none}
+  .ring svg{width:64px; height:64px; transform:rotate(-90deg)}
+  .ring .track{fill:none; stroke:#edf2ff; stroke-width:8}
+  .ring .fill{fill:none; stroke:var(--accent); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .6s ease}
+  .ring .pct{
+    position:relative; top:-64px; height:64px; display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:14px;
+  }
+
+  /* ---------- stepping-stone path ---------- */
+  .path{list-style:none; margin:10px 0 0; padding:0; position:relative}
+  .path::before{
+    content:""; position:absolute; left:19px; top:14px; bottom:14px; width:0;
+    border-left:3px dotted #d5deff;
+  }
+  .stone{
+    position:relative; display:flex; align-items:center; gap:12px;
+    padding:7px 8px 7px 0; border-radius:12px; text-decoration:none; color:inherit;
+  }
+  a.stone:hover{background:#f5f8ff}
+  .stone .dot{
+    width:40px; height:40px; flex:none; border-radius:50%;
+    border:3px solid #d5deff; background:#fff; z-index:1;
+    display:flex; align-items:center; justify-content:center;
+    font-weight:900; font-size:15px; color:var(--muted);
+    transition:background .3s, border-color .3s, color .3s;
+  }
+  .stone.started .dot{border-color:var(--accent); color:var(--ink)}
+  .stone.mastered .dot{background:var(--accent); border-color:var(--accent); color:#fff}
+  .stone .info{flex:1; min-width:0}
+  .stone .nm{font-weight:900; font-size:15px; line-height:1.25}
+  .stone .bar{
+    height:6px; border-radius:999px; background:#edf2ff; margin-top:5px; overflow:hidden; max-width:260px;
+  }
+  .stone .bar i{display:block; height:100%; border-radius:999px; background:var(--accent); transition:width .5s ease}
+  .stone .meta{font-size:11.5px; font-weight:800; color:var(--muted); margin-top:3px}
+  .stone .go{
+    flex:none; font-weight:900; color:var(--accent); font-size:14px;
+    padding:6px 12px; border-radius:999px; border:1px solid var(--ui); background:#fff;
+  }
+  .stone.soon{opacity:.45; pointer-events:none}
+  .stone.soon .go{color:var(--muted)}
+  .tagSoon{font-size:10px; font-weight:900; letter-spacing:.6px; color:var(--muted);
+    border:1px solid var(--ui); border-radius:999px; padding:2px 8px; margin-left:6px; vertical-align:2px}
+
+  /* ---------- report modal ---------- */
+  .modal{position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; z-index:30;
+    align-items:flex-start; justify-content:center; overflow:auto; padding:20px}
+  .modal.show{display:flex}
+  .modalCard{margin:24px 0; width:min(860px,96vw); background:#fff; border:1px solid var(--ui);
+    border-radius:24px; box-shadow:0 40px 80px rgba(2,6,23,.25)}
+  .modalHead{display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:16px 20px; border-bottom:1px dashed #e5e7eb}
+  .modalHead h3{margin:0; font-size:20px; font-weight:900}
+  .modalBody{padding:18px 20px}
+  table{width:100%; border-collapse:collapse; font-size:14px}
+  th{ text-align:left; font-size:11px; letter-spacing:.7px; text-transform:uppercase; color:var(--muted);
+    padding:8px 10px; border-bottom:2px solid #edf2ff}
+  td{padding:9px 10px; border-bottom:1px solid #f1f5ff; font-weight:800}
+  td.num{font-variant-numeric:tabular-nums}
+  .chip-ok{color:var(--ok); background:#eafff2; border:1px solid #bfeacc; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
+  .chip-prog{color:#7a5a00; background:#fff9d6; border:1px solid #ffe38a; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
+  .codeBox{margin-top:14px; display:flex; gap:8px; align-items:stretch}
+  .codeBox textarea{
+    flex:1; min-height:64px; border:2px solid var(--ui); border-radius:12px; padding:10px;
+    font:800 12px/1.5 ui-monospace, Menlo, Consolas, monospace; color:var(--ink); resize:vertical;
+  }
+  .foot{color:var(--muted); font-size:12.5px; font-weight:700; margin-top:14px; text-align:center}
+
+  @media print{
+    body *{visibility:hidden}
+    .modalCard, .modalCard *{visibility:visible}
+    .modal{position:static; padding:0; background:none; display:block}
+    .modalCard{box-shadow:none; border:0; margin:0; width:100%}
+    .noprint{display:none !important}
+  }
+  @media (max-width:520px){
+    .stone .bar{max-width:150px}
+    .nameBox input{width:130px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ header ============ -->
+  <div class="hdr">
+    <div class="toprow">
+      <div>
+        <h1>Algebra 1 Practice Portal</h1>
+        <div class="sub">Pick any skill, any time — or follow the path. Unlimited practice, hints, and steps.</div>
+      </div>
+      <div class="nameBox">
+        <input id="studentName" type="text" placeholder="Your name" aria-label="Your name" maxlength="40" />
+      </div>
+    </div>
+    <div class="pills">
+      <span class="pill">Answered <b id="tAttempts">0</b></span>
+      <span class="pill">Accuracy <b id="tAcc">—</b></span>
+      <span class="pill">Skills polished <b id="tMastered">0</b></span>
+      <span style="flex:1"></span>
+      <button class="btn primary" id="continueBtn">Continue my path →</button>
+      <button class="btn info" id="reportBtn">My report</button>
+    </div>
+  </div>
+
+  <!-- ============ four sections ============ -->
+  <div class="grid" id="sections"></div>
+
+  <div class="foot">Progress is saved on this device in this browser. Copy your report code to turn in your work.</div>
+</div>
+
+<!-- ============ report modal ============ -->
+<div class="modal" id="reportModal" role="dialog" aria-modal="true" aria-label="Progress report">
+  <div class="modalCard">
+    <div class="modalHead">
+      <h3>Progress Report <span id="repName" style="color:var(--muted); font-size:15px"></span></h3>
+      <div class="noprint" style="display:flex; gap:8px">
+        <button class="btn" id="printBtn">Print</button>
+        <button class="btn" id="closeReport">Close</button>
+      </div>
+    </div>
+    <div class="modalBody">
+      <table>
+        <thead><tr><th>Skill</th><th>Attempts</th><th>Correct</th><th>Recent 10</th><th>Status</th></tr></thead>
+        <tbody id="repRows"></tbody>
+      </table>
+      <div class="codeBox noprint">
+        <textarea id="repCode" readonly aria-label="Report code"></textarea>
+        <button class="btn info" id="copyCode">Copy code</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="portal.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $ = function(s){ return document.querySelector(s); };
+
+  /* ---------- build the four section cards ---------- */
+  function ringSVG(pct, accent){
+    var r = 26, C = 2*Math.PI*r, off = C*(1-pct);
+    return '<div class="ring" style="--accent:'+accent+'">' +
+      '<svg viewBox="0 0 64 64" aria-hidden="true">' +
+        '<circle class="track" cx="32" cy="32" r="'+r+'"></circle>' +
+        '<circle class="fill" cx="32" cy="32" r="'+r+'" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'"></circle>' +
+      '</svg>' +
+      '<div class="pct">'+Math.round(pct*100)+'%</div></div>';
+  }
+
+  function render(){
+    var host = $('#sections');
+    host.innerHTML = '';
+    var sum = Portal.summary();
+
+    Portal.SECTIONS.forEach(function(sec, si){
+      var skills = Portal.REGISTRY.filter(function(r){ return r.sec === sec.id; });
+      var s = sum[sec.id];
+
+      var card = document.createElement('div');
+      card.className = 'sec';
+      card.style.setProperty('--accent', sec.accent);
+
+      var html =
+        '<div class="head"><div>' +
+          '<div class="eyebrow">Section '+(si+1)+' · '+sec.teks+'</div>' +
+          '<h2>'+sec.name+'</h2>' +
+          '<div class="mcount">'+s.mastered+' of '+s.readyCount+' skills polished</div>' +
+        '</div>' + ringSVG(s.progress, sec.accent) + '</div>';
+
+      html += '<ul class="path">';
+      skills.forEach(function(r, i){
+        var st = Portal.skill(r.id);
+        var soon = r.status !== 'ready';
+        var cls = 'stone' + (soon ? ' soon' : st.mastered ? ' mastered' : st.attempts ? ' started' : '');
+        var dot = st.mastered ? '✓' : (i+1);
+        var meta = soon ? 'coming soon'
+                 : st.attempts ? st.attempts+' answered · '+Math.round(st.recentAcc*100)+'% recent'
+                 : 'not started';
+        var tag = soon ? '<span class="tagSoon">SOON</span>' : '';
+        var open = soon ? '<span class="'+cls+'" style="--accent:'+sec.accent+'">'
+                        : '<a class="'+cls+'" style="--accent:'+sec.accent+'" href="'+r.file+'">';
+        var close = soon ? '</span>' : '</a>';
+        html += '<li>' + open +
+          '<span class="dot">'+dot+'</span>' +
+          '<span class="info"><span class="nm">'+r.name+tag+'</span>' +
+            '<span class="bar"><i style="width:'+Math.round(st.progress*100)+'%"></i></span>' +
+            '<span class="meta">'+meta+'</span></span>' +
+          '<span class="go">'+(soon?'· · ·':'Practice')+'</span>' +
+          close + '</li>';
+      });
+      html += '</ul>';
+
+      card.innerHTML = html;
+      host.appendChild(card);
+    });
+
+    var t = Portal.totals();
+    $('#tAttempts').textContent = t.attempts;
+    $('#tAcc').textContent = t.attempts ? Math.round(100*t.correct/t.attempts)+'%' : '—';
+    $('#tMastered').textContent = t.mastered;
+  }
+
+  /* ---------- name field ---------- */
+  var nameInput = $('#studentName');
+  nameInput.value = Portal.studentName();
+  nameInput.addEventListener('change', function(){ Portal.studentName(nameInput.value.trim()); });
+
+  /* ---------- continue my path ---------- */
+  $('#continueBtn').addEventListener('click', function(){
+    var next = Portal.nextOnPath();
+    if(next){ location.href = next.file; }
+  });
+
+  /* ---------- report ---------- */
+  function nameOf(id){
+    var r = Portal.REGISTRY.find(function(x){ return x.id===id; });
+    return r ? r.name : id;
+  }
+  function openReport(){
+    var d = Portal.load();
+    var rows = '';
+    Portal.REGISTRY.forEach(function(r){
+      var raw = d.skills[r.id];
+      if(!raw || !raw.a) return;
+      var st = Portal.skill(r.id);
+      var status = st.mastered ? '<span class="chip-ok">Polished ✓</span>' : '<span class="chip-prog">In progress</span>';
+      rows += '<tr><td>'+r.name+'</td><td class="num">'+st.attempts+'</td><td class="num">'+st.correct+'</td>' +
+              '<td class="num">'+Math.round(st.recentAcc*100)+'%</td><td>'+status+'</td></tr>';
+    });
+    $('#repRows').innerHTML = rows || '<tr><td colspan="5" style="color:var(--muted)">No practice recorded yet — go answer some questions!</td></tr>';
+    $('#repName').textContent = Portal.studentName() ? '· '+Portal.studentName() : '';
+    $('#repCode').value = Portal.reportCode();
+    $('#reportModal').classList.add('show');
+  }
+  $('#reportBtn').addEventListener('click', openReport);
+  $('#closeReport').addEventListener('click', function(){ $('#reportModal').classList.remove('show'); });
+  $('#reportModal').addEventListener('click', function(e){ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
+  $('#printBtn').addEventListener('click', function(){ window.print(); });
+  $('#copyCode').addEventListener('click', function(){
+    var ta = $('#repCode'); ta.select();
+    try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
+    $('#copyCode').textContent = 'Copied ✓';
+    setTimeout(function(){ $('#copyCode').textContent = 'Copy code'; }, 1500);
+  });
+
+  /* re-render when the student returns from an app (bfcache/back button) */
+  window.addEventListener('pageshow', render);
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Attributes Trainer — Linear · Quadratic · Exponential (Zen v9.1)</title>
+<style>
+  :root{ --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --blue:#2f6cff; --teal:#36c2a0; --gold:#f4c431; --danger:#e5484d; --vio:#8e78ff }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--bg); color:var(--ink); font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
+  
+.app {
+  max-width:1240px;
+  margin:18px auto;
+  padding:0 12px;
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:12px;
+  width:min(1240px,100%); /* plays nice inside Google Sites */
+}
+
+  .card{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:0 8px 20px rgba(25,40,80,.06)}
+  .stage{padding:10px}
+  .panel{padding:12px}
+  .h{font-weight:900; font-size:18px; padding:10px}
+  .seg{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
+  .seg button{border:0; background:#fff; padding:8px 12px; font-weight:900; cursor:pointer}
+  .seg button.active{background:#f1f6ff; color:#133a9a}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+  .row.spread{justify-content:space-between; margin-bottom:8px}
+  .row.left{align-items:center; gap:12px}
+  .field{display:grid; grid-template-columns:200px 1fr auto; gap:8px; align-items:center; margin-bottom:8px}
+  .field .in{height:54px; border:2px solid var(--ui); border-radius:12px; padding:0 14px; font-weight:900; font-size:20px}
+  .in.short{max-width:220px} /* compact control (for # of zeros) */
+  [data-mode="lin"] .field .in{height:64px; font-size:22px}
+  .btn{height:44px; border-radius:12px; border:1px solid var(--ui); background:#fff; font-weight:900; padding:0 14px; cursor:pointer}
+  .btn.primary{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635}
+  .btn.alt{border:0; background:linear-gradient(90deg,#ffd7a3,#ffecc6); color:#081635}
+  .btn.info{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
+  .btn.warn{border:0; background:linear-gradient(90deg,#ffe6a8,#ffcf70); color:#081635}
+  .btn.danger{border:0; background:linear-gradient(90deg,#ffd0db,#ffa7b9); color:#081635}
+  .btnchk{height:44px; padding:0 12px; border-radius:12px; border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635; font-weight:900; cursor:pointer; min-width:92px}
+  .btnchk:disabled{opacity:.55; cursor:not-allowed; filter:saturate(.6)}
+  .btnchk.ok{background:linear-gradient(90deg,#b9f6cf,#7de0a6)}
+  .btnchk.bad{background:linear-gradient(90deg,#ffd2d2,#ffb3b3)}
+  .stat{border:1px solid var(--ui); border-radius:12px; padding:10px}
+  .pill{display:inline-block; padding:6px 12px; border-radius:999px; border:1px solid var(--ui); background:#fff; font-weight:900; margin:3px 6px 0 0}
+  .ok{background:#eafff2; border-color:#bfeacc; color:#0b6b2f}
+  .bad{background:#fff3f3; border-color:#ffd4d4; color:#a33232}
+  .hint{background:#fff9d6; border-color:#ffe38a; color:#7a5a00}
+  #canvas{width:100%; aspect-ratio:1; background:#fff; border:1px solid #e7edff; border-radius:12px; display:block}
+  .radio{display:flex; gap:12px}
+  .radio label{display:flex; align-items:center; gap:6px; font-weight:800}
+
+  .modal{position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; z-index:30; align-items:flex-start; justify-content:center; overflow:auto}
+  .modal.show{display:flex}
+  .modalCard{margin:40px 12px; max-width:1000px; width:min(1000px,95vw); background:#fff; border:1px solid var(--ui); border-radius:24px; box-shadow:0 40px 80px rgba(2,6,23,.25)}
+  .modalHead{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:16px 18px; border-bottom:1px dashed #e5e7eb}
+  .modalBody{padding:18px}
+  .statCard{ border:2px solid #edf2ff; background:#ffffff; border-radius:16px; padding:16px; }
+  .grid4{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px}
+  .grid3{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-top:12px}
+  .history{ display:flex; flex-wrap:wrap; gap:8px; }
+
+  .kbd{position:sticky; bottom:6px; display:none; flex-wrap:wrap; gap:6px; padding:8px; border:1px solid var(--ui); background:#fff; border-radius:14px; box-shadow:0 8px 20px rgba(25,40,80,.06); z-index:5}
+  .kbd.show{display:flex}
+  .kbd button{min-width:40px; height:40px; border:1px solid var(--ui); border-radius:10px; background:#f6f9ff; font-weight:900; cursor:pointer}
+  .kbd .wide{min-width:76px}
+
+/* Make short screens scroll instead of clipping centered content */
+body{
+  min-height:100dvh;           /* handles mobile browser chrome */
+  overflow:auto;
+}
+
+/* If height is tight, align to top so nothing is cut off */
+@media (max-height: 820px){
+  body{ align-items:flex-start; }
+  .app{ margin:12px auto; }
+}
+
+/* Inputs and bottom panels stack on narrow screens */
+@media (max-width: 900px){
+  .io{ grid-template-columns:1fr; }
+  .bottomRow{ grid-template-columns:1fr; }
+}
+
+/* Also stack when the screen is short (Chromebooks in split view, etc.) */
+@media (max-height: 820px){
+  .io{ grid-template-columns:1fr; }
+  .bottomRow{ grid-template-columns:1fr; }
+}
+
+
+/* Scale headline equation typography down on smaller screens */
+@media (max-width: 1024px){
+  .stdEq .term{ font-size: clamp(36px,8vw,110px); }
+}
+
+@media (max-width: 700px){
+  .stdEq .term{ font-size: clamp(28px,9.5vw,90px); }
+  .ybig, .int{ font-size: clamp(28px,8.5vw,70px); }
+  .frac{ font-size: clamp(28px,8.5vw,70px); }
+  .sign{ font-size: clamp(22px,7vw,56px); }
+}
+
+/* When height is tight (Chromebooks, landscape phones), shrink a bit */
+@media (max-height: 820px){
+  .stdEq .term{ font-size: clamp(32px,7.5vw,100px); }
+  .ybig, .int, .frac{ font-size: clamp(28px,7vw,64px); }
+}
+
+/* Keypad adapts on narrow phones */
+@media (max-width: 420px){
+  .kbdWrap{ grid-template-columns: repeat(4,1fr); }
+  .kbtn{ padding:10px 6px; }
+}
+
+/* Use dynamic viewport units so the steps modal never runs off-screen */
+.modalBackdrop{ padding:20px; }
+.modal{ max-height:92dvh; }
+
+
+</style>
+</head>
+<body data-mode="lin">
+  <div class="app">
+    <div class="card stage">
+      <div class="h">📈 Attributes Trainer</div>
+      <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="card panel">
+      <div class="row spread">
+        <div class="row left">
+          <div class="seg" id="tabs">
+            <button data-tab="lin" class="active">Linear</button>
+            <button data-tab="quad">Quadratic</button>
+            <button data-tab="exp">Exponential</button>
+          </div>
+          <div class="seg" id="difficulty" style="margin-left:6px">
+            <button data-d="int" class="active">Integers</button>
+            <button data-d="any">Any</button>
+          </div>
+        </div>
+        <div class="row" style="gap:10px">
+          <button id="btnNew" class="btn alt">New</button>
+          <button id="btnReveal" class="btn warn">Reveal</button>
+          <button id="btnSummary" class="btn info">Summary</button>
+          <button id="btnReset" class="btn danger">Reset</button>
+        </div>
+      </div>
+
+      <div id="inputs"></div>
+
+      <div class="row" style="margin-top:8px">
+        <button id="btnCheckAll" class="btn primary">Check all</button>
+      </div>
+
+      <div id="kb" class="kbd" aria-label="On-screen keyboard"></div>
+
+      <div class="stat" style="margin-top:10px">
+        <div class="row" style="justify-content:space-between">
+          <div><b>Feedback</b></div>
+          <div>Correct: <span id="stCorrect">0</span> · Attempts: <span id="stAttempts">0</span> · Streak: <span id="stStreak">0</span></div>
+        </div>
+        <div id="feedback" style="margin-top:6px"></div>
+      </div>
+
+      <div class="stat" style="margin-top:10px">
+        <b>Correct answers</b>
+        <div id="answers" style="margin-top:6px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal" class="modal" aria-hidden="true">
+    <div class="modalCard">
+      <div class="modalHead">
+        <div>
+          <div style="font-size:28px;font-weight:900">Session Summary</div>
+          <div style="color:#475569;font-weight:800">Practice overview</div>
+        </div>
+        <div class="row">
+          <button class="btn info" id="btnDownload">Download certificate</button>
+          <button class="btn danger" id="modalClose">Close</button>
+        </div>
+      </div>
+      <div class="modalBody">
+        <div class="grid4">
+          <div class="statCard"><div style="font-size:12px;font-weight:900;color:#64748b">Correct</div><div id="mCorr" style="font-size:26px;font-weight:900">0</div></div>
+          <div class="statCard"><div style="font-size:12px;font-weight:900;color:#64748b">Attempts</div><div id="mAtt" style="font-size:26px;font-weight:900">0</div></div>
+          <div class="statCard"><div style="font-size:12px;font-weight:900;color:#64748b">Accuracy</div><div id="mAcc" style="font-size:26px;font-weight:900">0%</div></div>
+          <div class="statCard"><div style="font-size:12px;font-weight:900;color:#64748b">Longest streak</div><div id="mStr" style="font-size:26px;font-weight:900">0</div></div>
+        </div>
+        <div class="grid3">
+          <div class="statCard"><div style="font-size:12px;font-weight:900;color:#64748b">Linear</div><div id="mLin" style="font-size:22px;font-weight:900">0 / 0</div></div>
+          <div class="statCard"><div style="font-size:12px;font-weight:900;color:#64748b">Quadratic</div><div id="mQuad" style="font-size:22px;font-weight:900">0 / 0</div></div>
+          <div class="statCard"><div style="font-size:12px;font-weight:900;color:#64748b">Exponential</div><div id="mExp" style="font-size:22px;font-weight:900">0 / 0</div></div>
+        </div>
+        <div style="margin-top:14px">
+          <div style="font-size:12px;color:#64748b;font-weight:900;margin-bottom:6px">Recent checks</div>
+          <div id="mHistory" class="history"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const $=s=>document.querySelector(s);
+  let modeTab='lin', difficulty='int', problem=null; 
+  const st={attempts:0,correct:0,streak:0,longest:0};
+  const per={lin:{a:0,c:0}, quad:{a:0,c:0}, exp:{a:0,c:0}};
+  const credit={}; const history=[]; 
+  const feedbackMap={};
+
+  $('#tabs').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    [...$('#tabs').children].forEach(x=>x.classList.toggle('active',x===b));
+    modeTab=b.dataset.tab; document.body.setAttribute('data-mode', modeTab);
+    buildProblem();
+  });
+  $('#difficulty').addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b) return;
+    [...$('#difficulty').children].forEach(x=>x.classList.toggle('active',x===b));
+    difficulty=b.dataset.d; buildProblem();
+  });
+  $('#btnNew').onclick=()=>buildProblem();
+  $('#btnReset').onclick=()=>{ st.attempts=st.correct=st.streak=st.longest=0; per.lin={a:0,c:0}; per.quad={a:0,c:0}; per.exp={a:0,c:0}; setStats(); buildProblem(); };
+  $('#btnReveal').onclick=()=>renderAnswers(true);
+  $('#btnCheckAll').onclick=()=>checkAll();
+  $('#btnSummary').onclick=()=>openSummary();
+  $('#modalClose').onclick=()=>$('#modal').classList.remove('show');
+  $('#modal').addEventListener('click',e=>{ if(e.target.id==='modal') $('#modal').classList.remove('show'); });
+
+  function enableOnValid(inp, btn, validator){ 
+    const go=()=>{ btn.disabled = !validator(inp.value); btn.classList.remove('ok','bad'); btn.textContent='Check'; }; 
+    inp.addEventListener('input', go); go(); 
+  }
+
+  // ----- on-screen keyboard -----
+  let activeInput=null;
+  const kb=$('#kb');
+  function insertToken(tok){
+    if(!activeInput) return;
+    const el=activeInput, start=el.selectionStart, end=el.selectionEnd;
+    el.value = el.value.slice(0,start) + tok + el.value.slice(end);
+    el.focus();
+    const pos=start + tok.length;
+    el.setSelectionRange(pos,pos);
+    el.dispatchEvent(new Event('input', {bubbles:true}));
+  }
+  function buildKB(type){
+    kb.innerHTML='';
+    const add=(t,v=t, cls='')=>{ const b=document.createElement('button'); b.textContent=t; if(cls) b.className=cls; b.onclick=()=>insertToken(v); kb.appendChild(b); };
+    const digits=()=>{ for(let i=0;i<=9;i++) add(String(i)); };
+    const common=()=>{ add('←','\b'); add('Clear','', 'wide'); kb.querySelector('.wide').onclick=()=>{ if(activeInput){ activeInput.value=''; activeInput.dispatchEvent(new Event('input',{bubbles:true})); activeInput.focus(); } }; };
+    if(type==='point'){ add('('); add(')'); add(','); add('-'); add('.'); digits(); common(); }
+    else if(type==='aos'){ add('x='); add('-'); add('.'); digits(); common(); }
+    else if(type==='yeq'){ add('y='); add('-'); add('.'); digits(); common(); }
+    else { add('-'); add('.'); digits(); common(); }
+  }
+  function hookKBFor(inp){
+    inp.addEventListener('focus',()=>{ activeInput=inp; buildKB(inp.dataset.type||''); kb.classList.add('show'); });
+    inp.addEventListener('blur',()=>{ setTimeout(()=>{ if(document.activeElement?.className!=='in'){ kb.classList.remove('show'); activeInput=null; } },150); });
+  }
+
+  function fieldRow(label, id, placeholder, validator, checker, type=''){
+    const wrap=document.createElement('div'); wrap.className='field';
+    const lab=document.createElement('label'); lab.innerHTML='<b>'+label+'</b>';
+    const inp=document.createElement('input'); inp.className='in'; inp.id=id; inp.placeholder=placeholder; if(type) inp.dataset.type=type;
+    hookKBFor(inp);
+    const btn=document.createElement('button'); btn.className='btnchk'; btn.textContent='Check'; btn.disabled=true; btn.addEventListener('click',()=>checkField(id, checker, btn, label));
+    enableOnValid(inp, btn, validator);
+    wrap.appendChild(lab); wrap.appendChild(inp); wrap.appendChild(btn); return wrap;
+  }
+
+  function buildInputs(){
+    const box=$('#inputs'); box.innerHTML=''; Object.keys(feedbackMap).forEach(k=>delete feedbackMap[k]); $('#feedback').innerHTML='';
+    if(modeTab==='lin'){
+      box.appendChild(fieldRow('x-intercept (zero)','lin_x','(x, y)',isPoint,v=>okPoint(v,{x:problem.xint,y:0}),'point'));
+      box.appendChild(fieldRow('y-intercept','lin_y','(x, y)',isPoint,v=>okPoint(v,{x:0,y:problem.yint}),'point'));
+    }
+    if(modeTab==='quad'){
+      // # of zeros with its own Check button (compact select)
+      const nzWrap=document.createElement('div'); nzWrap.className='field';
+      const nzLab=document.createElement('label'); nzLab.innerHTML='<b># of zeros</b>';
+      const nzSel=document.createElement('select'); nzSel.className='in short'; nzSel.id='q_nz';
+      const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='—'; nzSel.appendChild(opt0);
+      ['0','1','2'].forEach(k=>{const o=document.createElement('option'); o.value=k; o.textContent=k; nzSel.appendChild(o);});
+      const nzBtn=document.createElement('button'); nzBtn.className='btnchk'; nzBtn.textContent='Check'; nzBtn.disabled=true;
+      nzWrap.appendChild(nzLab); nzWrap.appendChild(nzSel); nzWrap.appendChild(nzBtn);
+      box.appendChild(nzWrap);
+
+      // zeros fields (appear based on selection)
+      const z1=fieldRow('zero 1','q_z1','(x, y)',isPoint, val=>zeroOK(val,1),'point');
+      const z2=fieldRow('zero 2','q_z2','(x, y)',isPoint, val=>zeroOK(val,2),'point');
+      z1.style.display='none'; z2.style.display='none';
+      box.appendChild(z1); box.appendChild(z2);
+
+      // y-int
+      const yiRow=fieldRow('y-intercept','q_yi','(x, y)',isPoint,v=>okPoint(v,{x:0,y:problem.yint}),'point');
+      box.appendChild(yiRow);
+
+      // AOS, Vertex, Max/Min
+      box.appendChild(fieldRow('Axis of symmetry','q_aos','x = h',isAOS,v=>aosOK(v,problem.aos),'aos'));
+      box.appendChild(fieldRow('Vertex','q_v','(x, y)',isPoint,v=>okPoint(v,{x:problem.vertex[0],y:problem.vertex[1]}),'point'));
+      const mm=document.createElement('div'); mm.className='field';
+      const mml=document.createElement('label'); mml.innerHTML='<b>Max/Min</b>';
+      const mmBox=document.createElement('div'); mmBox.className='radio'; mmBox.id='q_mm';
+      mmBox.innerHTML=`<label><input type="radio" name="mm" value="max"> max</label><label><input type="radio" name="mm" value="min"> min</label>`;
+      const mmBtn=document.createElement('button'); mmBtn.className='btnchk'; mmBtn.textContent='Check'; mmBtn.disabled=true; mmBtn.addEventListener('click',()=>checkField('q_mm', v=>v===problem.ext, mmBtn, 'Max/Min'));
+      mm.appendChild(mml); mm.appendChild(mmBox); mm.appendChild(mmBtn); box.appendChild(mm);
+      mmBox.addEventListener('change',()=>{ mmBtn.disabled = !document.querySelector('input[name="mm"]:checked'); mmBtn.classList.remove('ok','bad'); mmBtn.textContent='Check'; });
+
+      // tie NZ select to its button + show/hide of zero fields
+      function distinctRootCount(){ return problem.roots.length; } // 0,1,2 already handled in solver
+      function applyNZ(){ const k=nzSel.value; z1.style.display=(k==='1'||k==='2')?'grid':'none'; z2.style.display=(k==='2')?'grid':'none'; }
+      nzSel.addEventListener('change',()=>{ nzBtn.disabled = !(nzSel.value==='0'||nzSel.value==='1'||nzSel.value==='2'); nzBtn.classList.remove('ok','bad'); nzBtn.textContent='Check'; applyNZ(); });
+      nzBtn.addEventListener('click',()=>{
+        const ok = Number(nzSel.value)===distinctRootCount();
+        setChip('# of zeros', ok); addHistory('# of zeros', ok);
+        st.attempts++; per[modeTab].a++;
+        if(ok && !credit['q_zero']){ st.correct++; per.quad.c++; credit['q_zero']=true; st.streak++; } else { st.streak=0; }
+        st.longest=Math.max(st.longest, st.streak); setStats(); markBtn(nzBtn, ok); nzBtn.disabled=true;
+      });
+      applyNZ();
+
+      // If y-intercept is off-grid, lock it
+      const off = problem.yint < -10 || problem.yint > 10;
+      if(off){ const inp=yiRow.querySelector('input'); const btn=yiRow.querySelector('button'); inp.disabled=true; inp.placeholder='y-intercept not visible'; btn.disabled=true; }
+    }
+    if(modeTab==='exp'){
+      box.appendChild(fieldRow('y-intercept','e_yi','(x, y)',isPoint,v=>okPoint(v,{x:0,y:problem.yint}),'point'));
+      box.appendChild(fieldRow('Horizontal asymptote','e_as','y = k',isYeq,v=>asymOK(v,problem.asym),'yeq'));
+    }
+  }
+
+  // ------ validators/helpers ------
+  function parsePair(text){ const m=text.trim().match(/^\(\s*([-+]?\d+(?:\.\d+)?)\s*,\s*([-+]?\d+(?:\.\d+)?)\s*\)$/); return m?{x:parseFloat(m[1]), y:parseFloat(m[2])}:null; }
+  const isPoint=v=>!!parsePair(v);
+  const isAOS=v=>/^\s*x\s*=\s*([-+]?\d+(?:\.\d+)?)\s*$/i.test(v);
+  const isYeq=v=>/^\s*y\s*=\s*([-+]?\d+(?:\.\d+)?)\s*$/i.test(v);
+  function aosOK(v,h){ return isAOS(v) && nearly(parseFloat(v.split('=')[1]), h); }
+  function asymOK(v,k){ return isYeq(v) && nearly(parseFloat(v.split('=')[1]), k); }
+  function nearly(a,b){ return Math.abs(a-b) <= (difficulty==='int'? 0.01 : 0.1); }
+  function okPoint(text,target){ const p=parsePair(text); return !!p && nearly(p.x,target.x) && nearly(p.y,target.y); }
+
+  function rpick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function rint(a,b){ return Math.floor(a + Math.random()*(b-a+1)); }
+  function genLinear(){ if(difficulty==='any') return {m:(Math.random()<0.5?-1:1)*(Math.random()*2+0.2), b:rint(-5,5)}; let b=rpick([-9,-8,-7,-6,-5,-4,-3,-2,2,3,4,5,6,7,8,9]); const div=[]; for(let d=1; d<=Math.abs(b); d++) if(b%d===0) div.push(d); const m=rpick(div)*(Math.random()<0.5?-1:1); return {m,b}; }
+  function genQuadratic(){ if(difficulty==='any') return {a:rpick([-2,-1,1,2]), h:rint(-6,6), k:rint(-6,6)}; const casePick=rpick(['two','one','none']); for(let tries=0; tries<200; tries++){ const a=rpick([-1,1]); if(casePick==='two'){ let r1=rint(-8,-1), r2=rint(1,8); if((r1+r2)%2!==0){ r2 += 1; if(r2===0) r2=2; if(r2>8) r2=6; } const h=(r1+r2)/2; const k=a*(h-r1)*(h-r2); if(Math.abs(h)<=8 && Math.abs(k)<=8){ return {a,h,k, r1, r2}; } } else if(casePick==='one'){ const r=rint(-8,8); const h=r; const k=0; return {a,h,k, r1:r, r2:r}; } else { const h=rint(-6,6); const k = a>0? rint(1,6) : rint(-6,-1); if(Math.abs(h)<=8 && Math.abs(k)<=8) return {a,h,k}; } } return {a:1,h:0,k:0, r1:-2, r2:2}; }
+  function genExponential(){ if(difficulty==='any') return {a:rpick([-3,-2,-1,1,2,3]), b:rpick([0.5,0.6,0.75,1.25,1.5,2,3]), k:rint(-4,4), h:rpick([0,1,2,-1,-2])}; return {a:rpick([-3,-2,-1,1,2,3]), b:rpick([2,3]), k:rint(-4,4)}; }
+
+  function buildProblem(){ 
+    Object.keys(credit).forEach(k=>delete credit[k]); 
+    Object.keys(feedbackMap).forEach(k=>delete feedbackMap[k]); 
+    $('#feedback').innerHTML=''; $('#answers').innerHTML=''; 
+    if(modeTab==='lin'){ const P=genLinear(); problem=solveLinear(P); } 
+    if(modeTab==='quad'){ const P=genQuadratic(); problem=solveQuadratic(P); } 
+    if(modeTab==='exp'){ const P=genExponential(); problem=solveExponential(P); } 
+    buildInputs(); draw(); 
+  }
+
+  function solveLinear(P){ const m=P.m, b=P.b; const xint=(m!==0 && isFinite(m))? -b/m : null; return {type:'lin', m,b, xint, yint:b}; }
+  function solveQuadratic(P){ let a=P.a, h=P.h, k=P.k; let b=-2*a*h; let c=a*h*h + k; let roots=[]; const D=b*b-4*a*c; if(D>0){ const r=Math.sqrt(D); roots=[(-b-r)/(2*a),(-b+r)/(2*a)]; if(roots[0]>roots[1]) roots.reverse(); } else if(D===0){ roots=[-b/(2*a)]; } return {type:'quad', a,b,c, aos:h, vertex:[h,k], yint:c, roots, ext: a>0?'min':'max'}; }
+  function solveExponential(P){ let {a,b,k,h}=P; h=h||0; const yint=a*Math.pow(b,-h)+k; return {type:'exp', a,b,h, asym:k, yint}; }
+
+  function pill(text, cls=''){ const s=document.createElement('span'); s.className='pill '+cls; s.textContent=text; return s; }
+  function setStats(){ $('#stAttempts').textContent=st.attempts; $('#stCorrect').textContent=st.correct; $('#stStreak').textContent=st.streak; }
+  function setChip(label, ok){ 
+    const key=label.toLowerCase();
+    let chip=feedbackMap[key]; 
+    if(!chip){ chip=pill('', ''); feedbackMap[key]=chip; $('#feedback').appendChild(chip); } 
+    chip.className='pill '+(ok?'ok':'bad'); 
+    chip.textContent=label+': '+(ok?'Correct':'Incorrect'); 
+  }
+  function addHistory(label, ok){ history.push({label,ok}); if(history.length>10) history.shift(); }
+
+  function getValueFor(id){ if(id==='q_mm'){ const r=document.querySelector('input[name="mm"]:checked'); return r? r.value : ''; } if(Array.isArray(id)) return id.map(x=>$('#'+x).value); return $('#'+id).value; }
+  function markBtn(btn, ok){ btn.classList.remove('ok','bad'); btn.classList.add(ok?'ok':'bad'); btn.textContent = ok ? '✓' : '✗'; }
+
+  function checkField(id, checker, btn, label){ 
+    const val=getValueFor(id); const ok = checker(val); 
+    setChip(label, ok); addHistory(label, ok);
+    st.attempts++; per[modeTab].a++; 
+    if(ok){ if(!credit[id]){ st.correct++; per[modeTab].c++; credit[id]=true; } st.streak++; } else { st.streak=0; } 
+    btn.disabled=true; markBtn(btn, ok); 
+    st.longest=Math.max(st.longest, st.streak); setStats(); 
+  }
+
+  function allCurrentCorrectAndCredited(){ 
+    if(problem.type==='lin'){ const ok1=okPoint($('#lin_x').value,{x:problem.xint,y:0}); const ok2=okPoint($('#lin_y').value,{x:0,y:problem.yint}); return ok1&&ok2 && credit['lin_x']&&credit['lin_y']; }
+    if(problem.type==='quad'){ 
+      const nzSel=$('#q_nz')?.value||''; const okNZ = (nzSel==='0'||nzSel==='1'||nzSel==='2') && Number(nzSel)===problem.roots.length;
+      const yiInp=$('#q_yi'); const yiDisabled=yiInp?.disabled; 
+      const okY = yiDisabled? true : okPoint(yiInp.value,{x:0,y:problem.yint}); 
+      const okA=aosOK($('#q_aos').value, problem.aos); 
+      const okV=okPoint($('#q_v').value,{x:problem.vertex[0],y:problem.vertex[1]}); 
+      const r=document.querySelector('input[name="mm"]:checked'); const okE=r && r.value===problem.ext; 
+      return okNZ&&okY&&okA&&okV&&okE && credit['q_zero'] && (yiDisabled || credit['q_yi']) && credit['q_aos'] && credit['q_v'] && credit['q_mm']; 
+    }
+    if(problem.type==='exp'){ const okY = okPoint($('#e_yi').value,{x:0,y:problem.yint}); const okA = asymOK($('#e_as').value, problem.asym); return okY&&okA && credit['e_yi'] && credit['e_as']; } 
+    return false; 
+  }
+
+  function checkAll(){ 
+    if(allCurrentCorrectAndCredited()){ setChip('All', true); return; }
+
+    if(problem.type==='lin'){
+      const ok1=okPoint($('#lin_x').value,{x:problem.xint,y:0}); 
+      const ok2=okPoint($('#lin_y').value,{x:0,y:problem.yint}); 
+      setChip('x-intercept (zero)', ok1); setChip('y-intercept', ok2);
+      addHistory('x-intercept (zero)', ok1); addHistory('y-intercept', ok2);
+      if(ok1 && !credit['lin_x']){ st.correct++; per.lin.c++; credit['lin_x']=true; } 
+      if(ok2 && !credit['lin_y']){ st.correct++; per.lin.c++; credit['lin_y']=true; }
+      st.attempts++; per[modeTab].a++; const ok=ok1&&ok2; st.streak=ok?st.streak+1:0; st.longest=Math.max(st.longest, st.streak); setStats(); setChip('All', ok);
+      return;
+    }
+
+    if(problem.type==='quad'){
+      const nzSel=$('#q_nz')?.value||''; const okNZ = (nzSel==='0'||nzSel==='1'||nzSel==='2') && Number(nzSel)===problem.roots.length;
+      const yiInp=$('#q_yi'); const yiDisabled=yiInp?.disabled; 
+      const okY = yiDisabled? true : okPoint(yiInp.value,{x:0,y:problem.yint}); 
+      const okA = aosOK($('#q_aos').value, problem.aos); 
+      const okV = okPoint($('#q_v').value,{x:problem.vertex[0],y:problem.vertex[1]}); 
+      const r=document.querySelector('input[name="mm"]:checked'); const okE = r && r.value===problem.ext; 
+
+      setChip('# of zeros', okNZ); if(!yiDisabled) setChip('y-intercept', okY); setChip('Axis of symmetry', okA); setChip('Vertex', okV); setChip('Max/Min', okE);
+      addHistory('# of zeros', okNZ); if(!yiDisabled) addHistory('y-intercept', okY); addHistory('Axis of symmetry', okA); addHistory('Vertex', okV); addHistory('Max/Min', okE);
+
+      if(okNZ && !credit['q_zero']){ st.correct++; per.quad.c++; credit['q_zero']=true; } 
+      if(!yiDisabled && okY && !credit['q_yi']){ st.correct++; per.quad.c++; credit['q_yi']=true; } 
+      if(okA && !credit['q_aos']){ st.correct++; per.quad.c++; credit['q_aos']=true; } 
+      if(okV && !credit['q_v']){ st.correct++; per.quad.c++; credit['q_v']=true; } 
+      if(okE && !credit['q_mm']){ st.correct++; per.quad.c++; credit['q_mm']=true; }
+
+      st.attempts++; per[modeTab].a++; const ok= (okNZ && okA && okV && okE && okY); 
+      st.streak=ok?st.streak+1:0; st.longest=Math.max(st.longest, st.streak); setStats(); setChip('All', ok);
+      return;
+    }
+
+    if(problem.type==='exp'){
+      const okY = okPoint($('#e_yi').value,{x:0,y:problem.yint}); 
+      const okA = asymOK($('#e_as').value, problem.asym); 
+      setChip('y-intercept', okY); setChip('Horizontal asymptote', okA);
+      addHistory('y-intercept', okY); addHistory('Horizontal asymptote', okA);
+      if(okY && !credit['e_yi']){ st.correct++; per.exp.c++; credit['e_yi']=true; } 
+      if(okA && !credit['e_as']){ st.correct++; per.exp.c++; credit['e_as']=true; }
+      st.attempts++; per[modeTab].a++; const ok=okY&&okA; st.streak=ok?st.streak+1:0; st.longest=Math.max(st.longest, st.streak); setStats(); setChip('All', ok);
+    }
+  }
+
+  function renderAnswers(force){ if(!force) return; const a=$('#answers'); a.innerHTML='';
+    if(problem.type==='lin'){ a.appendChild(pill('x-intercept (zero): ('+fmt(problem.xint)+', 0)','hint')); a.appendChild(pill('y-intercept: (0, '+fmt(problem.yint)+')','hint')); }
+    if(problem.type==='quad'){ a.appendChild(pill('zeros: '+(problem.roots.length? problem.roots.map(r=>'('+fmt(r)+', 0)').join(', ') : 'none'),'hint')); const yiVis = !(problem.yint<-10||problem.yint>10); a.appendChild(pill('y-intercept: '+(yiVis? '(0, '+fmt(problem.yint)+')' : 'not visible'),'hint')); a.appendChild(pill('axis of symmetry: x = '+fmt(problem.aos),'hint')); a.appendChild(pill('vertex: ('+fmt(problem.vertex[0])+', '+fmt(problem.vertex[1])+')','hint')); a.appendChild(pill('extremum: '+problem.ext,'hint')); }
+    if(problem.type==='exp'){ a.appendChild(pill('y-intercept: (0, '+fmt(problem.yint)+')','hint')); a.appendChild(pill('horizontal asymptote: y = '+fmt(problem.asym),'hint')); } 
+  }
+
+  function openSummary(){ $('#mCorr').textContent=st.correct; $('#mAtt').textContent=st.attempts; const acc = st.attempts? Math.round(100*st.correct/st.attempts):0; $('#mAcc').textContent=acc+'%'; $('#mStr').textContent=st.longest; $('#mLin').textContent=per.lin.c+' / '+per.lin.a; $('#mQuad').textContent=per.quad.c+' / '+per.quad.a; $('#mExp').textContent=per.exp.c+' / '+per.exp.a; const h=$('#mHistory'); h.innerHTML=''; history.slice(-10).forEach(item=>{ const chip=pill(item.label+': '+(item.ok?'✓':'✗'), item.ok?'ok':'bad'); h.appendChild(chip); }); $('#modal').classList.add('show'); }
+
+  document.addEventListener('click',e=>{ if(e.target && e.target.id==='btnDownload'){ const W=1200,H=800; const c=document.createElement('canvas'); c.width=W; c.height=H; const g=c.getContext('2d'); g.fillStyle='#ffffff'; g.fillRect(0,0,W,H); g.fillStyle='#0f2340';
+      g.font='bold 44px system-ui,ui-rounded'; g.fillText('Attributes Trainer — Session Certificate', 40, 90);
+      g.font='bold 28px system-ui,ui-rounded'; const date=new Date().toLocaleString(); g.fillText('Date: '+date, 40, 140);
+      g.font='bold 22px system-ui,ui-rounded'; const acc= st.attempts? Math.round(100*st.correct/st.attempts):0; g.fillText(`Total: ${st.correct} correct out of ${st.attempts} attempts — ${acc}%`, 40, 200);
+      g.fillText(`Linear: ${per.lin.c} / ${per.lin.a}`, 40, 250);
+      g.fillText(`Quadratic: ${per.quad.c} / ${per.quad.a}`, 40, 290);
+      g.fillText(`Exponential: ${per.exp.c} / ${per.exp.a}`, 40, 330);
+      g.fillText(`Longest streak: ${st.longest}` , 40, 370);
+      g.fillStyle='#64748b'; g.font='italic 18px system-ui,ui-rounded'; g.fillText('Teacher: __________    Student: __________', 40, 430);
+      const link=document.createElement('a'); link.download='attributes_trainer_certificate.png'; link.href=c.toDataURL('image/png'); link.click(); }});
+
+  // ----- Graph -----
+  const canvas=document.getElementById('canvas'), ctx=canvas.getContext('2d');
+  const AX={xmin:-10,xmax:10,ymin:-10,ymax:10,tick:1};
+  function sizeCanvas(){ const dpr=Math.max(1,Math.floor(window.devicePixelRatio||1)); const rect=canvas.getBoundingClientRect(); const cssW=Math.floor(rect.width); const cssH=Math.floor(rect.height); if(cssW<=0||cssH<=0) return; const w=cssW*dpr, h=cssH*dpr; if(canvas.width===w&&canvas.height===h) return; canvas.width=w; canvas.height=h; ctx.setTransform(dpr,0,0,dpr,0,0);} 
+  const ro=new ResizeObserver(()=>{ sizeCanvas(); draw(); }); ro.observe(canvas);
+  function ux(x){ const W=canvas.clientWidth; return (x-AX.xmin)/(AX.xmax-AX.xmin)*W }
+  function uy(y){ const H=canvas.clientHeight; return H-(y-AX.ymin)/(AX.ymax-AX.ymin)*H }
+  function drawGrid(){ const W=canvas.clientWidth, H=canvas.clientHeight; ctx.save(); ctx.beginPath(); ctx.rect(0,0,W,H); ctx.clip(); ctx.clearRect(-1,-1,W+2,H+2);
+    ctx.strokeStyle='#e9eefb'; ctx.lineWidth=1; ctx.lineCap='butt';
+    for(let x=AX.xmin; x<=AX.xmax; x+=AX.tick){ const px=ux(x); ctx.beginPath(); ctx.moveTo(px,0); ctx.lineTo(px,H); ctx.stroke(); }
+    for(let y=AX.ymin; y<=AX.ymax; y+=AX.tick){ const py=uy(y); ctx.beginPath(); ctx.moveTo(0,py); ctx.lineTo(W,py); ctx.stroke(); }
+    ctx.strokeStyle='#0b52ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(ux(0),0); ctx.lineTo(ux(0),H); ctx.stroke(); ctx.beginPath(); ctx.moveTo(0,uy(0)); ctx.lineTo(W,uy(0)); ctx.stroke();
+    ctx.fillStyle='rgba(15,35,64,.95)'; ctx.font='900 18px ui-rounded, system-ui'; ctx.textBaseline='top'; ctx.textAlign='center';
+    const ay=uy(0); const Hh=canvas.clientHeight; const Ww=canvas.clientWidth; const yLabel=(ay>Hh-26)? ay-22 : ay+6; for(let x=Math.ceil(AX.xmin/2)*2; x<=AX.xmax; x+=2){ if(x!==0) ctx.fillText(x, ux(x), Math.max(2, Math.min(Hh-20, yLabel))); }
+    ctx.textAlign=(ux(0)>26)?'right':'left'; ctx.textBaseline='middle'; const ax=ux(0); const xTickCol=Math.max(8, Math.min(Ww-8, ax + (ux(0)>26?-8:8))); for(let y=Math.ceil(AX.ymin/2)*2; y<=AX.ymax; y+=2){ if(y!==0) ctx.fillText(y, xTickCol, uy(y)); }
+    ctx.font='900 20px ui-rounded, system-ui'; ctx.textAlign=(ux(0)>26)?'left':'right'; ctx.textBaseline='top'; const yOffset=26*((ux(0)>26)?1:-1); const gridYLabelX=Math.max(12, Math.min(Ww-12, ax + yOffset)); ctx.fillText('(y)', gridYLabelX, 10);
+    ctx.textAlign='left'; ctx.textBaseline='bottom'; ctx.fillText('(x)', Math.max(0,Ww-30), Math.max(16, Math.min(Hh-6, ay-6)));
+    ctx.restore();
+  }
+  function draw(){ if(!canvas.clientWidth) return; drawGrid(); if(!problem) return; ctx.save(); ctx.lineWidth=3; ctx.strokeStyle='#1a60ff'; const W=canvas.clientWidth, H=canvas.clientHeight; ctx.beginPath(); ctx.rect(0,0,W,H); ctx.clip();
+    if(problem.type==='lin'){
+      const m=problem.m, b=problem.yint; if(!Number.isFinite(m)){ const x=problem.xint; ctx.beginPath(); ctx.moveTo(ux(x),0); ctx.lineTo(ux(x),H); ctx.stroke(); }
+      else { const x0=AX.xmin, x1=AX.xmax, y0=m*x0+b, y1=m*x1+b; ctx.beginPath(); ctx.moveTo(ux(x0),uy(y0)); ctx.lineTo(ux(x1),uy(y1)); ctx.stroke(); }
+    }
+    if(problem.type==='quad'){
+      const a=problem.a, h=problem.aos, k=problem.vertex[1]; const step=(AX.xmax-AX.xmin)/300; ctx.beginPath(); for(let x=AX.xmin;x<=AX.xmax;x+=step){ const y=a*(x-h)*(x-h)+k; const px=ux(x), py=uy(y); if(x===AX.xmin) ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.stroke();
+      ctx.setLineDash([6,6]); ctx.strokeStyle='#f0b400'; ctx.beginPath(); ctx.moveTo(ux(h),0); ctx.lineTo(ux(h),H); ctx.stroke(); ctx.setLineDash([]);
+    }
+    if(problem.type==='exp'){
+      const a=problem.a, b=problem.b, h=problem.h, k=problem.asym; const step=(AX.xmax-AX.xmin)/300; ctx.beginPath(); for(let x=AX.xmin;x<=AX.xmax;x+=step){ const y=a*Math.pow(b, x - h)+k; const px=ux(x), py=uy(y); if(x===AX.xmin) ctx.moveTo(px,py); else ctx.lineTo(px,py); } ctx.stroke();
+      ctx.setLineDash([6,6]); ctx.strokeStyle='#f0b400'; ctx.beginPath(); ctx.moveTo(0,uy(k)); ctx.lineTo(W,uy(k)); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.restore(); }
+
+  function fmt(n){ if(n===null) return 'none'; if(!isFinite(n)) return String(n); return Number(n.toFixed(4)).toString(); }
+
+  (new ResizeObserver(()=>{ sizeCanvas(); draw(); })).observe(document.getElementById('canvas'));
+  sizeCanvas(); buildProblem();
+
+  // ----- zeros checker helpers -----
+  function zeroOK(text, which){ const p=parsePair(text); if(!p) return false; if(!nearly(p.y,0)) return false; const r=problem.roots; if(r.length===0) return false; const isRoot = (nearly(p.x,r[0]) || (r[1]!=null && nearly(p.x,r[1]))); if(!isRoot) return false; if(r.length===2 && !nearly(r[0],r[1])){ const otherId = which===1? 'q_z2':'q_z1'; const other = parsePair($('#'+otherId)?.value||''); if(other && nearly(other.x,p.x)) return false; } return true; }
+</script>
+</body>
+</html>

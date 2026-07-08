@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Polynomial Methods – Interactive Practice</title>
+<style>
+  :root{
+    --bg:#f7f9fc; --ink:#0f172a; --muted:#6b7280; --border:#e6eaf2; --card:#ffffff;
+    --ring:0 0 0 3px rgba(79,70,229,.22); --shadow:0 10px 28px rgba(15,23,42,.08);
+    --ok:#dcfce7; --err:#fee2e2; --chip:#fff; --chipb:#dbe2f2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial}
+  .wrap{max-width:1140px;margin:16px auto 56px;padding:0 16px}
+  .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+  .chip{padding:7px 12px;border-radius:999px;background:var(--chip);border:1px solid var(--chipb);font-weight:900;cursor:pointer}
+  .chip[aria-pressed="true"]{box-shadow:var(--ring);background:#eef2ff;border-color:#d5dcff}
+  .select{padding:7px 10px;border-radius:12px;border:1px solid var(--border);background:#fff;font-weight:900}
+  .ghost{padding:7px 12px;border-radius:999px;background:#fff;border:1px solid var(--border);font-weight:900;cursor:pointer}
+  .problem-card{background:var(--card);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow);padding:12px 14px;margin-bottom:14px}
+  .problem-box{display:flex;align-items:center;justify-content:center;min-height:140px;padding:10px;border-radius:12px;background:#fff;border:1px dashed #d9e1ef}
+  #problemText{width:100%;text-align:center;font-weight:900;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:clip;font-size:72px}
+  .grid{display:grid;grid-template-columns:.85fr 1.15fr;gap:16px}
+  @media (max-width:980px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:12px}
+  .band{border-radius:12px;padding:8px 10px;margin:-2px 0 10px;font-weight:900;background:#ecfdf5;color:#065f46}
+  .ans-grid{display:grid;grid-template-columns:1fr auto;column-gap:10px;align-items:start}
+  .valWrap{position:relative;min-width:240px}
+  .val{flex:1;width:100%;background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:16px;font-weight:900;font-size:40px;outline:none}
+  .val::placeholder{color:transparent}
+  #ans{color:transparent;caret-color:var(--ink)}
+  .pretty{position:absolute;inset:0;padding:16px;border:none;background:transparent;pointer-events:none;color:var(--ink);white-space:nowrap;overflow:hidden;font-weight:900;font-size:40px}
+  .pretty .placeholder{color:#9aa4b2}
+  .preview{margin-top:6px;color:#475569;font-weight:900;font-size:22px;min-height:28px}
+  .actions{display:flex;flex-direction:column;gap:8px}
+  .btn{padding:10px 14px;border-radius:12px;border:none;font-weight:900;cursor:pointer}
+  .btn.primary{background:linear-gradient(180deg,#6366f1,#4f46e5);color:#fff}
+  .btn.next{background:linear-gradient(180deg,#34d399,#16a34a);color:#fff;border:1px solid #bbf7d0}
+  .kbd{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .key{min-width:44px;height:40px;border:1px solid var(--border);border-radius:10px;background:#fff;font-weight:900;cursor:pointer}
+  .key.wide{min-width:86px}
+  .module{border:1px solid var(--border);border-radius:12px;padding:12px;background:#fff;margin-bottom:12px;box-shadow:0 2px 10px rgba(0,0,0,.04)}
+  .hdr{display:flex;align-items:center;justify-content:space-between;gap:8px;color:#6b7280;font-weight:900}
+  .result-tag{display:inline-block;margin-top:8px;padding:10px 14px;border-radius:999px;font-weight:900}
+  .ok{background:var(--ok);color:#065f46;border:1px solid #bbf7d0}
+  .err{background:var(--err);color:#7f1d1d;border:1px solid #fecaca}
+  .eq{font-weight:900;font-size:22px;line-height:1.2;word-break:break-word}
+  .history{display:flex;flex-wrap:wrap;gap:8px}
+  .hitem{padding:6px 10px;border-radius:999px;border:1px solid var(--border);font-weight:800;background:#fff}
+  .stepList{display:flex;flex-direction:column;gap:10px}
+  .step{border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-weight:900;display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+  .step:hover{background:#f3f4f6}
+  .modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;z-index:50;align-items:flex-start;justify-content:center;overflow:auto}
+  .modal.show{display:flex}
+  .modalCard{margin:40px 12px;max-width:1000px;width:min(1000px,95vw);background:#fff;border:1px solid var(--border);border-radius:24px;box-shadow:0 40px 80px rgba(2,6,23,.25)}
+  .modalHead{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:16px 18px;border-bottom:1px dashed #e5e7eb}
+  .modalBody{padding:18px;max-height:75vh;overflow-y:auto}
+  .walk{display:grid;grid-template-columns:1fr 50px 1fr;gap:12px;align-items:center}
+  .walk .arrow{font-size:28px;text-align:center;color:#94a3b8}
+  .walk .box{border:1px solid var(--border);border-radius:14px;padding:12px;font-weight:900;font-size:18px;line-height:1.4}
+  .walk .box .highlight{color:#dc2626;font-weight:900}
+  
+  /* Summary modal styles */
+  .stat-card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+  .stat-label{font-size:12px;color:#6b7280;font-weight:800;margin-bottom:4px}
+  .stat-value{font-size:26px;font-weight:900;color:#0f172a}
+  .mode-card{border-radius:14px;padding:12px 14px;border:1px solid var(--border);background:#fff}
+  .mode-card.factor-card{background:#ecfdf5;border-color:#bbf7d0}
+  .mode-card.multiply-card{background:#eff6ff;border-color:#bfdbfe}
+  .mode-card.expo-card{background:#fef3c7;border-color:#fde68a}
+  .mode-title{font-weight:900;font-size:14px;margin-bottom:6px}
+  .factor-card .mode-title{color:#064e3b}
+  .multiply-card .mode-title{color:#1e3a8a}
+  .expo-card .mode-title{color:#78350f}
+  .mode-stats{display:flex;justify-content:space-between;align-items:center;font-weight:900;font-size:18px}
+  .mode-acc{font-size:14px;color:#6b7280}
+  
+  /* Math display styles */
+  .math{display:inline;font-weight:900}
+  .math sup{font-size:0.65em;vertical-align:super;line-height:0}
+  .math .frac{display:inline-block;vertical-align:middle;text-align:center}
+  .math .frac .num, .math .frac .den{display:block;line-height:1}
+  .math .frac .bar{display:block;height:1px;background:currentColor;margin:2px 0}
+
+/* === Chromebook & Mobile Safety Overrides (drop at end of <style>) === */
+
+/* Let short screens scroll; play nice inside Google Sites iframes */
+html, body { height:auto; min-height:100dvh; }
+body { overflow:auto; }
+.wrap { width:min(1140px,100%); } /* safer than vw inside embeds */
+
+/* Make the two columns stack when space is tight vertically (Chromebooks, split view)
+   and keep critical controls visible */
+@media (max-height: 820px){
+  .grid { grid-template-columns:1fr; }
+  .problem-card { margin-bottom:10px; }
+
+  /* Keep action buttons in view as the user scrolls answers/steps */
+  .actions { position:sticky; top:8px; flex-direction:row; flex-wrap:wrap; gap:6px; }
+  .actions .btn { min-width:120px; }
+  
+  /* Keep the top bar handy without covering content */
+  .top { position:sticky; top:6px; z-index:5; background:var(--bg); padding-bottom:6px; }
+}
+
+/* On narrow phones, also lay out action buttons horizontally */
+@media (max-width: 980px){
+  .actions { flex-direction:row; flex-wrap:wrap; gap:6px; }
+}
+
+/* Input + pretty mirror scale down gracefully so they don't push buttons off-screen */
+.val     { font-size: clamp(20px, 3.6vw, 40px); padding:14px; }
+.pretty  { font-size: clamp(20px, 3.6vw, 40px); }
+
+/* On-screen keyboard stays docked and compact on phones */
+.kbd {
+  position: sticky;
+  bottom: 6px;
+  background:#fff;
+  padding:8px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  box-shadow:0 8px 20px rgba(15,23,42,.06);
+}
+.key { min-width:40px; height:38px; }
+.key.wide { min-width:78px; }
+
+/* Modals never run off-screen; body inside modal scrolls if needed */
+.modalCard { max-height:92dvh; }
+.modalBody { max-height: calc(92dvh - 110px); overflow-y:auto; }
+
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <button class="chip" id="modeFactor" aria-pressed="true">Factor</button>
+    <button class="chip" id="modeMultiply" aria-pressed="false">Multiply</button>
+    <button class="chip" id="modeExpo" aria-pressed="false">Exponent Laws</button>
+    <select id="typeSel" class="select" title="Problem type"></select>
+    <button id="btnNew" class="chip">New</button>
+    <button id="btnSummary" class="chip">Summary</button>
+    <button id="btnSteps" class="ghost" title="Open walkthrough" disabled>Steps</button>
+  </div>
+  <section class="problem-card">
+    <div class="problem-box"><div id="problemText"></div></div>
+  </section>
+  <div class="grid">
+    <section class="card">
+      <div class="band">Answer</div>
+      <div class="ans-grid">
+        <div class="valWrap">
+          <input id="ans" class="val" placeholder="Type your answer…" autocomplete="off"/>
+          <div id="ansPretty" class="pretty val"><span class="placeholder">Type your answer…</span></div>
+        </div>
+        <div class="actions">
+          <button class="btn primary" id="btnSubmit" type="button">Submit</button>
+          <button class="btn next" id="btnNext" type="button">Next</button>
+        </div>
+      </div>
+      <div id="preview" class="preview"></div>
+      <div class="kbd" id="kbd">
+        <button class="key" data-k="x">x</button><button class="key" data-k="x^2">x²</button><button class="key" data-k="x^3">x³</button>
+        <button class="key" data-k="^">^</button>
+        <button class="key" data-k="+">+</button><button class="key" data-k="-">−</button>
+        <button class="key" data-k="(">(</button><button class="key" data-k=")">)</button>
+        <button class="key" data-k="*">·</button><button class="key" data-k="/">/</button>
+        <button class="key" data-k="0">0</button><button class="key" data-k="1">1</button><button class="key" data-k="2">2</button><button class="key" data-k="3">3</button><button class="key" data-k="4">4</button><button class="key" data-k="5">5</button><button class="key" data-k="6">6</button><button class="key" data-k="7">7</button><button class="key" data-k="8">8</button><button class="key" data-k="9">9</button>
+        <button class="key" data-act="back">⌫</button><button class="key wide" data-act="clear">Clear</button>
+      </div>
+    </section>
+    <aside class="card">
+      <div class="module" id="stepsModule" style="display:none">
+        <div class="hdr"><span>Steps</span></div>
+        <div id="stepsBody" class="stepList"></div>
+      </div>
+      <div class="module">
+        <div class="hdr"><span>Result</span></div>
+        <div id="resultTag" class="result-tag" style="display:none"></div>
+        <div id="reveal" class="eq" style="margin-top:8px"></div>
+      </div>
+      <div class="module">
+        <div class="hdr"><span>Stats & History</span></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
+          <span class="hitem">Correct: <b id="spC">0</b></span>
+          <span class="hitem">Incorrect: <b id="spI">0</b></span>
+          <span class="hitem">Streak: <b id="spS">0</b></span>
+        </div>
+        <div class="history" id="hist" style="margin-top:8px"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- Steps Modal -->
+<div id="stepsModal" class="modal" aria-hidden="true">
+  <div class="modalCard">
+    <div class="modalHead">
+      <div>
+        <div style="font-size:26px;font-weight:900">Problem Steps</div>
+        <div style="color:#64748b;font-weight:800">Tap through the walkthrough</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ghost" id="prevStep">Prev</button>
+        <button class="ghost" id="nextStep">Next</button>
+        <button class="ghost" id="closeSteps">Close</button>
+      </div>
+    </div>
+    <div class="modalBody">
+      <div id="walkArea" class="walk">
+        <div class="box eq" id="beforeEq"></div>
+        <div class="arrow">➜</div>
+        <div class="box eq" id="afterEq"></div>
+      </div>
+      <div style="margin-top:10px;color:#64748b;font-weight:900" id="stepCaption"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Summary Modal -->
+<div id="sumModal" class="modal" aria-hidden="true">
+  <div class="modalCard">
+    <div class="modalHead">
+      <div>
+        <div style="font-size:26px;font-weight:900">Session Summary</div>
+        <div style="color:#64748b;font-weight:800">Polynomial Methods Practice</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ghost" id="sumPrint">Print</button>
+        <button class="ghost" id="closeSum">Close</button>
+      </div>
+    </div>
+    <div class="modalBody">
+      <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px">
+        <div class="stat-card">
+          <div class="stat-label">Correct</div>
+          <div class="stat-value" id="mCorr">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Incorrect</div>
+          <div class="stat-value" id="mInc">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Accuracy</div>
+          <div class="stat-value" id="mAcc">0%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Best Streak</div>
+          <div class="stat-value" id="mStr">0</div>
+        </div>
+      </div>
+      
+      <div style="margin:16px 0 12px;font-weight:900;color:#475569">Performance by Mode</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+        <div class="mode-card factor-card">
+          <div class="mode-title">Factor</div>
+          <div class="mode-stats">
+            <div><span id="factorCorrect">0</span> / <span id="factorTotal">0</span></div>
+            <div class="mode-acc" id="factorAcc">0%</div>
+          </div>
+        </div>
+        <div class="mode-card multiply-card">
+          <div class="mode-title">Multiply</div>
+          <div class="mode-stats">
+            <div><span id="multiplyCorrect">0</span> / <span id="multiplyTotal">0</span></div>
+            <div class="mode-acc" id="multiplyAcc">0%</div>
+          </div>
+        </div>
+        <div class="mode-card expo-card">
+          <div class="mode-title">Exponent Laws</div>
+          <div class="mode-stats">
+            <div><span id="expoCorrect">0</span> / <span id="expoTotal">0</span></div>
+            <div class="mode-acc" id="expoAcc">0%</div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-top:16px">
+        <div style="font-size:12px;color:#64748b;font-weight:900;margin-bottom:8px">Recent problems</div>
+        <div id="mHist" class="history"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ===================== MATH FORMATTER ===================== */
+
+function formatMath(expr) {
+  if (!expr) return '';
+  
+  if (expr.includes('\n')) {
+    const lines = expr.split('\n');
+    return lines.map(line => {
+      if (line.trim() === '') return '<br>';
+      return formatMathLine(line);
+    }).join('');
+  }
+  
+  return formatMathLine(expr);
+}
+
+function formatMathLine(line) {
+  let html = String(line);
+  
+  const hasHighlight = html.includes('<span class="highlight">');
+  let highlightWrapper = '';
+  if (hasHighlight) {
+    html = html.replace(/<span class="highlight">(.*?)<\/span>/g, (match, content) => {
+      highlightWrapper = 'highlight';
+      return content;
+    });
+  }
+  
+  html = html.replace(/−|–|—/g, '-');
+  html = html.replace(/\*/g, '·');
+  
+  // Handle fractions with parentheses and exponents
+  html = html.replace(/\(([^)]+)\)\^(\d+)\s*\/\s*(.+?)(?=\s|$|<)/g, '<span class="frac"><span class="num">($1)<sup>$2</sup></span><span class="bar"></span><span class="den">$3</span></span>');
+  html = html.replace(/\(([^)]+)\)\/\(([^)]+)\)/g, '<span class="frac"><span class="num">$1</span><span class="bar"></span><span class="den">$2</span></span>');
+  html = html.replace(/\(([^)]+)\)\s*\/\s*([^\s<]+)/g, '<span class="frac"><span class="num">($1)</span><span class="bar"></span><span class="den">$2</span></span>');
+  html = html.replace(/([x\d](?:\^[+-]?\d+)?)\s*\/\s*([x\d](?:\^[+-]?\d+)?)/g, '<span class="frac"><span class="num">$1</span><span class="bar"></span><span class="den">$2</span></span>');
+  
+  // Convert exponents to superscripts
+  html = html.replace(/(?<!class="num">)(?<!class="den">)\^\(([+-]?\d+)\)/g, '<sup>$1</sup>');
+  html = html.replace(/(?<!class="num">)(?<!class="den">)\^([+-]?\d+)/g, '<sup>$1</sup>');
+  html = html.replace(/x\s+(\d+)/gi, 'x<sup>$1</sup>');
+  
+  html = html.replace(/(?<=[\s+\-·/()]|^)-/g, '−');
+  html = html.replace(/✓/g, '<span style="color:#16a34a">✓</span>');
+  
+  html = html.replace(/(<span class="(?:num|den)">(?:.*?))(\^[+-]?\d+)(.*?<\/span>)/g, (match, pre, exp, post) => {
+    return pre + '<sup>' + exp.substring(1) + '</sup>' + post;
+  });
+  
+  const result = '<span class="math' + (highlightWrapper ? ' ' + highlightWrapper : '') + '">' + html + '</span>';
+  return result;
+}
+
+function setProblem(expr) {
+  const el = document.getElementById('problemText');
+  el.innerHTML = formatMath(expr);
+  fitProblemText();
+}
+
+function fitProblemText() {
+  const box = document.querySelector('.problem-box');
+  const el = document.getElementById('problemText');
+  const max = 112, min = 28, safety = 18;
+  let lo = min, hi = max, best = min;
+  
+  while(lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    el.style.fontSize = mid + 'px';
+    if(el.scrollWidth <= box.clientWidth - safety) {
+      best = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+  
+  el.style.fontSize = best + 'px';
+  el.style.letterSpacing = (best >= 84) ? '-0.3px' : '0px';
+}
+
+/* ====================== HELPERS ====================== */
+
+const $ = s => document.querySelector(s);
+
+function setPressed(el, v) {
+  el.setAttribute('aria-pressed', v ? 'true' : 'false');
+}
+
+function clean(s) {
+  return String(s || '').replace(/\s+/g, '').replace(/−/g, '-');
+}
+
+let canSeeSteps = false;
+
+function hideSteps() {
+  const mod = $('#stepsModule');
+  if(mod) mod.style.display = 'none';
+  const b = $('#btnSteps');
+  if(b) {
+    b.setAttribute('disabled', '');
+    b.style.opacity = 0.45;
+    b.style.pointerEvents = 'none';
+  }
+}
+
+function showSteps() {
+  const mod = $('#stepsModule');
+  if(mod) mod.style.display = '';
+  const b = $('#btnSteps');
+  if(b) {
+    b.removeAttribute('disabled');
+    b.style.opacity = 1;
+    b.style.pointerEvents = '';
+  }
+}
+
+/* ====================== POLYNOMIAL ENGINE ====================== */
+
+function addTerm(P, e, c) {
+  if(!P[e]) P[e] = 0;
+  P[e] += c;
+  if(P[e] === 0) delete P[e];
+  return P;
+}
+
+function polyFromMonomial(a, e) {
+  const P = {};
+  if(a !== 0) P[e] = a;
+  return P;
+}
+
+function polyMul(A, B) {
+  const P = {};
+  for(const ea in A) {
+    for(const eb in B) {
+      addTerm(P, (+ea) + (+eb), A[ea] * B[eb]);
+    }
+  }
+  return P;
+}
+
+function polyToStd(P) {
+  const exps = Object.keys(P).map(Number).sort((a,b) => b - a);
+  if(exps.length === 0) return '0';
+  
+  const parts = [];
+  exps.forEach((e, i) => {
+    const c = P[e];
+    if(c === 0) return;
+    
+    const sign = c >= 0 ? (i === 0 ? '' : ' + ') : ' - ';
+    const mag = Math.abs(c);
+    let term = '';
+    
+    if(e === 0) {
+      term = String(mag);
+    } else if(e === 1) {
+      term = (mag === 1 ? 'x' : mag + 'x');
+    } else {
+      term = (mag === 1 ? `x^${e}` : `${mag}x^${e}`);
+    }
+    
+    parts.push(sign + term);
+  });
+  
+  return parts.join('');
+}
+
+function polyEqual(A, B) {
+  const ea = Object.keys(A).map(Number);
+  const eb = Object.keys(B).map(Number);
+  if(ea.length !== eb.length) return false;
+  
+  for(const e of ea) {
+    if((A[e] || 0) !== (B[e] || 0)) return false;
+  }
+  return true;
+}
+
+function parsePolyStd(s) {
+  const t = clean(s).replace(/x(?=[^0-9^]|$)/g, 'x^1');
+  if(!t) return null;
+  
+  let P = {};
+  const parts = t.replace(/-/g, '+-').split('+').filter(Boolean);
+  
+  for(const w of parts) {
+    const m = w.match(/^([+-]?\d*)x\^(\d+)$/);
+    if(m) {
+      let c = m[1];
+      if(c === '' || c === '+') c = 1;
+      else if(c === '-') c = -1;
+      else c = Number(c);
+      addTerm(P, Number(m[2]), c);
+    } else {
+      if(!/^[+-]?\d+$/.test(w)) return null;
+      addTerm(P, 0, Number(w));
+    }
+  }
+  
+  return P;
+}
+
+function parseFactored(s) {
+  const t = clean(s);
+  if(!t) return null;
+  if(/\(x[+-]0\)/.test(t)) return {error: 'Use x, not (x+0).'};
+  
+  let i = 0, k = 1;
+  let P = polyFromMonomial(1, 0);
+  let pow = 0;
+  
+  if(t[i] === '-' && (t[i+1] === '(' || t[i+1] === 'x')) {
+    k = -1;
+    i += 1;
+  }
+  
+  const lead = t.slice(i).match(/^([+-]?\d+)/);
+  if(lead) {
+    k *= Number(lead[1]);
+    i += lead[1].length;
+  }
+  
+  while(t.slice(i).startsWith('x')) {
+    i += 1;
+    if(t[i] === '^') {
+      const m = t.slice(i+1).match(/^\d+/);
+      if(!m) return null;
+      pow += Number(m[0]);
+      i += 1 + m[0].length;
+    } else {
+      pow += 1;
+    }
+    if(t[i] === '*' || t[i] === '·') i++;
+  }
+  
+  if(pow > 0) P = polyMul(P, polyFromMonomial(1, pow));
+  
+  while(i < t.length) {
+    if(t[i] === '*' || t[i] === '·') {
+      i++;
+      continue;
+    }
+    
+    if(t[i] !== '(') return null;
+    const j = t.indexOf(')', i + 1);
+    if(j < 0) return null;
+    
+    const inside = t.slice(i + 1, j);
+    i = j + 1;
+    
+    const mm = inside.match(/^([+-]?\d*)x([+-]\d+)$/);
+    if(!mm) return null;
+    
+    let a = mm[1];
+    if(a === '' || a === '+') a = 1;
+    else if(a === '-') a = -1;
+    else a = Number(a);
+    
+    const b = Number(mm[2]);
+    if(b === 0) return {error: 'Use x, not (x+0).'};
+    
+    const F = {1: a, 0: b};
+    P = polyMul(P, F);
+  }
+  
+  if(k !== 1) {
+    P = polyMul(P, {0: k});
+  }
+  
+  return {poly: P};
+}
+
+/* ====================== GENERATORS ====================== */
+
+function rInt(a, b) {
+  return (Math.random() * (b - a + 1) | 0) + a;
+}
+
+function rNZ(a, b) {
+  let x = 0;
+  while(x === 0) x = rInt(a, b);
+  return x;
+}
+
+function makeBinom(allowA = true) {
+  const a = allowA ? rNZ(-5, 5) : 1;
+  const b = rNZ(-9, 9);
+  return {
+    str: `(${a === 1 ? '' : a === -1 ? '-' : a}x${b >= 0 ? '+' : ''}${b})`,
+    poly: {1: a, 0: b}
+  };
+}
+
+function trinA1() {
+  const p = rInt(-9, 9);
+  const q = rInt(-9, 9);
+  const F1 = {1: 1, 0: p};
+  const F2 = {1: 1, 0: q};
+  return {
+    poly: polyMul(F1, F2),
+    s1: `(x${p >= 0 ? '+' : ''}${p})`,
+    s2: `(x${q >= 0 ? '+' : ''}${q})`,
+    p, q
+  };
+}
+
+const normNoZero = s => s.replace(/\(x[+-]0\)/g, 'x');
+const step = (cap, before, after) => ({caption: cap, before, after});
+
+function pairLines(n, wantSum) {
+  const A = Math.abs(n);
+  const pairs = [];
+  
+  for(let d = 1; d <= Math.sqrt(A); d++) {
+    if(A % d === 0) {
+      pairs.push([d, A/d]);
+    }
+  }
+  
+  const lines = [];
+  
+  pairs.forEach(([a, b]) => {
+    if (n > 0) {
+      lines.push(`(${a}) · (${b}) = ${n} ; (${a}) + (${b}) = ${a + b}`);
+      if (a !== b) {
+        lines.push(`(${-a}) · (${-b}) = ${n} ; (${-a}) + (${-b}) = ${-a - b}`);
+      }
+    }
+    else {
+      lines.push(`(${a}) · (${-b}) = ${n} ; (${a}) + (${-b}) = ${a - b}`);
+      if (a !== b) {
+        lines.push(`(${-a}) · (${b}) = ${n} ; (${-a}) + (${b}) = ${b - a}`);
+      }
+    }
+  });
+  
+  return lines.join('\n\n');
+}
+
+/* GENERATOR FUNCTIONS */
+function genFactor() {
+  const bank = {
+    random: () => {
+      const types = ['gcf_quad', 'x_binom', 'two_a1', 'two_aN', 'k_two_a1', 'xk_binom', 'xk_two'];
+      const selected = types[(Math.random() * types.length) | 0];
+      window.actualProbType = selected;
+      return bank[selected]();
+    },
+    
+    gcf_quad: () => {
+      const g = rNZ(-6, 6);
+      const n = rInt(2, 4);
+      const A = g * rNZ(1, 4);
+      const B = g * rNZ(1, 6);
+      const C = g * rNZ(-2, 6);
+      const P = {};
+      addTerm(P, n, A);
+      addTerm(P, n-1, B);
+      addTerm(P, n-2, C);
+      const prompt = polyToStd(P);
+      const k = Math.abs(g) * (A < 0 ? -1 : 1);
+      const factorPow = n - 2;
+      const insideA = (A/k)|0, insideB = (B/k)|0, insideC = (C/k)|0;
+      const inside = polyToStd({2: insideA, 1: insideB, 0: insideC});
+      const fact = normNoZero(`${k !== 1 ? k : ''}${factorPow > 0 ? `x^${factorPow}` : ''}(${inside})`);
+      return {
+        prompt,
+        targetPoly: P,
+        targetFactored: fact,
+        steps: [step(`Factor out GCF ${k}${factorPow > 0 ? ` and x^${factorPow}` : ''}`, prompt, fact)]
+      };
+    },
+    
+    x_binom: () => {
+      const b = makeBinom();
+      const P = polyMul({1: 1}, b.poly);
+      const s = `x${b.str}`;
+      return {
+        prompt: polyToStd(P),
+        targetPoly: P,
+        targetFactored: normNoZero(s),
+        steps: [step('Factor out x', polyToStd(P), s)]
+      };
+    },
+    
+    two_a1: () => {
+      const t = trinA1();
+      const trin = polyToStd(t.poly);
+      const s = `${t.s1}${t.s2}`;
+      const pairDisplay = pairLines(t.p*t.q, t.p+t.q);
+      const verifyLine = `(${t.p}) · (${t.q}) = ${t.p*t.q} ✓\n(${t.p}) + (${t.q}) = ${t.p+t.q} ✓`;
+      return {
+        prompt: trin,
+        targetPoly: t.poly,
+        targetFactored: normNoZero(s),
+        steps: [
+          step(`To find two numbers that multiply to ${t.p*t.q} and add to ${t.p+t.q}, break down ${t.p*t.q} into two-number factors and check each combination`, trin, pairDisplay),
+          step('Use the values to create factors', verifyLine, s)
+        ]
+      };
+    },
+    
+    k_two_a1: () => {
+      let a = rNZ(-6, 6);
+      while(Math.abs(a) === 1) a = rNZ(-6, 6);
+      const p = rNZ(-9, 9), q = rNZ(-9, 9);
+      const F1 = {1: 1, 0: p}, F2 = {1: 1, 0: q};
+      let P = polyMul(F1, F2);
+      P = polyMul(P, {0: a});
+      const fact = `${a}(x${p >= 0 ? '+' : ''}${p})(x${q >= 0 ? '+' : ''}${q})`;
+      const pairDisplay = pairLines(p*q, p+q);
+      const verifyLine = `(${p}) · (${q}) = ${p*q} ✓\n(${p}) + (${q}) = ${p+q} ✓`;
+      return {
+        prompt: polyToStd(P),
+        targetPoly: P,
+        targetFactored: normNoZero(fact),
+        steps: [
+          step(`Factor out ${a}`, polyToStd(P), `${a}(${polyToStd({2:1, 1:p+q, 0:p*q})})`),
+          step(`To find two numbers that multiply to ${p*q} and add to ${p+q}, break down ${p*q} into two-number factors and check each combination`, `${a}(${polyToStd({2:1, 1:p+q, 0:p*q})})`, pairDisplay),
+          step('Use the values to create factors', verifyLine, fact)
+        ]
+      };
+    },
+    
+    two_aN: () => {
+      const b1 = makeBinom(true), b2 = makeBinom(true);
+      const A = b1.poly[1], B = b1.poly[0], C = b2.poly[1], D = b2.poly[0];
+      const P = polyMul(b1.poly, b2.poly);
+      const a = P[2] || 0, b = P[1] || 0, c = P[0] || 0;
+      const ac = a * c;
+      const r = A * D, s = B * C;
+      const rewrite = `${a === 1 ? '' : a}x^2 + ${r}x + ${s}x + ${c}`;
+      const group = `(${a === 1 ? '' : a}x^2 + ${r}x) + (${s}x + ${c})`;
+      const fact = `${b1.str}${b2.str}`;
+      return {
+        prompt: polyToStd(P),
+        targetPoly: P,
+        targetFactored: fact,
+        steps: [
+          step(`AC method: a=${a}, b=${b}, c=${c} → a·c=${ac}`, polyToStd(P), rewrite),
+          step(`Split b into r+s with r+s=${b}, rs=${ac}`, rewrite, group),
+          step(`Factor by grouping`, group, fact)
+        ]
+      };
+    },
+    
+    xk_binom: () => {
+      const k = rInt(2, 3);
+      const b = makeBinom();
+      let P = polyFromMonomial(1, k);
+      P = polyMul(P, b.poly);
+      const s = `x^${k}${b.str}`;
+      return {
+        prompt: polyToStd(P),
+        targetPoly: P,
+        targetFactored: normNoZero(s),
+        steps: [step(`Factor out x^${k}`, polyToStd(P), s)]
+      };
+    },
+    
+    xk_two: () => {
+      const k = rInt(1, 2);
+      const b1 = makeBinom(), b2 = makeBinom();
+      let P = polyFromMonomial(1, k);
+      P = polyMul(P, b1.poly);
+      P = polyMul(P, b2.poly);
+      const s = `x^${k}${b1.str}${b2.str}`;
+      return {
+        prompt: polyToStd(P),
+        targetPoly: P,
+        targetFactored: normNoZero(s),
+        steps: [step(`Factor out x^${k}`, polyToStd(P), s)]
+      };
+    }
+  };
+  return (bank[window.probType] || bank.random)();
+}
+
+function genMultiply() {
+  const bank = {
+    random: () => {
+      const types = ['bb', 'bt', 'tt', 'mono'];
+      const selected = types[(Math.random() * types.length) | 0];
+      window.actualProbType = selected;
+      return bank[selected]();
+    },
+    
+    bb: () => {
+      const b1 = makeBinom(), b2 = makeBinom();
+      const A = b1.poly[1], B = b1.poly[0], C = b2.poly[1], D = b2.poly[0];
+      const P = polyMul(b1.poly, b2.poly);
+      const bef = `${b1.str}${b2.str}`;
+      
+      const Astr = A === 1 ? '' : A === -1 ? '-' : A;
+      const Cstr = C === 1 ? '' : C === -1 ? '-' : C;
+      const ACprod = A * C === 1 ? '' : A * C === -1 ? '-' : A * C;
+      
+      const F = `F: ${Astr}x · ${Cstr}x = ${ACprod}x^2`;
+      const O = `O: ${Astr}x · ${D} = ${A*D}x`;
+      const I = `I: ${B} · ${Cstr}x = ${B*C}x`;
+      const L = `L: ${B} · ${D} = ${B*D}`;
+      
+      const foilDisplay = `${F}\n\n${O}\n\n${I}\n\n${L}`;
+      const foilExpanded = `${ACprod}x^2 + ${A*D}x + ${B*C}x + ${B*D}`;
+      const combined = polyToStd(P);
+      
+      return {
+        prompt: bef,
+        targetPoly: P,
+        steps: [
+          step('FOIL: Multiply First, Outer, Inner, Last', bef, foilDisplay),
+          step('Combine all terms', foilDisplay, foilExpanded),
+          step('Combine like terms', foilExpanded, combined)
+        ]
+      };
+    },
+    
+    bt: () => {
+      const b = makeBinom();
+      const T = {2: 1, 1: rInt(-6, 6), 0: rInt(-9, 9)};
+      const P = polyMul(b.poly, T);
+      const bef = `${b.str}(${polyToStd(T)})`;
+      const aft = polyToStd(P);
+      return {
+        prompt: bef,
+        targetPoly: P,
+        steps: [step('Distribute binomial across trinomial', bef, aft)]
+      };
+    },
+    
+    tt: () => {
+      const T1 = {2: 1, 1: rInt(-6, 6), 0: rInt(-9, 9)};
+      const T2 = {2: 1, 1: rInt(-6, 6), 0: rInt(-9, 9)};
+      const P = polyMul(T1, T2);
+      const bef = `(${polyToStd(T1)})(${polyToStd(T2)})`;
+      const aft = polyToStd(P);
+      return {
+        prompt: bef,
+        targetPoly: P,
+        steps: [step('Multiply term-by-term & combine', bef, aft)]
+      };
+    },
+    
+    mono: () => {
+      const k = rNZ(-6, 6), e = rInt(1, 3);
+      const M = polyFromMonomial(k, e);
+      const T = {2: 1, 1: rInt(-6, 6), 0: rInt(-9, 9)};
+      const P = polyMul(M, T);
+      const bef = `(${polyToStd(M)})(${polyToStd(T)})`;
+      const aft = polyToStd(P);
+      return {
+        prompt: bef,
+        targetPoly: P,
+        steps: [step('Distribute monomial to each term', bef, aft)]
+      };
+    }
+  };
+  return (bank[window.probType] || bank.random)();
+}
+
+function genExpo() {
+  const bank = {
+    random: () => {
+      const types = ['product', 'power', 'quot', 'mixed1', 'mixed2', 'mixed3'];
+      const selected = types[(Math.random() * types.length) | 0];
+      window.actualProbType = selected;
+      return bank[selected]();
+    },
+    
+    product: () => {
+      const a = rInt(2, 6), b = rInt(1, 6);
+      const aStr = a === 1 ? 'x' : `x^${a}`;
+      const bStr = b === 1 ? 'x' : `x^${b}`;
+      const bef = `${aStr} * ${bStr}`;
+      const sum = a + b;
+      const aft = sum === 1 ? 'x' : `x^${sum}`;
+      return {
+        prompt: bef,
+        target: aft,
+        steps: [step(`Product rule: add exponents ${a} + ${b} = ${sum}`, bef, aft)]
+      };
+    },
+    
+    power: () => {
+      const m = rInt(2, 5), n = rInt(2, 4);
+      const mStr = m === 1 ? 'x' : `x^${m}`;
+      const bef = `(${mStr})^${n}`;
+      const product = m * n;
+      const aft = product === 1 ? 'x' : `x^${product}`;
+      return {
+        prompt: bef,
+        target: aft,
+        steps: [step(`Power rule: multiply exponents ${m}·${n} = ${product}`, bef, aft)]
+      };
+    },
+    
+    quot: () => {
+      let a = rInt(2, 8), b = rInt(1, 8);
+      if(a < b) [a, b] = [b, a];
+      const aStr = a === 1 ? 'x' : `x^${a}`;
+      const bStr = b === 1 ? 'x' : `x^${b}`;
+      const bef = `(${aStr})/(${bStr})`;
+      const diff = a - b;
+      const aft = diff === 0 ? '1' : diff === 1 ? 'x' : `x^${diff}`;
+      return {
+        prompt: bef,
+        target: aft,
+        steps: [step(`Quotient rule: subtract exponents ${a} − ${b} = ${diff}`, bef, aft)]
+      };
+    },
+    
+    mixed1: () => {
+      const a = rInt(1, 5), b = rInt(1, 4), c = rInt(2, 4), d = rInt(2, 5);
+      const dStr = d === 1 ? 'x' : `x^${d}`;
+      const bef = `(x^${a} · x^-${b})^${c} / ${dStr}`;
+      const s1 = `x^${a*c} · x^${-b*c} / ${dStr}`;
+      const s2Num = a*c - b*c;
+      const s2 = s2Num === 1 ? `x / ${dStr}` : `x^${s2Num} / ${dStr}`;
+      const finalExp = a*c - b*c - d;
+      const s3 = finalExp === 0 ? '1' : finalExp === 1 ? 'x' : `x^${finalExp}`;
+      return {
+        prompt: bef,
+        target: s3,
+        steps: [
+          step(`Power to a product: multiply exponents by ${c}`, bef, s1),
+          step(`Combine product: ${a*c} + (${-(b*c)}) = ${a*c - b*c}`, s1, s2),
+          step(`Quotient rule: ${a*c - b*c} − ${d} = ${a*c - b*c - d}`, s2, s3)
+        ]
+      };
+    },
+    
+    mixed2: () => {
+      const a = rInt(0, 5), b = rInt(2, 5), c = rInt(2, 5), d = rInt(2, 4);
+      const aStr = a === 0 ? '' : a === 1 ? 'x * ' : `x^${a} * `;
+      const bStr = b === 1 ? 'x' : `x^${b}`;
+      const cStr = c === 1 ? 'x' : `x^${c}`;
+      const bef = `${aStr}(${bStr} / ${cStr})^${d}`;
+      const bdStr = b*d === 1 ? 'x' : `x^${b*d}`;
+      const cdStr = c*d === 1 ? 'x' : `x^${c*d}`;
+      const s1 = a === 0 ? `(${bdStr} / ${cdStr})` : `${aStr}(${bdStr} / ${cdStr})`;
+      const diffExp = b*d - c*d;
+      const diffStr = diffExp === 0 ? '1' : diffExp === 1 ? 'x' : diffExp === -1 ? 'x^-1' : `x^${diffExp}`;
+      const s2 = a === 0 ? diffStr : `${aStr.replace(' * ', ' * ')}${diffStr}`;
+      const finalExp = a + b*d - c*d;
+      const s3 = finalExp === 0 ? '1' : finalExp === 1 ? 'x' : finalExp === -1 ? 'x^-1' : `x^${finalExp}`;
+      return {
+        prompt: bef,
+        target: s3,
+        steps: [
+          step(`Power to a quotient: multiply exponents by ${d}`, bef, s1),
+          step(`Inside quotient: ${b*d} − ${c*d} = ${b*d - c*d}`, s1, s2),
+          step(`Product rule: ${a} + (${b*d - c*d}) = ${a + b*d - c*d}`, s2, s3)
+        ]
+      };
+    },
+    
+    mixed3: () => {
+      const a = rInt(2, 6), b = rInt(2, 6), c = rInt(2, 4), d = rInt(0, 5);
+      const aStr = a === 1 ? 'x' : `x^${a}`;
+      const bStr = b === 1 ? 'x' : `x^${b}`;
+      const dStr = d === 0 ? '' : d === 1 ? ' * x' : ` * x^${d}`;
+      const bef = `(${aStr} / ${bStr})^${c}${dStr}`;
+      const diffExp = a*c - b*c;
+      const s1Exp = diffExp === 0 ? '1' : diffExp === 1 ? 'x' : diffExp === -1 ? 'x^-1' : `x^${diffExp}`;
+      const s1 = d === 0 ? s1Exp : `${s1Exp}${dStr}`;
+      const finalExp = a*c - b*c + d;
+      const s2 = finalExp === 0 ? '1' : finalExp === 1 ? 'x' : finalExp === -1 ? 'x^-1' : `x^${finalExp}`;
+      return {
+        prompt: bef,
+        target: s2,
+        steps: [
+          step(`Power to a quotient: (${a} − ${b})·${c} = ${a*c - b*c}`, bef, s1),
+          step(`Product rule: ${a*c - b*c} + ${d} = ${a*c - b*c + d}`, s1, s2)
+        ]
+      };
+    }
+  };
+  return (bank[window.probType] || bank.random)();
+}
+
+/* ====================== STATE & UI ====================== */
+
+let mode = 'factor', probType = 'random';
+let problem = {};
+let spC = 0, spI = 0, streak = 0, longest = 0;
+const recent = [];
+let stepIndex = 0;
+
+const modeStats = {
+  factor: {attempts: 0, correct: 0},
+  multiply: {attempts: 0, correct: 0},
+  expo: {attempts: 0, correct: 0}
+};
+
+function loadTypeOptions() {
+  const sel = $('#typeSel');
+  sel.innerHTML = '';
+  
+  const opts = mode === 'factor' ? [
+    ['random', 'Random'],
+    ['gcf_quad', 'GCF first'],
+    ['x_binom', 'x·(ax+b)'],
+    ['two_a1', '(x+p)(x+q)'],
+    ['k_two_a1', 'a(x+p)(x+q)'],
+    ['two_aN', '(ax+b)(cx+d)'],
+    ['xk_binom', 'x^k·(ax+b)'],
+    ['xk_two', 'x^k·(ax+b)(cx+d)']
+  ] : mode === 'multiply' ? [
+    ['random', 'Random'],
+    ['bb', '(…)(…)'],
+    ['bt', '(…)(…+…+…)'],
+    ['tt', '(…+…+…)(…+…+…)'],
+    ['mono', '(kx^e)(…+…+…)']
+  ] : [
+    ['random', 'Random'],
+    ['product', 'Product'],
+    ['power', 'Power'],
+    ['quot', 'Quotient'],
+    ['mixed1', 'Mixed A'],
+    ['mixed2', 'Mixed B'],
+    ['mixed3', 'Mixed C']
+  ];
+  
+  opts.forEach(([v, l]) => {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = l;
+    sel.appendChild(o);
+  });
+  
+  sel.value = 'random';
+  probType = 'random';
+  window.probType = 'random';
+}
+
+function newProblem() {
+  $('#ans').value = '';
+  $('#preview').innerHTML = '';
+  $('#resultTag').style.display = 'none';
+  $('#reveal').innerHTML = '';
+  $('#stepsBody').innerHTML = '';
+  stepIndex = 0;
+  canSeeSteps = false;
+  hideSteps();
+  updatePretty();
+  
+  window.actualProbType = null;
+  problem = mode === 'factor' ? genFactor() : mode === 'multiply' ? genMultiply() : genExpo();
+  problem.type = window.actualProbType || probType;
+  
+  setProblem(problem.prompt);
+  
+  (problem.steps || []).forEach((s, i) => {
+    const d = document.createElement('div');
+    d.className = 'step';
+    const label = document.createElement('div');
+    label.textContent = s.caption;
+    const arrow = document.createElement('span');
+    arrow.style.color = '#9aa4b2';
+    arrow.textContent = '›';
+    d.append(label, arrow);
+    d.onclick = () => {
+      stepIndex = i;
+      updateWalkthrough();
+      $('#stepsModal').classList.add('show');
+    };
+    $('#stepsBody').appendChild(d);
+  });
+  
+  $('#stepsModal').classList.remove('show');
+  recent.push({
+    problem: problem.prompt,
+    mode: mode,
+    type: problem.type
+  });
+  if(recent.length > 10) recent.shift();
+  fitProblemText();
+}
+
+function updateWalkthrough() {
+  const s = (problem.steps || [])[stepIndex] || {caption: '', before: '', after: ''};
+  $('#beforeEq').innerHTML = formatMath(s.before || problem.prompt || '');
+  $('#afterEq').innerHTML = formatMath(s.after || (mode === 'expo' ? problem.target : (problem.targetPoly ? polyToStd(problem.targetPoly) : '')));
+  $('#stepCaption').textContent = s.caption || '';
+}
+
+function openSummary() {
+  $('#mCorr').textContent = spC;
+  $('#mInc').textContent = spI;
+  const att = spC + spI;
+  $('#mAcc').textContent = (att ? Math.round(100 * spC / att) : 0) + '%';
+  $('#mStr').textContent = longest;
+  
+  for(const m of ['factor', 'multiply', 'expo']) {
+    const stats = modeStats[m];
+    const modeKey = m === 'expo' ? 'expo' : m;
+    
+    $(`#${modeKey}Correct`).textContent = stats.correct;
+    $(`#${modeKey}Total`).textContent = stats.attempts;
+    $(`#${modeKey}Acc`).textContent = stats.attempts ? 
+      Math.round(100 * stats.correct / stats.attempts) + '%' : '0%';
+  }
+  
+  $('#mHist').innerHTML = recent.slice(-10).reverse().map(r => {
+    if(!r.result) return '';
+    const s = document.createElement('span');
+    s.className = 'hitem';
+    s.innerHTML = (r.correct ? '✓ ' : '✗ ') + formatMath(r.result);
+    if(r.correct) s.style.background = '#dcfce7';
+    else s.style.background = '#fee2e2';
+    return s.outerHTML;
+  }).join('');
+  
+  $('#sumModal').classList.add('show');
+}
+
+function updatePretty() {
+  const input = $('#ans');
+  const pretty = $('#ansPretty');
+  const preview = $('#preview');
+  const val = input.value;
+  
+  pretty.innerHTML = '';
+  if(!val) {
+    const ph = document.createElement('span');
+    ph.className = 'placeholder';
+    ph.textContent = input.getAttribute('placeholder') || '';
+    pretty.append(ph);
+  } else {
+    pretty.innerHTML = formatMath(val);
+  }
+  
+  preview.innerHTML = formatMath(val);
+}
+
+function checkAnswer() {
+  const raw = $('#ans').value.trim();
+  if(!raw) {
+    showResult(false, 'Enter an answer.');
+    return;
+  }
+  
+  if(mode === 'expo') {
+    const ok = clean(raw) === clean(problem.target);
+    showResult(ok, problem.target);
+    track(ok, problem.target);
+    if(!canSeeSteps) {
+      canSeeSteps = true;
+      showSteps();
+    }
+    return;
+  }
+  
+  if(mode === 'multiply') {
+    const P = parsePolyStd(raw);
+    if(!P) {
+      showResult(false, 'Standard form, e.g., 2x^2-3x+5');
+      return;
+    }
+    const ok = polyEqual(P, problem.targetPoly);
+    const rev = polyToStd(problem.targetPoly);
+    showResult(ok, rev);
+    track(ok, rev);
+    if(!canSeeSteps) {
+      canSeeSteps = true;
+      showSteps();
+    }
+    return;
+  }
+  
+  const parsed = parseFactored(raw);
+  if(!parsed) {
+    showResult(false, 'Use products like (x+2)(2x-3) or x^2(x+4).');
+    return;
+  }
+  if(parsed.error) {
+    showResult(false, parsed.error);
+    return;
+  }
+  
+  const ok = polyEqual(parsed.poly, problem.targetPoly);
+  const msg = problem.targetFactored || polyToStd(problem.targetPoly);
+  showResult(ok, msg);
+  track(ok, msg);
+  if(!canSeeSteps) {
+    canSeeSteps = true;
+    showSteps();
+  }
+}
+
+function showResult(ok, msgExpr) {
+  const t = $('#resultTag');
+  t.style.display = 'inline-block';
+  t.className = 'result-tag ' + (ok ? 'ok' : 'err');
+  t.textContent = ok ? 'Correct ✓' : 'Incorrect ✗';
+  
+  const r = $('#reveal');
+  r.innerHTML = '';
+  if(!msgExpr) return;
+  
+  const isMath = /[x0-9^*/()+\-]/.test(String(msgExpr));
+  if(isMath) {
+    r.innerHTML = formatMath(msgExpr);
+  } else {
+    r.textContent = String(msgExpr);
+  }
+}
+
+function track(ok, textExpr) {
+  if(ok) {
+    spC++;
+    streak++;
+    longest = Math.max(longest, streak);
+  } else {
+    spI++;
+    streak = 0;
+  }
+  
+  modeStats[mode].attempts++;
+  if(ok) modeStats[mode].correct++;
+  
+  $('#spC').textContent = spC;
+  $('#spI').textContent = spI;
+  $('#spS').textContent = streak;
+  
+  const lastRecent = recent[recent.length - 1];
+  if(lastRecent) {
+    lastRecent.result = textExpr;
+    lastRecent.correct = ok;
+  }
+  
+  const pill = document.createElement('span');
+  pill.className = 'hitem';
+  pill.innerHTML = formatMath(textExpr);
+  const hist = $('#hist');
+  hist.append(pill);
+  if(hist.children.length > 6) hist.removeChild(hist.firstChild);
+}
+
+// Event listeners
+$('#modeFactor').onclick = () => {
+  mode = 'factor';
+  setPressed($('#modeFactor'), true);
+  setPressed($('#modeMultiply'), false);
+  setPressed($('#modeExpo'), false);
+  loadTypeOptions();
+  newProblem();
+};
+
+$('#modeMultiply').onclick = () => {
+  mode = 'multiply';
+  setPressed($('#modeFactor'), false);
+  setPressed($('#modeMultiply'), true);
+  setPressed($('#modeExpo'), false);
+  loadTypeOptions();
+  newProblem();
+};
+
+$('#modeExpo').onclick = () => {
+  mode = 'expo';
+  setPressed($('#modeFactor'), false);
+  setPressed($('#modeMultiply'), false);
+  setPressed($('#modeExpo'), true);
+  loadTypeOptions();
+  newProblem();
+};
+
+$('#typeSel').onchange = e => {
+  probType = e.target.value;
+  window.probType = probType;
+  newProblem();
+};
+
+$('#btnNew').onclick = () => newProblem();
+$('#btnNext').onclick = () => newProblem();
+$('#btnSubmit').onclick = () => checkAnswer();
+$('#btnSummary').onclick = () => openSummary();
+
+$('#prevStep').onclick = () => {
+  if(!problem.steps) return;
+  stepIndex = (stepIndex - 1 + problem.steps.length) % problem.steps.length;
+  updateWalkthrough();
+};
+
+$('#nextStep').onclick = () => {
+  if(!problem.steps) return;
+  stepIndex = (stepIndex + 1) % problem.steps.length;
+  updateWalkthrough();
+};
+
+$('#closeSteps').onclick = () => $('#stepsModal').classList.remove('show');
+$('#closeSum').onclick = () => $('#sumModal').classList.remove('show');
+
+$('#btnSteps').onclick = () => {
+  if(!canSeeSteps) return;
+  stepIndex = 0;
+  updateWalkthrough();
+  $('#stepsModal').classList.add('show');
+};
+
+// Print certificate
+$('#sumPrint').onclick = () => {
+  const total = spC + spI;
+  const acc = total ? Math.round(100 * spC / total) : 0;
+  const date = new Date().toLocaleDateString();
+  
+  const modeRows = ['factor', 'multiply', 'expo'].map(m => {
+    const stats = modeStats[m];
+    const name = m === 'expo' ? 'Exponents' : m.charAt(0).toUpperCase() + m.slice(1);
+    const pct = stats.attempts ? Math.round(100 * stats.correct / stats.attempts) : 0;
+    const color = m === 'factor' ? '#ecfdf5' : m === 'multiply' ? '#eff6ff' : '#fef3c7';
+    return `
+      <div style="background:${color};border:1px solid #e5e7eb;border-radius:8px;padding:10px;text-align:center">
+        <div style="font-size:14px;font-weight:bold;color:#475569">${name}</div>
+        <div style="font-size:20px;font-weight:bold;margin:4px 0">${stats.correct}/${stats.attempts}</div>
+        <div style="font-size:12px;color:#6b7280">${pct}%</div>
+      </div>
+    `;
+  }).join('');
+  
+  const w = window.open('', '_blank');
+  w.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Polynomial Methods Certificate</title>
+      <style>
+        @page {size: A4; margin: 20mm}
+        body {
+          font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+          margin: 0;
+          padding: 20px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          min-height: 100vh;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .certificate {
+          background: white;
+          border-radius: 20px;
+          padding: 40px;
+          max-width: 800px;
+          width: 100%;
+          box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        .header {
+          text-align: center;
+          border-bottom: 3px solid #e5e7eb;
+          padding-bottom: 20px;
+          margin-bottom: 30px;
+        }
+        .title {
+          font-size: 32px;
+          font-weight: bold;
+          color: #1f2937;
+          margin-bottom: 8px;
+        }
+        .subtitle {
+          font-size: 18px;
+          color: #6b7280;
+        }
+        .student-name {
+          font-size: 24px;
+          font-weight: bold;
+          color: #4f46e5;
+          margin: 20px 0;
+        }
+        .stats-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 15px;
+          margin: 30px 0;
+        }
+        .stat-box {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-radius: 12px;
+          padding: 12px;
+          text-align: center;
+        }
+        .stat-label {
+          font-size: 12px;
+          color: #6b7280;
+          margin-bottom: 4px;
+        }
+        .stat-value {
+          font-size: 24px;
+          font-weight: bold;
+          color: #1f2937;
+        }
+        .modes-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 15px;
+          margin: 30px 0;
+        }
+        .footer {
+          margin-top: 40px;
+          padding-top: 20px;
+          border-top: 2px solid #e5e7eb;
+          display: flex;
+          justify-content: space-between;
+          font-size: 14px;
+          color: #6b7280;
+        }
+        @media print {
+          body {
+            background: white;
+          }
+          .certificate {
+            box-shadow: none;
+          }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="certificate">
+        <div class="header">
+          <div class="title">Certificate of Achievement</div>
+          <div class="subtitle">Polynomial Methods Practice</div>
+        </div>
+        <div class="student-name">Student Name: _______________________</div>
+        
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-label">Problems Solved</div>
+            <div class="stat-value">${spC}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Accuracy</div>
+            <div class="stat-value">${acc}%</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Total Attempts</div>
+            <div class="stat-value">${total}</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Best Streak</div>
+            <div class="stat-value">${longest}</div>
+          </div>
+        </div>
+        
+        <div class="modes-grid">${modeRows}</div>
+        
+        <div class="footer">
+          <div>Date: ${date}</div>
+          <div>Teacher Signature: _______________________</div>
+        </div>
+      </div>
+      <script>window.print();<\/script>
+    </body>
+    </html>
+  `);
+  w.document.close();
+};
+
+// Keyboard input
+(function() {
+  const input = $('#ans');
+  
+  const ins = (t) => {
+    const s = input.selectionStart, e = input.selectionEnd;
+    if(t === '[BS]') {
+      if(s > 0) {
+        input.value = input.value.slice(0, s-1) + input.value.slice(e);
+        input.setSelectionRange(s-1, s-1);
+      }
+    } else if(t === '[CLR]') {
+      input.value = '';
+    } else {
+      input.value = input.value.slice(0, s) + t + input.value.slice(e);
+      input.setSelectionRange(s + t.length, s + t.length);
+    }
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+    input.focus();
+  };
+  
+  $('#kbd').addEventListener('click', e => {
+    const b = e.target.closest('.key');
+    if(!b) return;
+    const k = b.dataset.k, act = b.dataset.act;
+    if(k) ins(k);
+    else if(act === 'back') ins('[BS]');
+    else if(act === 'clear') ins('[CLR]');
+  });
+  
+  input.addEventListener('input', updatePretty);
+  input.addEventListener('keydown', e => {
+    if(e.key === 'Enter') {
+      e.preventDefault();
+      checkAnswer();
+    }
+  });
+})();
+
+// Initialize
+loadTypeOptions();
+newProblem();
+window.addEventListener('resize', fitProblemText);
+</script>
+
+</body>
+</html>
