@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A.10 Studio — Polynomial Operations</title>
+<style>
+  :root{
+    --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
+    --blue:#2f6cff; --teal:#36c2a0; --gold:#f4c431; --danger:#e5484d; --vio:#8e78ff;
+    --accent:#f4a531; --shadow:0 8px 20px rgba(25,40,80,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100dvh}
+  body{margin:0; background:var(--bg); color:var(--ink); overflow:auto;
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
+  .wrap{width:min(1240px,100%); margin:14px auto; padding:0 12px}
+  .hdr{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow);
+    padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .back{font-weight:900; text-decoration:none; color:var(--blue); font-size:14px; padding:8px 12px;
+    border:1px solid var(--ui); border-radius:10px; background:#fff}
+  .hdr h1{margin:0; font-size:clamp(17px,2.6vw,22px); font-weight:900; flex:1; min-width:200px}
+  .hdr .eyebrow{display:block; font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900}
+  .pill{display:inline-block; padding:6px 12px; border-radius:999px; border:1px solid var(--ui);
+    background:#fff; font-weight:900; font-size:13px}
+  .pill b{color:var(--blue)}
+  .cols{display:grid; grid-template-columns:250px 1fr; gap:12px; align-items:start}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr} }
+  .rail{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:10px}
+  .rail .rh{font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900; padding:4px 8px 8px}
+  .stones{display:flex; flex-direction:column; position:relative}
+  .stones::before{content:""; position:absolute; left:24px; top:18px; bottom:18px; border-left:3px dotted #d5deff}
+  .stone{display:flex; align-items:center; gap:10px; padding:6px 8px; border:0; background:none;
+    border-radius:12px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink); width:100%}
+  .stone:hover{background:#f5f8ff}
+  .stone.active{background:#eef4ff; outline:2px solid #bcd2ff}
+  .stone .dot{width:34px; height:34px; flex:none; border-radius:50%; border:3px solid #d5deff; background:#fff;
+    z-index:1; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; color:var(--muted)}
+  .stone.started .dot{border-color:var(--accent); color:var(--ink)}
+  .stone.mastered .dot{background:var(--accent); border-color:var(--accent); color:#fff}
+  .stone .nm{font-weight:900; font-size:13px; line-height:1.2}
+  .stone .mini{height:5px; border-radius:999px; background:#edf2ff; margin-top:4px; overflow:hidden; width:110px}
+  .stone .mini i{display:block; height:100%; background:var(--accent); border-radius:999px}
+  @media (max-width:900px){
+    .rail{position:sticky; top:8px; z-index:5}
+    .stones{flex-direction:row; overflow-x:auto; gap:6px; padding-bottom:4px}
+    .stones::before{display:none}
+    .stone{flex:none; flex-direction:column; gap:4px; padding:6px; width:auto; min-width:74px}
+    .stone .mini{width:56px}
+    .stone .nm{font-size:11px; text-align:center; max-width:90px}
+  }
+  .main{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:16px}
+  .seHead{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;
+    border-bottom:1px dashed #e5e7eb; padding-bottom:10px; margin-bottom:12px}
+  .seHead h2{margin:0; font-size:19px; font-weight:900}
+  .seHead .blurb{color:var(--muted); font-weight:700; font-size:13px; margin-top:3px; max-width:640px}
+  .seTag{font-size:12px; font-weight:900; color:#133a9a; background:#f1f6ff; border:1px solid var(--ui);
+    border-radius:999px; padding:6px 14px; white-space:nowrap}
+  .prompt{font-size:clamp(17px,2.4vw,21px); font-weight:800; line-height:1.55; margin:6px 0 14px}
+  .prompt .given{background:#f6f9ff; border:1px solid #e7edff; border-radius:12px; padding:10px 14px;
+    display:inline-block; margin-top:8px; font-size:clamp(19px,3vw,26px)}
+  .vfrac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle;
+    font-size:.72em; line-height:1.05; font-weight:900; margin:0 2px}
+  .vfrac span:first-child{border-bottom:2.5px solid currentColor; padding:0 4px}
+  .vfrac span:last-child{padding:0 4px}
+  table.ttab{border-collapse:collapse; margin-top:8px; font-size:clamp(16px,2.4vw,20px)}
+  .ttab th,.ttab td{border:2px solid #d9e2ff; padding:6px 16px; text-align:center; font-weight:900; min-width:54px}
+  .ttab th{background:#f1f6ff; color:#133a9a}
+  .answer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(20px,3.4vw,28px); font-weight:900; margin:10px 0 6px}
+  .answer .lbl{font-size:15px; color:var(--muted); width:100%; font-weight:900}
+  .in{height:56px; width:96px; border:2px solid var(--ui); border-radius:12px; text-align:center;
+    font-weight:900; font-size:22px; font-family:inherit; color:var(--ink)}
+  .in.wide{width:120px}
+  .in:focus-visible, .sel:focus-visible, button:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
+  .sel{height:56px; border:2px solid var(--ui); border-radius:12px; font-weight:900; font-size:20px;
+    font-family:inherit; color:var(--ink); background:#fff; padding:0 8px}
+  .sysRow{display:flex; align-items:center; gap:8px; margin:6px 0}
+  .radio{display:flex; gap:16px; flex-wrap:wrap; font-size:16px; margin-top:6px}
+  .radio label{display:flex; align-items:center; gap:6px; font-weight:800; cursor:pointer}
+  .radio input{accent-color:var(--blue); width:18px; height:18px}
+  .mc{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
+  @media (max-width:720px){ .mc{grid-template-columns:1fr} }
+  .mc button{border:2px solid var(--ui); background:#fff; border-radius:14px; padding:12px 14px;
+    font-family:inherit; font-weight:800; font-size:15.5px; text-align:left; cursor:pointer; color:var(--ink); line-height:1.5}
+  .mc button.sel{border-color:var(--blue); background:#f1f6ff}
+  .mc button:disabled{cursor:default; opacity:.85}
+  .mc button.right{border-color:#7de0a6; background:#eafff2}
+  .mc button.wrong{border-color:#ffb3b3; background:#fff3f3}
+  .btnRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center}
+  .btn{height:46px; border-radius:12px; border:1px solid var(--ui); background:#fff; font-weight:900;
+    padding:0 16px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink)}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.55; cursor:not-allowed}
+  .btn.check{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635; min-width:110px}
+  .btn.hint{border:0; background:linear-gradient(90deg,#ffe6a8,#ffcf70); color:#081635}
+  .btn.steps{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
+  .btn.next{background:#f6f9ff}
+  .fb{font-weight:900; font-size:17px; min-height:26px; margin-top:8px}
+  .fb.ok{color:#0b6b2f} .fb.bad{color:#a33232}
+  .note{background:#fff9d6; border:1px solid #ffe38a; color:#7a5a00; border-radius:12px; padding:10px 14px;
+    font-weight:800; font-size:14.5px; margin-top:10px; display:none; line-height:1.55}
+  .note.show{display:block}
+  .stepsBox{background:#f6f9ff; border:1px solid #e7edff; border-radius:12px; padding:12px 16px;
+    font-weight:800; font-size:15.5px; margin-top:10px; display:none; line-height:1.8}
+  .stepsBox.show{display:block}
+  .stepsBox .st{display:block; margin:2px 0}
+  .stepsBox .final{color:#133a9a}
+  .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
+  .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
+  .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
+    cursor:pointer; font-family:inherit; color:var(--ink)}
+  .drSeg button.active{background:#f1f6ff; color:#133a9a}
+  .drTog button.active{background:#eafff7; color:#0c6d54}
+  .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+  .qhead{font-weight:900; margin-top:14px}
+  .pqBox{display:none; margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <a class="back" href="../index.html">&larr; Portal</a>
+    <h1><span class="eyebrow">Section 4 &middot; Number &amp; Algebraic Methods</span>TEKS A.10 &middot; Polynomial Operations</h1>
+    <span class="pill">This visit <b id="sesScore">0 / 0</b></span>
+  </div>
+  <div class="cols">
+    <div class="rail">
+      <div class="rh">Student Expectations</div>
+      <div class="stones" id="stones"></div>
+    </div>
+    <div class="main">
+      <div class="seHead">
+        <div>
+          <h2 id="seTitle"></h2>
+          <div class="blurb" id="seBlurb"></div>
+        </div>
+        <span class="seTag" id="seTag"></span>
+      </div>
+      <div class="prompt" id="prompt"></div>
+      <div id="answerArea"></div>
+      <div class="btnRow">
+        <button class="btn check" id="checkBtn">Check</button>
+        <button class="btn hint" id="hintBtn">Hint</button>
+        <button class="btn steps" id="stepsBtn">Show steps</button>
+        <button class="btn next" id="nextBtn">New problem</button>
+      </div>
+      <div class="fb" id="fb" aria-live="polite"></div>
+      <div class="note" id="hintBox"></div>
+      <div class="stepsBox" id="stepsBox"></div>
+      <div class="kbdnote">Negative numbers are welcome &mdash; type -3 or 3. Enter = check &middot; N = new problem.</div>
+    </div>
+  </div>
+</div>
+
+<script src="../portal.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ===== PURE MATH LIBRARY ===== */
+function ri(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function rc(arr){ return arr[ri(0,arr.length-1)]; }
+function rnz(a,b){ var x=0; while(x===0) x=ri(a,b); return x; }
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
+function gcdArr(arr){ var g=0; arr.forEach(function(x){ if(x!==0) g=gcd(g,Math.abs(x)); }); return g||1; }
+function R(n,d){ d=(d===undefined)?1:d; if(d<0){n=-n;d=-d;} var g=gcd(n,d); return {n:n/g, d:d/g}; }
+function req(a,b){ return a.n*b.d === b.n*a.d; }
+function rint(x){ return R(x,1); }
+function parseRat(s){
+  if(s===null || s===undefined) return null;
+  s = String(s).trim().replace(/\u2212/g,'-').replace(/\s+/g,'');
+  if(!s || !/\d/.test(s)) return null;
+  var m = s.match(/^(-?\d+)\/(-?\d+)$/);
+  if(m){ var d=parseInt(m[2],10); if(!d) return null; return R(parseInt(m[1],10), d); }
+  if(/^-?\d+$/.test(s)) return R(parseInt(s,10),1);
+  m = s.match(/^(-)?(\d*)\.(\d+)$/);
+  if(m){ var neg=!!m[1], ip=m[2]||'0', fp=m[3];
+    var den=Math.pow(10,fp.length), num=parseInt(ip,10)*den + parseInt(fp,10);
+    return R(neg?-num:num, den); }
+  return null;
+}
+var MIN='\u2212';
+function fmtInt(x){ return x<0 ? MIN+Math.abs(x) : String(x); }
+function ratHTML(r){
+  if(r.d===1) return fmtInt(r.n);
+  var s = r.n<0 ? MIN : '';
+  return s+'<span class="vfrac"><span>'+Math.abs(r.n)+'</span><span>'+r.d+'</span></span>';
+}
+
+/* ---- polynomial helpers (coeffs are LOW-to-HIGH degree integer arrays) ---- */
+function polyHTML(coeffs){
+  var deg=coeffs.length-1, s='', first=true;
+  for(var d=deg; d>=0; d--){
+    var c=coeffs[d];
+    if(c===0) continue;
+    var ac=Math.abs(c), term;
+    if(d===0) term=String(ac);
+    else if(d===1) term=(ac===1?'':String(ac))+'x';
+    else term=(ac===1?'':String(ac))+'x<sup>'+d+'</sup>';
+    if(first){ s += (c<0?MIN:'')+term; first=false; }
+    else { s += (c<0?' '+MIN+' ':' + ')+term; }
+  }
+  return first ? '0' : s;
+}
+function polyMul(a,b){
+  var res=new Array(a.length+b.length-1).fill(0);
+  for(var i=0;i<a.length;i++) for(var j=0;j<b.length;j++) res[i+j]+=a[i]*b[j];
+  return res;
+}
+function genLinear(topRange){ // [c0,c1], c1 nonzero
+  return [ri(-(topRange||6),(topRange||6)), rnz(-(topRange||6),(topRange||6))];
+}
+function genQuadNZ(topRange){ // [c0,c1,c2], c2 nonzero
+  var r=topRange||6;
+  return [ri(-r,r), ri(-r,r), rnz(-r,r)];
+}
+
+/* ---- UI helpers ---- */
+function inBox(id, wide){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off" />'; }
+
+/* ---- multiple-choice helpers ---- */
+function makeMC(items, correctIdx){
+  var idxArr = items.map(function(_,i){ return i; });
+  for(var i=idxArr.length-1;i>0;i--){ var j=ri(0,i); var t=idxArr[i]; idxArr[i]=idxArr[j]; idxArr[j]=t; }
+  var opts = idxArr.map(function(i){ return items[i]; });
+  var correct = idxArr.indexOf(correctIdx);
+  return {opts:opts, correct:correct};
+}
+function mcHTML(id, mc){
+  var h='<div class="mc" id="'+id+'">';
+  mc.opts.forEach(function(o,i){ h+='<button type="button" data-i="'+i+'">'+o+'</button>'; });
+  return h+'</div>';
+}
+function mcSelected(id){
+  var host=document.getElementById(id); if(!host) return null;
+  var sel=host.querySelectorAll ? Array.prototype.filter.call(host.querySelectorAll('button'), function(b){ return b.classList.contains('sel'); })[0] : null;
+  return sel ? parseInt(sel.getAttribute('data-i')) : null;
+}
+function wireMC(id){
+  var host=document.getElementById(id); if(!host || !host.querySelectorAll) return;
+  Array.prototype.forEach.call(host.querySelectorAll('button'), function(btn){
+    btn.addEventListener('click', function(){
+      if(btn.disabled) return;
+      Array.prototype.forEach.call(host.querySelectorAll('button'), function(b){ b.classList.remove('sel'); });
+      btn.classList.add('sel');
+    });
+  });
+}
+function markMC(id, correct, chosen){
+  var host=document.getElementById(id); if(!host || !host.querySelectorAll) return;
+  Array.prototype.forEach.call(host.querySelectorAll('button'), function(btn){
+    var i=parseInt(btn.getAttribute('data-i'));
+    btn.disabled=true;
+    if(i===correct) btn.classList.add('right');
+    else if(i===chosen) btn.classList.add('wrong');
+  });
+}
+
+/* =====================================================================
+   A.10A — Add and Subtract Polynomials (degree 1 and 2)
+   ===================================================================== */
+var SE_A10A = {
+  id:'A.10A', letter:'A', short:'Add/Subtract',
+  title:'Add and Subtract Polynomials',
+  blurb:'Add and subtract polynomials of degree one and degree two.',
+
+  gen:function(){
+    var degA=rc([1,2]), degB=rc([1,2]);
+    var a = degA===2 ? genQuadNZ() : [genLinear()[0], genLinear()[1], 0];
+    var b = degB===2 ? genQuadNZ() : [genLinear()[0], genLinear()[1], 0];
+    var op = rc(['+','-']);
+    var res = op==='+' ? [a[0]+b[0],a[1]+b[1],a[2]+b[2]] : [a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+    return {a:a,b:b,op:op,res:res};
+  },
+  prompt:function(p){
+    return 'Simplify:<br><span class="given">('+polyHTML(p.a)+') '+p.op+' ('+polyHTML(p.b)+')</span>';
+  },
+  answerHTML:function(p){
+    return '<div class="answer"><span class="lbl">Enter each coefficient (use 0 if a term is missing):</span>'+
+      inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+  },
+  read:function(p){
+    var c2=parseRat(document.getElementById('c2').value);
+    var c1=parseRat(document.getElementById('c1').value);
+    var c0=parseRat(document.getElementById('c0').value);
+    if(c2===null||c1===null||c0===null) return null;
+    return {c2:c2,c1:c1,c0:c0};
+  },
+  check:function(p,ans){
+    return req(ans.c2,rint(p.res[2])) && req(ans.c1,rint(p.res[1])) && req(ans.c0,rint(p.res[0]));
+  },
+  hints:function(p){
+    return [
+      p.op==='-' ? 'Subtracting a polynomial means flipping the sign of every term inside the second set of parentheses first.' : 'Combine like terms: add the x\u00b2 terms together, then the x terms, then the constants.',
+      'Line up terms by degree \u2014 x\u00b2 with x\u00b2, x with x, constant with constant \u2014 before combining.'
+    ];
+  },
+  steps:function(p){
+    var s='';
+    if(p.op==='-'){
+      var negB=[-p.b[0],-p.b[1],-p.b[2]];
+      s+='<span class="st">1. Distribute the subtraction sign: ('+polyHTML(p.a)+') + ('+polyHTML(negB)+')</span>';
+    } else {
+      s+='<span class="st">1. Line up like terms from each polynomial.</span>';
+    }
+    s+='<span class="st">2. Combine x\u00b2 terms: '+fmtInt(p.a[2])+(p.op==='+'?' + ':' \u2212 ')+fmtInt(p.b[2])+' = '+fmtInt(p.res[2])+'</span>';
+    s+='<span class="st">3. Combine x terms: '+fmtInt(p.a[1])+(p.op==='+'?' + ':' \u2212 ')+fmtInt(p.b[1])+' = '+fmtInt(p.res[1])+'</span>';
+    s+='<span class="st">4. Combine constants: '+fmtInt(p.a[0])+(p.op==='+'?' + ':' \u2212 ')+fmtInt(p.b[0])+' = '+fmtInt(p.res[0])+'</span>';
+    s+='<span class="st final">Result: '+polyHTML(p.res)+'</span>';
+    return s;
+  },
+  emptyMsg:'Fill in all three coefficients \u2014 use 0 for any missing term.'
+};
+
+/* =====================================================================
+   A.10B — Multiply Polynomials (degree 1 and 2)
+   ===================================================================== */
+var SE_A10B = {
+  id:'A.10B', letter:'B', short:'Multiply',
+  title:'Multiply Polynomials',
+  blurb:'Multiply polynomials of degree one and degree two.',
+
+  gen:function(){
+    var mode = rc(['ll','lq']);
+    var a = genLinear(6);
+    var b = mode==='ll' ? genLinear(6) : genQuadNZ(5);
+    var res = polyMul(a,b);
+    return {mode:mode, a:a, b:b, res:res};
+  },
+  prompt:function(p){
+    return 'Multiply:<br><span class="given">('+polyHTML(p.a)+')('+polyHTML(p.b)+')</span>';
+  },
+  answerHTML:function(p){
+    if(p.mode==='ll'){
+      return '<div class="answer"><span class="lbl">Enter each coefficient:</span>'+
+        inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+    }
+    return '<div class="answer"><span class="lbl">Enter each coefficient:</span>'+
+      inBox('c3')+'<span>x<sup>3</sup> +</span>'+inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+  },
+  read:function(p){
+    var c0=parseRat(document.getElementById('c0').value);
+    var c1=parseRat(document.getElementById('c1').value);
+    var c2=parseRat(document.getElementById('c2').value);
+    if(p.mode==='ll'){
+      if(c2===null||c1===null||c0===null) return null;
+      return {c0:c0,c1:c1,c2:c2};
+    }
+    var c3=parseRat(document.getElementById('c3').value);
+    if(c3===null||c2===null||c1===null||c0===null) return null;
+    return {c0:c0,c1:c1,c2:c2,c3:c3};
+  },
+  check:function(p,ans){
+    if(!(req(ans.c0,rint(p.res[0])) && req(ans.c1,rint(p.res[1])) && req(ans.c2,rint(p.res[2])))) return false;
+    if(p.mode==='lq') return req(ans.c3,rint(p.res[3]));
+    return true;
+  },
+  hints:function(p){
+    var h=[];
+    if(p.mode==='ll') h.push('Use FOIL: First, Outer, Inner, Last \u2014 multiply every term in the first factor by every term in the second.');
+    else h.push('Distribute the linear factor across every term of the quadratic, one term at a time.');
+    h.push('Combine any like terms after multiplying, then write the result from the highest degree to the lowest.');
+    return h;
+  },
+  steps:function(p){
+    var s='<span class="st">1. Multiply every term of ('+polyHTML(p.a)+') by every term of ('+polyHTML(p.b)+').</span>';
+    var terms=[];
+    for(var i=0;i<p.a.length;i++) for(var j=0;j<p.b.length;j++){
+      if(p.a[i]===0||p.b[j]===0) continue;
+      terms.push(fmtInt(p.a[i]*p.b[j])+(i+j>0?('x'+(i+j>1?'<sup>'+(i+j)+'</sup>':'')):''));
+    }
+    s+='<span class="st">2. Partial products: '+terms.join(', ')+'</span>';
+    s+='<span class="st">3. Combine like terms.</span>';
+    s+='<span class="st final">Result: '+polyHTML(p.res)+'</span>';
+    return s;
+  },
+  emptyMsg:'Fill in every coefficient box.'
+};
+
+/* =====================================================================
+   A.10C — Divide Polynomials (divisor degree \u2264 dividend degree)
+   ===================================================================== */
+function genC10C(){
+  var mode = rc(['linbylin','quadbylin','quadbyquad']);
+  if(mode==='linbylin'){
+    var divisor=genLinear(6);
+    var k=rnz(-6,6);
+    var dividend=[divisor[0]*k, divisor[1]*k];
+    return {mode:mode, divisor:divisor, dividend:dividend, qType:'const', k:k};
+  }
+  if(mode==='quadbylin'){
+    var divisorL=[rnz(-6,6),1]; // monic linear: x + c0
+    var quotient=genLinear(5);
+    var dividendQ=polyMul(divisorL,quotient);
+    return {mode:mode, divisor:divisorL, dividend:dividendQ, qType:'linear', quotient:quotient};
+  }
+  // quadbyquad
+  var divisorQ=genQuadNZ(5);
+  var kk=rnz(-6,6);
+  var dividendQQ=[divisorQ[0]*kk, divisorQ[1]*kk, divisorQ[2]*kk];
+  return {mode:mode, divisor:divisorQ, dividend:dividendQQ, qType:'const', k:kk};
+}
+var SE_A10C = {
+  id:'A.10C', letter:'C', short:'Divide',
+  title:'Divide Polynomials',
+  blurb:'Determine the quotient of a polynomial of degree one and a polynomial of degree two when divided by a polynomial of degree one or degree two, where the divisor\u2019s degree does not exceed the dividend\u2019s.',
+
+  gen:function(){ return genC10C(); },
+  prompt:function(p){
+    return 'Divide:<br><span class="given">('+polyHTML(p.dividend)+') \u00f7 ('+polyHTML(p.divisor)+')</span>';
+  },
+  answerHTML:function(p){
+    if(p.qType==='const'){
+      return '<div class="answer"><span>Quotient =</span>'+inBox('k')+'</div>';
+    }
+    return '<div class="answer"><span>Quotient =</span>'+inBox('q1')+'<span>x +</span>'+inBox('q0')+'</div>';
+  },
+  read:function(p){
+    if(p.qType==='const'){
+      var k=parseRat(document.getElementById('k').value);
+      if(k===null) return null;
+      return {k:k};
+    }
+    var q1=parseRat(document.getElementById('q1').value);
+    var q0=parseRat(document.getElementById('q0').value);
+    if(q1===null||q0===null) return null;
+    return {q1:q1,q0:q0};
+  },
+  check:function(p,ans){
+    if(p.qType==='const') return req(ans.k, rint(p.k));
+    return req(ans.q1,rint(p.quotient[1])) && req(ans.q0,rint(p.quotient[0]));
+  },
+  hints:function(p){
+    var h=[];
+    if(p.mode==='linbylin') h.push('Every coefficient of the dividend is the same multiple of the matching coefficient in the divisor \u2014 find that constant multiplier.');
+    else if(p.mode==='quadbylin') h.push('The divisor is x plus a number. Think of the dividend as (divisor) \u00d7 (a linear quotient), and figure out which linear expression makes that product work.');
+    else h.push('Every coefficient of the dividend is the same multiple of the matching coefficient in the divisor \u2014 find that constant multiplier.');
+    h.push('Check your answer by multiplying the divisor by your quotient \u2014 it should rebuild the dividend exactly.');
+    return h;
+  },
+  steps:function(p){
+    var s='';
+    if(p.qType==='const'){
+      s+='<span class="st">1. Every term of the dividend is the corresponding divisor term times the same constant.</span>';
+      s+='<span class="st">2. Compare leading terms to find that constant: '+fmtInt(p.dividend[p.dividend.length-1])+' \u00f7 '+fmtInt(p.divisor[p.divisor.length-1])+' = '+fmtInt(p.k)+'</span>';
+      s+='<span class="st final">Quotient = '+fmtInt(p.k)+'</span>';
+    } else {
+      s+='<span class="st">1. The divisor is ('+polyHTML(p.divisor)+'). Look for a linear quotient (qx + r) so that (divisor)(quotient) rebuilds the dividend.</span>';
+      s+='<span class="st">2. Multiplying ('+polyHTML(p.divisor)+')('+polyHTML(p.quotient)+') gives ('+polyHTML(p.dividend)+'), confirming the quotient.</span>';
+      s+='<span class="st final">Quotient = '+polyHTML(p.quotient)+'</span>';
+    }
+    return s;
+  },
+  emptyMsg:'Fill in the quotient box(es).'
+};
+
+/* =====================================================================
+   A.10D — Rewrite Polynomials Using the Distributive Property
+   ===================================================================== */
+function genD10D(){
+  var mode = rc(['expand','factor']);
+  if(mode==='expand'){
+    var deg=rc([1,2]);
+    var k=rnz(-6,6);
+    var poly = deg===2 ? genQuadNZ(6) : [genLinear(6)[0], genLinear(6)[1], 0].slice(0,2);
+    var scaled = poly.map(function(c){ return c*k; });
+    return {mode:mode, deg:deg, k:k, poly:poly, scaled:scaled};
+  }
+  // factor
+  var deg2=rc([1,2]);
+  var g, inner, tries=0;
+  do{
+    g = ri(2,6);
+    inner = deg2===2 ? [rnz(-6,6), rnz(-6,6), ri(1,6)] : [rnz(-6,6), ri(1,6)];
+    tries++;
+  } while(gcdArr(inner)!==1 && tries<25);
+  var given = inner.map(function(c){ return c*g; });
+  return {mode:mode, deg:deg2, g:g, inner:inner, given:given};
+}
+var SE_A10D = {
+  id:'A.10D', letter:'D', short:'Distribute',
+  title:'Use the Distributive Property',
+  blurb:'Rewrite polynomial expressions of degree one and degree two in equivalent forms using the distributive property.',
+
+  gen:function(){ return genD10D(); },
+  prompt:function(p){
+    if(p.mode==='expand'){
+      var kStr = p.k===1?'':(p.k===-1?MIN:fmtInt(p.k));
+      return 'Distribute to write an equivalent expression:<br><span class="given">'+kStr+'('+polyHTML(p.poly)+')</span>';
+    }
+    return 'Factor out the greatest common factor to write an equivalent expression:<br><span class="given">'+polyHTML(p.given)+'</span>';
+  },
+  answerHTML:function(p){
+    if(p.mode==='expand'){
+      if(p.deg===2){
+        return '<div class="answer"><span class="lbl">Expanded form:</span>'+inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+      }
+      return '<div class="answer"><span class="lbl">Expanded form:</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+    }
+    if(p.deg===2){
+      return '<div class="answer"><span class="lbl">Factored form: GCF ( ... )</span>'+inBox('g')+'<span>(</span>'+inBox('i2')+'<span>x<sup>2</sup> +</span>'+inBox('i1')+'<span>x +</span>'+inBox('i0')+'<span>)</span></div>';
+    }
+    return '<div class="answer"><span class="lbl">Factored form: GCF ( ... )</span>'+inBox('g')+'<span>(</span>'+inBox('i1')+'<span>x +</span>'+inBox('i0')+'<span>)</span></div>';
+  },
+  read:function(p){
+    if(p.mode==='expand'){
+      var c1=parseRat(document.getElementById('c1').value);
+      var c0=parseRat(document.getElementById('c0').value);
+      if(p.deg===2){
+        var c2=parseRat(document.getElementById('c2').value);
+        if(c2===null||c1===null||c0===null) return null;
+        return {c2:c2,c1:c1,c0:c0};
+      }
+      if(c1===null||c0===null) return null;
+      return {c1:c1,c0:c0};
+    }
+    var g=parseRat(document.getElementById('g').value);
+    var i1=parseRat(document.getElementById('i1').value);
+    var i0=parseRat(document.getElementById('i0').value);
+    if(p.deg===2){
+      var i2=parseRat(document.getElementById('i2').value);
+      if(g===null||i2===null||i1===null||i0===null) return null;
+      return {g:g,i2:i2,i1:i1,i0:i0};
+    }
+    if(g===null||i1===null||i0===null) return null;
+    return {g:g,i1:i1,i0:i0};
+  },
+  check:function(p,ans){
+    if(p.mode==='expand'){
+      var ok = req(ans.c1,rint(p.scaled[1])) && req(ans.c0,rint(p.scaled[0]));
+      if(p.deg===2) ok = ok && req(ans.c2,rint(p.scaled[2]));
+      return ok;
+    }
+    var ok2 = req(ans.g,rint(p.g)) && req(ans.i1,rint(p.inner[1])) && req(ans.i0,rint(p.inner[0]));
+    if(p.deg===2) ok2 = ok2 && req(ans.i2,rint(p.inner[2]));
+    return ok2;
+  },
+  hints:function(p){
+    if(p.mode==='expand'){
+      return [
+        'Multiply the outside number by every term inside the parentheses \u2014 don\u2019t skip any term.',
+        'Keep track of signs carefully: a negative multiplier flips the sign of every term it touches.'
+      ];
+    }
+    return [
+      'Find the largest number that divides every coefficient evenly \u2014 that\u2019s the GCF.',
+      'Divide each term by the GCF to find what stays inside the parentheses.'
+    ];
+  },
+  steps:function(p){
+    var s='';
+    if(p.mode==='expand'){
+      s+='<span class="st">1. Multiply the outside factor by each term inside the parentheses.</span>';
+      for(var d=p.poly.length-1; d>=0; d--){
+        if(p.poly[d]===0) continue;
+        s+='<span class="st">'+fmtInt(p.k)+' \u00d7 '+fmtInt(p.poly[d])+' = '+fmtInt(p.k*p.poly[d])+'</span>';
+      }
+      s+='<span class="st final">Result: '+polyHTML(p.scaled)+'</span>';
+    } else {
+      s+='<span class="st">1. The greatest common factor of the coefficients is '+p.g+'.</span>';
+      s+='<span class="st">2. Divide every term by '+p.g+' to find what goes inside the parentheses.</span>';
+      s+='<span class="st final">Result: '+p.g+'('+polyHTML(p.inner)+')</span>';
+    }
+    return s;
+  },
+  emptyMsg:'Fill in every box.'
+};
+
+function coefX(c){ return (c===1?'':(c===-1?MIN:String(c)))+'x'; }
+
+/* =====================================================================
+   A.10E — Factor Trinomials (ax\u00b2 + bx + c), including perfect squares
+   ===================================================================== */
+var cModeE='mix';
+function genE10E(kind){
+  var p1,q1,m,n,a,b,c;
+  if(kind==='a1'){
+    p1=1; q1=1; m=rnz(-9,9); n=rnz(-9,9);
+  } else if(kind==='perfect'){
+    p1=ri(1,3); q1=p1; m=rnz(-6,6); n=m;
+  } else { // aNot1
+    p1=ri(2,4); q1=rc([1,2,3]); if(p1===q1 && Math.random()<0.5) q1=q1+1;
+    m=rnz(-6,6); n=rnz(-6,6);
+  }
+  a=p1*q1; b=p1*n+q1*m; c=m*n;
+  return {kind:kind, p1:p1,q1:q1,m:m,n:n,a:a,b:b,c:c};
+}
+var SE_A10E = {
+  id:'A.10E', letter:'E', short:'Factor Trinomials',
+  title:'Factor Trinomials',
+  blurb:'Factor, if possible, trinomials with real factors in the form ax\u00b2 + bx + c, including perfect square trinomials of degree two.',
+
+  gen:function(){
+    var kind = (cModeE==='mix') ? rc(['a1','aNot1','perfect']) : cModeE;
+    return genE10E(kind);
+  },
+  prompt:function(p){
+    var selector = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">TYPE</span>'+
+      '<div class="drSeg" id="typeSeg" role="tablist">'+
+        '<button type="button" data-v="mix">Mixed</button>'+
+        '<button type="button" data-v="a1">a = 1</button>'+
+        '<button type="button" data-v="aNot1">a &gt; 1</button>'+
+        '<button type="button" data-v="perfect">Perfect Square</button>'+
+      '</div></div>';
+    var tag = p.kind==='perfect' ? 'this perfect-square trinomial' : 'completely';
+    return selector+'Factor '+tag+':<br><span class="given">'+polyHTML([p.c,p.b,p.a])+'</span>';
+  },
+  answerHTML:function(p){
+    return '<div class="answer"><span class="lbl">Enter the two binomial factors:</span>'+
+      '<span>(</span>'+inBox('p1')+'<span>x +</span>'+inBox('m1')+'<span>)(</span>'+inBox('p2')+'<span>x +</span>'+inBox('m2')+'<span>)</span></div>';
+  },
+  read:function(p){
+    var p1=parseRat(document.getElementById('p1').value);
+    var m1=parseRat(document.getElementById('m1').value);
+    var p2=parseRat(document.getElementById('p2').value);
+    var m2=parseRat(document.getElementById('m2').value);
+    if(p1===null||m1===null||p2===null||m2===null) return null;
+    return {p1:p1,m1:m1,p2:p2,m2:m2};
+  },
+  check:function(p,ans){
+    // expansion-based check: (p1 x + m1)(p2 x + m2) must equal a x^2 + b x + c
+    var A = ans.p1.n*ans.p2.n; var Ad = ans.p1.d*ans.p2.d;
+    var B = ans.p1.n*ans.m2.n*ans.p2.d*ans.m1.d + ans.p2.n*ans.m1.n*ans.p1.d*ans.m2.d;
+    var Bd = ans.p1.d*ans.p2.d*ans.m1.d*ans.m2.d;
+    var C = ans.m1.n*ans.m2.n; var Cd = ans.m1.d*ans.m2.d;
+    return req(R(A,Ad), rint(p.a)) && req(R(B,Bd), rint(p.b)) && req(R(C,Cd), rint(p.c));
+  },
+  hints:function(p){
+    if(p.kind==='a1'){
+      return ['Find two numbers that multiply to c and add to b.', 'Write the trinomial as (x + one number)(x + the other number).'];
+    }
+    if(p.kind==='perfect'){
+      return ['Check: is a a perfect square? Is c a perfect square? Does b equal twice the product of their square roots?', 'If it\u2019s a perfect square trinomial, it factors as (px + q)\u00b2.'];
+    }
+    return ['Use the ac-method: multiply a and c, then find two numbers that multiply to ac and add to b.', 'Split the middle term using those two numbers, then factor by grouping.'];
+  },
+  steps:function(p){
+    var s='';
+    s+='<span class="st">1. Trinomial: '+polyHTML([p.c,p.b,p.a])+'</span>';
+    if(p.kind==='perfect'){
+      s+='<span class="st">2. This is a perfect square: a and c are both perfect squares, and b is twice the product of their roots.</span>';
+      s+='<span class="st final">Factored form: ('+coefX(p.p1)+' '+(p.m>=0?'+ '+p.m:MIN+' '+(-p.m))+')<sup>2</sup></span>';
+    } else {
+      s+='<span class="st">2. Find factors ('+coefX(p.p1)+' '+(p.m>=0?'+ '+p.m:MIN+' '+(-p.m))+')('+coefX(p.q1)+' '+(p.n>=0?'+ '+p.n:MIN+' '+(-p.n))+') that expand back to the trinomial.</span>';
+      s+='<span class="st final">Factored form: ('+coefX(p.p1)+' '+(p.m>=0?'+ '+p.m:MIN+' '+(-p.m))+')('+coefX(p.q1)+' '+(p.n>=0?'+ '+p.n:MIN+' '+(-p.n))+')</span>';
+    }
+    return s;
+  },
+  emptyMsg:'Fill in all four numbers \u2014 the coefficients and constants of both factors.',
+  init:function(p){
+    var host=document.getElementById('typeSeg');
+    if(host){
+      Array.prototype.forEach.call(host.querySelectorAll('button'), function(btn){
+        if(btn.getAttribute('data-v')===cModeE) btn.classList.add('active');
+        btn.addEventListener('click', function(){
+          Array.prototype.forEach.call(host.querySelectorAll('button'), function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          cModeE = btn.getAttribute('data-v');
+          newProblem();
+        });
+      });
+    }
+  }
+};
+
+/* =====================================================================
+   A.10F — Difference of Two Squares
+   ===================================================================== */
+function genF10F(){
+  var isDiff = Math.random()<0.5;
+  var m,n,a,c,form;
+  if(isDiff){
+    m=ri(1,9); n=ri(1,9); a=m*m; c=n*n; form='diff';
+  } else if(Math.random()<0.5){
+    m=ri(1,9); n=ri(1,9); a=m*m; c=n*n; form='sum';
+  } else {
+    var nonSquares=[2,3,5,6,7,8,10,11,12,13,14,15];
+    a=rc(nonSquares); c=ri(1,9)*ri(1,9); m=null; n=null; form='diffNotSquare';
+  }
+  return {isDiff:isDiff, a:a, c:c, m:m, n:n, form:form, q1:makeMC(['Yes','No'], isDiff?0:1)};
+}
+var SE_A10F = {
+  id:'A.10F', letter:'F', short:'Diff. of Squares',
+  title:'Difference of Two Squares',
+  blurb:'Decide if a binomial can be written as the difference of two squares and, if possible, use that structure to rewrite the binomial.',
+
+  gen:function(){ return genF10F(); },
+  prompt:function(p){
+    var coeffs = p.form==='sum' ? [p.c,0,p.a] : [-p.c,0,p.a];
+    return 'Can this binomial be written as the difference of two squares?<br><span class="given">'+polyHTML(coeffs)+'</span>';
+  },
+  answerHTML:function(p){
+    return mcHTML('yn', p.q1)+
+      '<div class="pqBox" id="pqBox">'+
+      '<div class="qhead">Enter p and q so the factored form is (px \u2212 q)(px + q):</div>'+
+      '<div class="answer"><span>p =</span>'+inBox('pBox')+'<span>q =</span>'+inBox('qBox')+'</div>'+
+      '</div>';
+  },
+  read:function(p){
+    var mcIndex = mcSelected('yn');
+    if(mcIndex===null) return null;
+    var label = p.q1.opts[mcIndex];
+    if(label==='No') return {mcIndex:mcIndex, label:label};
+    var pv=parseRat(document.getElementById('pBox').value);
+    var qv=parseRat(document.getElementById('qBox').value);
+    if(pv===null||qv===null) return null;
+    return {mcIndex:mcIndex, label:label, p:pv, q:qv};
+  },
+  check:function(p,ans){
+    var correctLabel = p.isDiff ? 'Yes' : 'No';
+    var mcOk = (ans.label === correctLabel);
+    markMC('yn', p.q1.correct, ans.mcIndex);
+    if(!mcOk) return false;
+    if(!p.isDiff) return true;
+    return req(ans.p, rint(p.m)) && req(ans.q, rint(p.n));
+  },
+  hints:function(p){
+    var h=['A difference of squares looks like (something)\u00b2 \u2212 (something else)\u00b2 \u2014 both terms must be perfect squares AND connected by subtraction, not addition.'];
+    if(p.form==='sum') h.push('This expression is a SUM of two squares, not a difference \u2014 sums like this don\u2019t factor this way over the reals.');
+    else if(p.form==='diffNotSquare') h.push('The leading coefficient here isn\u2019t a perfect square, so this can\u2019t be written as a difference of two squares using whole numbers.');
+    else h.push('Since a = m\u00b2 and c = n\u00b2, this factors as (mx \u2212 n)(mx + n).');
+    return h;
+  },
+  steps:function(p){
+    var coeffs = p.form==='sum' ? [p.c,0,p.a] : [-p.c,0,p.a];
+    var s='<span class="st">1. Expression: '+polyHTML(coeffs)+'</span>';
+    if(p.isDiff){
+      s+='<span class="st">2. a = '+p.a+' = '+p.m+'\u00b2 and c = '+p.c+' = '+p.n+'\u00b2, and the terms are subtracted.</span>';
+      s+='<span class="st final">Yes \u2014 factors as ('+coefX(p.m)+' \u2212 '+p.n+')('+coefX(p.m)+' + '+p.n+')</span>';
+    } else if(p.form==='sum'){
+      s+='<span class="st">2. Both terms are perfect squares, but they\u2019re added, not subtracted.</span>';
+      s+='<span class="st final">No \u2014 this is a sum of squares, which doesn\u2019t factor this way.</span>';
+    } else {
+      s+='<span class="st">2. a = '+p.a+' is not a perfect square.</span>';
+      s+='<span class="st final">No \u2014 cannot be written as a difference of two squares using integers.</span>';
+    }
+    return s;
+  },
+  emptyMsg:'Choose Yes or No. If Yes, also fill in p and q.',
+  init:function(p){
+    var host=document.getElementById('yn');
+    if(host){
+      Array.prototype.forEach.call(host.querySelectorAll('button'), function(btn){
+        btn.addEventListener('click', function(){
+          Array.prototype.forEach.call(host.querySelectorAll('button'), function(b){ b.classList.remove('sel'); });
+          btn.classList.add('sel');
+          var box=document.getElementById('pqBox');
+          if(box) box.style.display = (btn.textContent.trim()==='Yes') ? 'block' : 'none';
+        });
+      });
+    }
+  }
+};
+
+var SES=[SE_A10A, SE_A10B, SE_A10C, SE_A10D, SE_A10E, SE_A10F];
+
+/* ===== THE FIXED CONTROLLER (unchanged between modules) ===== */
+var current={se:SES[0], p:null, done:false, recorded:false, hintIdx:0, hintLogged:false};
+var session={a:0,c:0};
+var $=function(s){return document.querySelector(s);};
+
+function stoneStats(id){
+  return (window.Portal && Portal.skill) ? Portal.skill(id) : {progress:0, attempts:0, mastered:false};
+}
+function renderRail(){
+  var host=$('#stones'); host.innerHTML='';
+  SES.forEach(function(se){
+    var st=stoneStats(se.id);
+    var cls='stone'+(se===current.se?' active':'')+(st.mastered?' mastered':st.attempts?' started':'');
+    var b=document.createElement('button');
+    b.type='button'; b.className=cls;
+    b.innerHTML='<span class="dot">'+(st.mastered?'\u2713':se.letter)+'</span>'+
+      '<span><span class="nm">'+se.id+' \u00b7 '+se.short+'</span>'+
+      '<span class="mini"><i style="width:'+Math.round(st.progress*100)+'%"></i></span></span>';
+    b.addEventListener('click', function(){ current.se=se; newProblem(); });
+    host.appendChild(b);
+  });
+}
+function newProblem(){
+  var se=current.se;
+  current.p=se.gen(); current.done=false; current.recorded=false; current.hintIdx=0; current.hintLogged=false;
+  $('#seTitle').innerHTML=se.title;
+  $('#seBlurb').textContent=se.blurb;
+  $('#seTag').textContent='TEKS '+se.id;
+  $('#prompt').innerHTML=se.prompt(current.p);
+  $('#answerArea').innerHTML=se.answerHTML(current.p);
+  $('#fb').textContent=''; $('#fb').className='fb';
+  $('#hintBox').className='note'; $('#hintBox').innerHTML='';
+  $('#stepsBox').className='stepsBox'; $('#stepsBox').innerHTML='';
+  $('#checkBtn').disabled=false;
+  if(se.init) se.init(current.p);
+  renderRail();
+  var first=$('#answerArea input'); if(first) first.focus();
+}
+function onCheck(){
+  if(current.done) return;
+  var se=current.se, ans=se.read(current.p);
+  if(!ans){
+    $('#fb').className='fb bad';
+    $('#fb').textContent=se.emptyMsg||'Fill in every box — fractions like 3/4 are fine.';
+    return;
+  }
+  var ok=se.check(current.p, ans);
+  if(se.allowRecheck){ if(ok) current.done=true; }
+  else { current.done=true; $('#checkBtn').disabled=true; if(se.reveal) se.reveal(current.p); }
+  if(!current.recorded){
+    current.recorded=true;
+    session.a++; if(ok) session.c++;
+    $('#sesScore').textContent=session.c+' / '+session.a;
+    if(window.Portal && Portal.record) Portal.record(se.id, ok);
+  }
+  $('#fb').className='fb '+(ok?'ok':'bad');
+  $('#fb').textContent= ok?'Correct \u2713'
+    : (se.allowRecheck?'Not quite \u2717 — read the tips, adjust, and check again.'
+                      :'Not quite \u2717 — open the steps to see the path.');
+  renderRail();
+}
+function onHint(){
+  var hints=current.se.hints(current.p);
+  var h=hints[Math.min(current.hintIdx, hints.length-1)];
+  current.hintIdx++;
+  var box=$('#hintBox'); box.classList.add('show');
+  box.innerHTML += (box.innerHTML?'<br>':'')+'\u2022 '+h;
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+function onSteps(){
+  var box=$('#stepsBox'); box.classList.add('show');
+  box.innerHTML=current.se.steps(current.p);
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+$('#checkBtn').addEventListener('click', onCheck);
+$('#hintBtn').addEventListener('click', onHint);
+$('#stepsBtn').addEventListener('click', onSteps);
+$('#nextBtn').addEventListener('click', newProblem);
+window.addEventListener('keydown', function(e){
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(e.key==='Enter' && tag!=='select'){ e.preventDefault(); onCheck(); }
+  if((e.key==='n'||e.key==='N') && tag!=='input'){ newProblem(); }
+});
+
+var want=new URLSearchParams(location.search).get('se');
+if(want){ var f=SES.filter(function(s){return s.id.toLowerCase()===want.toLowerCase();})[0]; if(f) current.se=f; }
+newProblem();
+
+})();
+</script>
+</body>
+</html>

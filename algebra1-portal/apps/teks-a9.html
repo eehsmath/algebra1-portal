@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A.9 Studio — Exponential Functions &amp; Equations</title>
+<style>
+  :root{
+    --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
+    --blue:#2f6cff; --teal:#36c2a0; --gold:#f4c431; --danger:#e5484d; --vio:#8e78ff;
+    --accent:#36c2a0; --shadow:0 8px 20px rgba(25,40,80,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100dvh}
+  body{margin:0; background:var(--bg); color:var(--ink); overflow:auto;
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
+  .wrap{width:min(1240px,100%); margin:14px auto; padding:0 12px}
+  .hdr{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow);
+    padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .back{font-weight:900; text-decoration:none; color:var(--blue); font-size:14px; padding:8px 12px;
+    border:1px solid var(--ui); border-radius:10px; background:#fff}
+  .hdr h1{margin:0; font-size:clamp(17px,2.6vw,22px); font-weight:900; flex:1; min-width:200px}
+  .hdr .eyebrow{display:block; font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900}
+  .pill{display:inline-block; padding:6px 12px; border-radius:999px; border:1px solid var(--ui);
+    background:#fff; font-weight:900; font-size:13px}
+  .pill b{color:var(--blue)}
+  .cols{display:grid; grid-template-columns:250px 1fr; gap:12px; align-items:start}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr} }
+  .rail{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:10px}
+  .rail .rh{font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900; padding:4px 8px 8px}
+  .stones{display:flex; flex-direction:column; position:relative}
+  .stones::before{content:""; position:absolute; left:24px; top:18px; bottom:18px; border-left:3px dotted #d5deff}
+  .stone{display:flex; align-items:center; gap:10px; padding:6px 8px; border:0; background:none;
+    border-radius:12px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink); width:100%}
+  .stone:hover{background:#f5f8ff}
+  .stone.active{background:#eef4ff; outline:2px solid #bcd2ff}
+  .stone .dot{width:34px; height:34px; flex:none; border-radius:50%; border:3px solid #d5deff; background:#fff;
+    z-index:1; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; color:var(--muted)}
+  .stone.started .dot{border-color:var(--accent); color:var(--ink)}
+  .stone.mastered .dot{background:var(--accent); border-color:var(--accent); color:#fff}
+  .stone .nm{font-weight:900; font-size:13px; line-height:1.2}
+  .stone .mini{height:5px; border-radius:999px; background:#edf2ff; margin-top:4px; overflow:hidden; width:110px}
+  .stone .mini i{display:block; height:100%; background:var(--accent); border-radius:999px}
+  @media (max-width:900px){
+    .rail{position:sticky; top:8px; z-index:5}
+    .stones{flex-direction:row; overflow-x:auto; gap:6px; padding-bottom:4px}
+    .stones::before{display:none}
+    .stone{flex:none; flex-direction:column; gap:4px; padding:6px; width:auto; min-width:74px}
+    .stone .mini{width:56px}
+    .stone .nm{font-size:11px; text-align:center; max-width:90px}
+  }
+  .main{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:16px}
+  .seHead{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;
+    border-bottom:1px dashed #e5e7eb; padding-bottom:10px; margin-bottom:12px}
+  .seHead h2{margin:0; font-size:19px; font-weight:900}
+  .seHead .blurb{color:var(--muted); font-weight:700; font-size:13px; margin-top:3px; max-width:640px}
+  .seTag{font-size:12px; font-weight:900; color:#133a9a; background:#f1f6ff; border:1px solid var(--ui);
+    border-radius:999px; padding:6px 14px; white-space:nowrap}
+  .prompt{font-size:clamp(17px,2.4vw,21px); font-weight:800; line-height:1.55; margin:6px 0 14px}
+  .prompt .given{background:#f6f9ff; border:1px solid #e7edff; border-radius:12px; padding:10px 14px;
+    display:inline-block; margin-top:8px; font-size:clamp(19px,3vw,26px)}
+  .vfrac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle;
+    font-size:.72em; line-height:1.05; font-weight:900; margin:0 2px}
+  .vfrac span:first-child{border-bottom:2.5px solid currentColor; padding:0 4px}
+  .vfrac span:last-child{padding:0 4px}
+  table.ttab{border-collapse:collapse; margin-top:8px; font-size:clamp(16px,2.4vw,20px)}
+  .ttab th,.ttab td{border:2px solid #d9e2ff; padding:6px 16px; text-align:center; font-weight:900; min-width:54px}
+  .ttab th{background:#f1f6ff; color:#133a9a}
+  .answer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(20px,3.4vw,28px); font-weight:900; margin:10px 0 6px}
+  .answer .lbl{font-size:15px; color:var(--muted); width:100%; font-weight:900}
+  .in{height:56px; width:96px; border:2px solid var(--ui); border-radius:12px; text-align:center;
+    font-weight:900; font-size:22px; font-family:inherit; color:var(--ink)}
+  .in.wide{width:120px}
+  .in:focus-visible, .sel:focus-visible, button:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
+  .sel{height:56px; border:2px solid var(--ui); border-radius:12px; font-weight:900; font-size:20px;
+    font-family:inherit; color:var(--ink); background:#fff; padding:0 8px}
+  .sysRow{display:flex; align-items:center; gap:8px; margin:6px 0}
+  .radio{display:flex; gap:16px; flex-wrap:wrap; font-size:16px; margin-top:6px}
+  .radio label{display:flex; align-items:center; gap:6px; font-weight:800; cursor:pointer}
+  .radio input{accent-color:var(--blue); width:18px; height:18px}
+  .mc{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
+  @media (max-width:720px){ .mc{grid-template-columns:1fr} }
+  .mc button{border:2px solid var(--ui); background:#fff; border-radius:14px; padding:12px 14px;
+    font-family:inherit; font-weight:800; font-size:15.5px; text-align:left; cursor:pointer; color:var(--ink); line-height:1.5}
+  .mc button.sel{border-color:var(--blue); background:#f1f6ff}
+  .mc button:disabled{cursor:default; opacity:.85}
+  .mc button.right{border-color:#7de0a6; background:#eafff2}
+  .mc button.wrong{border-color:#ffb3b3; background:#fff3f3}
+  .btnRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center}
+  .btn{height:46px; border-radius:12px; border:1px solid var(--ui); background:#fff; font-weight:900;
+    padding:0 16px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink)}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.55; cursor:not-allowed}
+  .btn.check{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635; min-width:110px}
+  .btn.hint{border:0; background:linear-gradient(90deg,#ffe6a8,#ffcf70); color:#081635}
+  .btn.steps{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
+  .btn.next{background:#f6f9ff}
+  .fb{font-weight:900; font-size:17px; min-height:26px; margin-top:8px}
+  .fb.ok{color:#0b6b2f} .fb.bad{color:#a33232}
+  .note{background:#fff9d6; border:1px solid #ffe38a; color:#7a5a00; border-radius:12px; padding:10px 14px;
+    font-weight:800; font-size:14.5px; margin-top:10px; display:none; line-height:1.55}
+  .note.show{display:block}
+  .stepsBox{background:#f6f9ff; border:1px solid #e7edff; border-radius:12px; padding:12px 16px;
+    font-weight:800; font-size:15.5px; margin-top:10px; display:none; line-height:1.8}
+  .stepsBox.show{display:block}
+  .stepsBox .st{display:block; margin:2px 0}
+  .stepsBox .final{color:#133a9a}
+  .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
+  .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
+  .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
+    cursor:pointer; font-family:inherit; color:var(--ink)}
+  .drSeg button.active{background:#f1f6ff; color:#133a9a}
+  .drTog button.active{background:#eafff7; color:#0c6d54}
+  .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+  .qhead{font-weight:900; margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <a class="back" href="../index.html">&larr; Portal</a>
+    <h1><span class="eyebrow">Section 3 &middot; Exponential Functions</span>TEKS A.9 &middot; Exponential Functions &amp; Equations</h1>
+    <span class="pill">This visit <b id="sesScore">0 / 0</b></span>
+  </div>
+  <div class="cols">
+    <div class="rail">
+      <div class="rh">Student Expectations</div>
+      <div class="stones" id="stones"></div>
+    </div>
+    <div class="main">
+      <div class="seHead">
+        <div>
+          <h2 id="seTitle"></h2>
+          <div class="blurb" id="seBlurb"></div>
+        </div>
+        <span class="seTag" id="seTag"></span>
+      </div>
+      <div class="prompt" id="prompt"></div>
+      <div id="answerArea"></div>
+      <div class="btnRow">
+        <button class="btn check" id="checkBtn">Check</button>
+        <button class="btn hint" id="hintBtn">Hint</button>
+        <button class="btn steps" id="stepsBtn">Show steps</button>
+        <button class="btn next" id="nextBtn">New problem</button>
+      </div>
+      <div class="fb" id="fb" aria-live="polite"></div>
+      <div class="note" id="hintBox"></div>
+      <div class="stepsBox" id="stepsBox"></div>
+      <div class="kbdnote">Fractions/decimals are welcome in any box &mdash; type 3/4, 1.05, or &minus;3/4. Enter = check &middot; N = new problem.</div>
+    </div>
+  </div>
+</div>
+
+<script src="../portal.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ===== PURE MATH LIBRARY ===== */
+function ri(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function rc(arr){ return arr[ri(0,arr.length-1)]; }
+function rnz(a,b){ var x=0; while(x===0) x=ri(a,b); return x; }
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
+function R(n,d){ d=(d===undefined)?1:d; if(d<0){n=-n;d=-d;} var g=gcd(n,d); return {n:n/g, d:d/g}; }
+function rmul(x,y){ return R(x.n*y.n, x.d*y.d); }
+function req(a,b){ return a.n*b.d === b.n*a.d; }
+function rzero(a){ return a.n===0; }
+function rint(x){ return R(x,1); }
+function parseRat(s){
+  if(s===null || s===undefined) return null;
+  s = String(s).trim().replace(/\u2212/g,'-').replace(/\s+/g,'');
+  if(!s || !/\d/.test(s)) return null;
+  var m = s.match(/^(-?\d+)\/(-?\d+)$/);
+  if(m){ var d=parseInt(m[2],10); if(!d) return null; return R(parseInt(m[1],10), d); }
+  if(/^-?\d+$/.test(s)) return R(parseInt(s,10),1);
+  m = s.match(/^(-)?(\d*)\.(\d+)$/);
+  if(m){ var neg=!!m[1], ip=m[2]||'0', fp=m[3];
+    var den=Math.pow(10,fp.length), num=parseInt(ip,10)*den + parseInt(fp,10);
+    return R(neg?-num:num, den); }
+  return null;
+}
+var MIN='\u2212';
+function fmtInt(x){ return x<0 ? MIN+Math.abs(x) : String(x); }
+function ratHTML(r){
+  if(r.d===1) return fmtInt(r.n);
+  var s = r.n<0 ? MIN : '';
+  return s+'<span class="vfrac"><span>'+Math.abs(r.n)+'</span><span>'+r.d+'</span></span>';
+}
+function ratText(r){ return r.d===1 ? String(r.n) : r.n+'/'+r.d; }
+function tableHTML(xs,ys){
+  var h='<table class="ttab"><tr><th>x</th>';
+  xs.forEach(function(x){ h+='<td>'+fmtInt(x)+'</td>'; });
+  h+='</tr><tr><th>y</th>';
+  ys.forEach(function(y){ h+='<td>'+fmtInt(y)+'</td>'; });
+  h+='</tr></table>';
+  return h;
+}
+
+/* ---- exponential-specific display helper ---- */
+function expHTML(a,b){
+  var coeff = a===1 ? '' : (a===-1 ? MIN : fmtInt(a));
+  return 'f(x) = '+coeff+'('+ratHTML(b)+')<sup>x</sup>';
+}
+
+/* ---- UI helpers ---- */
+function inBox(id, wide){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off" />'; }
+
+/* ---- multiple-choice helpers (shuffle + read + grade) ---- */
+function makeMC(items, correctIdx){
+  var idxArr = items.map(function(_,i){ return i; });
+  for(var i=idxArr.length-1;i>0;i--){ var j=ri(0,i); var t=idxArr[i]; idxArr[i]=idxArr[j]; idxArr[j]=t; }
+  var opts = idxArr.map(function(i){ return items[i]; });
+  var correct = idxArr.indexOf(correctIdx);
+  return {opts:opts, correct:correct};
+}
+function mcHTML(id, mc){
+  var h='<div class="mc" id="'+id+'">';
+  mc.opts.forEach(function(o,i){ h+='<button type="button" data-i="'+i+'">'+o+'</button>'; });
+  return h+'</div>';
+}
+function mcSelected(id){
+  var host=document.getElementById(id); if(!host) return null;
+  var sel=host.querySelectorAll ? Array.prototype.filter.call(host.querySelectorAll('button'), function(b){ return b.classList.contains('sel'); })[0] : null;
+  return sel ? parseInt(sel.getAttribute('data-i')) : null;
+}
+function wireMC(id){
+  var host=document.getElementById(id); if(!host || !host.querySelectorAll) return;
+  Array.prototype.forEach.call(host.querySelectorAll('button'), function(btn){
+    btn.addEventListener('click', function(){
+      if(btn.disabled) return;
+      Array.prototype.forEach.call(host.querySelectorAll('button'), function(b){ b.classList.remove('sel'); });
+      btn.classList.add('sel');
+    });
+  });
+}
+function markMC(id, correct, chosen){
+  var host=document.getElementById(id); if(!host || !host.querySelectorAll) return;
+  Array.prototype.forEach.call(host.querySelectorAll('button'), function(btn){
+    var i=parseInt(btn.getAttribute('data-i'));
+    btn.disabled=true;
+    if(i===correct) btn.classList.add('right');
+    else if(i===chosen) btn.classList.add('wrong');
+  });
+}
+
+/* ---- curved-graph renderer: exponential curve on a signed grid ---- */
+function plotExpo(o){
+  o=o||{}; var Rg=o.Rg||8, S=Math.round(288/(2*Rg)), W=2*Rg*S, H=W, i;
+  function X(x){ return (x+Rg)*S; }
+  function Y(y){ return (Rg-y)*S; }
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="300" height="300" class="grid" xmlns="http://www.w3.org/2000/svg">';
+  for(i=-Rg;i<=Rg;i++){
+    s+='<line x1="'+X(i)+'" y1="0" x2="'+X(i)+'" y2="'+H+'" stroke="#e9eefb" stroke-width="1"/>';
+    s+='<line x1="0" y1="'+Y(i)+'" x2="'+W+'" y2="'+Y(i)+'" stroke="#e9eefb" stroke-width="1"/>';
+  }
+  s+='<line x1="'+X(0)+'" y1="0" x2="'+X(0)+'" y2="'+H+'" stroke="#9db4e8" stroke-width="2"/>';
+  s+='<line x1="0" y1="'+Y(0)+'" x2="'+W+'" y2="'+Y(0)+'" stroke="#9db4e8" stroke-width="2"/>';
+  for(i=-Rg;i<=Rg;i+=2){ if(i===0) continue;
+    s+='<text x="'+X(i)+'" y="'+(Y(0)+14)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="middle">'+i+'</text>';
+    s+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+4)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="end">'+i+'</text>';
+  }
+  (o.curves||[]).forEach(function(C){
+    var d='', pen=false, x, y;
+    for(x=-Rg; x<=Rg+1e-9; x+=0.06){
+      y=C.a*Math.pow(C.b,x);
+      if(isFinite(y) && y<=Rg && y>=-Rg){ d+=(pen?'L':'M')+X(x).toFixed(1)+' '+Y(y).toFixed(1)+' '; pen=true; }
+      else pen=false;
+    }
+    s+='<path d="'+d+'" fill="none" stroke="'+(C.color||'#36c2a0')+'" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  });
+  (o.hlines||[]).forEach(function(Hl){
+    s+='<line x1="0" y1="'+Y(Hl.y)+'" x2="'+W+'" y2="'+Y(Hl.y)+'" stroke="'+(Hl.color||'#f4c431')+'" stroke-width="2.5"'+(Hl.dash?' stroke-dasharray="8 6"':'')+'/>';
+  });
+  (o.points||[]).forEach(function(Pt){
+    s+='<circle cx="'+X(Pt.x)+'" cy="'+Y(Pt.y)+'" r="5.5" fill="'+(Pt.color||'#2f6cff')+'" stroke="'+(Pt.color||'#2f6cff')+'" stroke-width="3"/>';
+  });
+  (o.labels||[]).forEach(function(t,idx){
+    s+='<text x="'+(W-8)+'" y="'+(16+idx*16)+'" font-size="12" font-weight="900" fill="'+t.color+'" text-anchor="end">'+t.text+'</text>';
+  });
+  return s+'</svg>';
+}
+
+/* ---- shared word-problem contexts (A.9B / A.9C) ---- */
+var CONTEXTS=[
+  {subject:'A bacteria colony', unit:'hour', v:'t'},
+  {subject:'An investment account', unit:'year', v:'t'},
+  {subject:"A car's resale value", unit:'year', v:'t'},
+  {subject:'A radioactive sample', unit:'day', v:'t'},
+  {subject:"A website's daily visitor count", unit:'week', v:'t'},
+  {subject:'A population of rabbits', unit:'month', v:'t'}
+];
+var BASES=[R(2,1),R(3,1),R(4,1),R(5,1),R(1,2),R(1,3),R(1,4),R(3,2),R(2,3),R(5,2),R(4,3)];
+
+/* =====================================================================
+   A.9A — Domain & Range of Exponential Functions
+   ===================================================================== */
+var SE_A9A = {
+  id:'A.9A', letter:'A', short:'Domain/Range',
+  title:'Domain &amp; Range of Exponential Functions',
+  blurb:'Determine the domain and range of exponential functions of the form f(x) = ab\u02e3 and represent the domain and range using inequalities.',
+
+  gen:function(){
+    var a=rc([-5,-4,-3,-2,-1,1,2,3,4,5]);
+    var b=rc(BASES);
+    var domItems=['All real numbers','x > 0','x \u2265 0','x \u2260 0'];
+    var rngItems = a>0 ? ['y > 0','y < 0','All real numbers','y \u2265 0'] : ['y < 0','y > 0','All real numbers','y \u2264 0'];
+    return {a:a, b:b, q1:makeMC(domItems,0), q2:makeMC(rngItems,0)};
+  },
+  prompt:function(p){
+    return 'For the exponential function <span class="given">'+expHTML(p.a,p.b)+'</span>, determine its domain and range.'+
+      '<div class="qhead">1) What is the domain?</div>';
+  },
+  answerHTML:function(p){
+    return mcHTML('q1MC',p.q1)+'<div class="qhead">2) What is the range?</div>'+mcHTML('q2MC',p.q2);
+  },
+  read:function(p){
+    var d=mcSelected('q1MC'), r=mcSelected('q2MC');
+    if(d===null||r===null) return null;
+    return {dom:d,rng:r};
+  },
+  check:function(p,ans){
+    var ok = ans.dom===p.q1.correct && ans.rng===p.q2.correct;
+    markMC('q1MC',p.q1.correct,ans.dom);
+    markMC('q2MC',p.q2.correct,ans.rng);
+    return ok;
+  },
+  hints:function(p){
+    return [
+      'Exponential functions f(x)=ab\u02e3 are defined for every real value of x \u2014 there\u2019s nothing under a root or in a denominator that restricts it.',
+      'The sign of a tells you which side of the x-axis the whole curve stays on: outputs are always positive when a>0, always negative when a<0.',
+      'The curve gets closer and closer to y = 0 but never actually reaches or crosses it \u2014 that boundary is not included in the range.'
+    ];
+  },
+  steps:function(p){
+    var bv=p.b.n/p.b.d;
+    var g=plotExpo({Rg:6, curves:[{a:p.a,b:bv,color:p.a>0?'#36c2a0':'#e5484d'}], hlines:[{y:0,color:'#f4c431',dash:true}], points:[{x:0,y:p.a,color:'#2f6cff'}]});
+    var s='';
+    s+='<span class="st">1. Domain: any real number can be substituted for x in ab\u02e3, so the domain is all real numbers.</span>';
+    s+='<span class="st">2. Range: since a '+(p.a>0?'> 0':'< 0')+', every output f(x) = '+fmtInt(p.a)+'\u00b7b\u02e3 is '+(p.a>0?'positive':'negative')+'.</span>';
+    s+='<span class="st final">Domain: all real numbers. Range: '+(p.a>0?'y > 0':'y < 0')+'.</span>';
+    s+='<div style="margin-top:10px">'+g+'</div>';
+    return s;
+  },
+  emptyMsg:'Choose one option for the domain and one for the range.',
+  init:function(p){ wireMC('q1MC'); wireMC('q2MC'); }
+};
+
+/* =====================================================================
+   A.9B — Interpret the meaning of a and b
+   ===================================================================== */
+var SE_A9B = {
+  id:'A.9B', letter:'B', short:'Interpret a, b',
+  title:'Interpreting a and b',
+  blurb:'Interpret the meaning of the values of a and b in exponential functions of the form f(x) = ab\u02e3 in real-world problems.',
+
+  gen:function(){
+    var ctx=rc(CONTEXTS);
+    var growth=Math.random()<0.5;
+    var r=rc([2,3,4,5,6,7,8,9,10,12,15,18,20]);
+    var bVal = growth ? (100+r)/100 : (100-r)/100;
+    var bStr = bVal.toFixed(2);
+    var bR = growth ? R(100+r,100) : R(100-r,100);
+    var a = rc([10,20,25,50,100,150,200,250,500]);
+    var wrongPct = Math.round(bVal*100);
+    var q1Items=[
+      'The initial amount of '+ctx.subject.toLowerCase()+' when '+ctx.v+' = 0',
+      'The percent rate of change per '+ctx.unit,
+      'The amount after exactly one '+ctx.unit,
+      'The maximum possible value it can reach'
+    ];
+    var q2Items = growth ? [
+      ctx.subject+' increases by '+r+'% each '+ctx.unit,
+      ctx.subject+' decreases by '+r+'% each '+ctx.unit,
+      ctx.subject+' increases by '+wrongPct+'% each '+ctx.unit,
+      ctx.subject+' stays the same each '+ctx.unit
+    ] : [
+      ctx.subject+' decreases by '+r+'% each '+ctx.unit,
+      ctx.subject+' increases by '+r+'% each '+ctx.unit,
+      ctx.subject+' decreases by '+wrongPct+'% each '+ctx.unit,
+      ctx.subject+' stays the same each '+ctx.unit
+    ];
+    return {ctx:ctx, a:a, bStr:bStr, bR:bR, growth:growth, r:r,
+      q1:makeMC(q1Items,0), q2:makeMC(q2Items,0)};
+  },
+  prompt:function(p){
+    return p.ctx.subject+' is modeled by <span class="given">f('+p.ctx.v+') = '+p.a+'('+p.bStr+')<sup>'+p.ctx.v+'</sup></span>, where '+p.ctx.v+' is measured in '+p.ctx.unit+'s.'+
+      '<div class="qhead">1) What does a = '+p.a+' represent in this context?</div>';
+  },
+  answerHTML:function(p){
+    return mcHTML('q1MC',p.q1)+'<div class="qhead">2) What does b = '+p.bStr+' tell you about how it changes each '+p.ctx.unit+'?</div>'+mcHTML('q2MC',p.q2);
+  },
+  read:function(p){
+    var d=mcSelected('q1MC'), r=mcSelected('q2MC');
+    if(d===null||r===null) return null;
+    return {q1:d,q2:r};
+  },
+  check:function(p,ans){
+    var ok = ans.q1===p.q1.correct && ans.q2===p.q2.correct;
+    markMC('q1MC',p.q1.correct,ans.q1);
+    markMC('q2MC',p.q2.correct,ans.q2);
+    return ok;
+  },
+  hints:function(p){
+    return [
+      'a is always the starting value \u2014 the amount at time '+p.ctx.v+' = 0, before any growth or decay happens.',
+      p.growth ? 'Since b > 1 here, write b as 1 + r: the extra piece above 1 (as a percent) is the growth rate.'
+               : 'Since b < 1 here, write b as 1 \u2212 r: the piece missing from 1 (as a percent) is the decay rate.',
+      'Careful: b itself (like '+p.bStr+') is NOT the percent \u2014 it\u2019s the growth/decay FACTOR. Subtract 1 first, then convert to a percent.'
+    ];
+  },
+  steps:function(p){
+    var s='';
+    s+='<span class="st">1. a = '+p.a+' is the value at '+p.ctx.v+' = 0 \u2014 the starting amount, before any time passes.</span>';
+    s+='<span class="st">2. b = '+p.bStr+' can be written as 1 '+(p.growth?'+ ':'\u2212 ')+'0.'+(p.r<10?'0':'')+p.r+'.</span>';
+    s+='<span class="st final">So '+p.ctx.subject.toLowerCase()+' '+(p.growth?'increases':'decreases')+' by '+p.r+'% each '+p.ctx.unit+'.</span>';
+    return s;
+  },
+  emptyMsg:'Choose one option for each question.',
+  init:function(p){ wireMC('q1MC'); wireMC('q2MC'); }
+};
+
+/* =====================================================================
+   A.9C — Write Exponential Functions from Growth/Decay Descriptions
+   ===================================================================== */
+function genC(){
+  var ctx=rc(CONTEXTS);
+  var kind=rc(['percent','percent','double']);
+  var growth=Math.random()<0.5;
+  var aInt=rc([5,10,15,20,25,40,50,60,75,80,100,120,150,200,250,300,400,500]);
+  var b, desc;
+  if(kind==='percent'){
+    var r=rc([2,3,4,5,6,7,8,9,10,12,15,18,20,25]);
+    b = growth ? R(100+r,100) : R(100-r,100);
+    desc = ctx.subject+' starts at <span class="given">'+aInt+'</span> and '+(growth?'grows':'decays')+' by <span class="given">'+r+'%</span> each '+ctx.unit+'.';
+  } else {
+    var factor=rc([2,3]);
+    b = growth ? R(factor,1) : R(1,factor);
+    var word = factor===2 ? (growth?'doubles':'is cut in half') : (growth?'triples':'is cut to one third');
+    desc = ctx.subject+' starts at <span class="given">'+aInt+'</span> and <span class="given">'+word+'</span> every '+ctx.unit+'.';
+  }
+  return {ctx:ctx, a:R(aInt,1), b:b, desc:desc, kind:kind, growth:growth};
+}
+var SE_A9C = {
+  id:'A.9C', letter:'C', short:'Write Model',
+  title:'Write Exponential Models',
+  blurb:'Write exponential functions in the form f(x) = ab\u02e3 (where b is a rational number) to describe problems arising from mathematical and real-world situations, including growth and decay.',
+
+  gen:function(){ return genC(); },
+  prompt:function(p){
+    return p.desc+'<div class="qhead">Write the exponential function f('+p.ctx.v+') = a(b)<sup>'+p.ctx.v+'</sup> that models this situation.</div>';
+  },
+  answerHTML:function(p){
+    return '<div class="answer"><span>f('+p.ctx.v+') =</span>'+inBox('a')+'<span>(</span>'+inBox('b')+'<span>)</span><sup>'+p.ctx.v+'</sup></div>';
+  },
+  read:function(p){
+    var a=parseRat(document.getElementById('a').value);
+    var b=parseRat(document.getElementById('b').value);
+    if(a===null||b===null) return null;
+    return {a:a,b:b};
+  },
+  check:function(p,ans){ return req(ans.a,p.a) && req(ans.b,p.b); },
+  hints:function(p){
+    var h=['a is just the starting amount, before any time passes.'];
+    if(p.kind==='percent'){
+      h.push(p.growth ? 'For growth, b = 1 + r, where r is the decimal form of the percent (e.g., 5% = 0.05).'
+                       : 'For decay, b = 1 \u2212 r, where r is the decimal form of the percent (e.g., 5% = 0.05).');
+    } else {
+      h.push('Doubling each period means multiplying by 2 every time, so b = 2. Tripling gives b = 3. Cutting in half gives b = 1/2, and cutting to a third gives b = 1/3.');
+    }
+    return h;
+  },
+  steps:function(p){
+    var s='';
+    s+='<span class="st">1. a is the starting amount: a = '+p.a.n+'.</span>';
+    if(p.kind==='percent'){
+      s+='<span class="st">2. '+(p.growth?'Growth':'Decay')+' factor: b = 1 '+(p.growth?'+':'\u2212')+' r = '+ratText(p.b)+' = '+(p.b.n/p.b.d).toFixed(2)+'.</span>';
+    } else {
+      s+='<span class="st">2. The pattern repeats by the same multiplier every time, so b = '+ratHTML(p.b)+'.</span>';
+    }
+    s+='<span class="st final">Model: '+expHTML(p.a.n,p.b)+'</span>';
+    return s;
+  },
+  emptyMsg:'Fill in both a and b \u2014 decimals like 1.05 or fractions like 1/2 are fine.'
+};
+
+/* =====================================================================
+   A.9D — Graph Exponential Functions & Identify Key Features
+   ===================================================================== */
+var SE_A9D = {
+  id:'A.9D', letter:'D', short:'Graph Features',
+  title:'Graph Key Features',
+  blurb:'Graph exponential functions that model growth and decay and identify key features, including y-intercept and asymptote, in mathematical and real-world problems.',
+
+  gen:function(){
+    var a=ri(1,8);
+    var b=rc(BASES);
+    var gdItems = (b.n/b.d)>1 ? ['Growth','Decay','Neither','Cannot tell from the graph'] : ['Decay','Growth','Neither','Cannot tell from the graph'];
+    return {a:a, b:b, yInt:R(a,1), asym:R(0,1), q1:makeMC(gdItems,0)};
+  },
+  prompt:function(p){
+    var bv=p.b.n/p.b.d;
+    var g=plotExpo({Rg:8, curves:[{a:p.a,b:bv,color:'#36c2a0'}], hlines:[{y:0,color:'#f4c431',dash:true}], points:[{x:0,y:p.a,color:'#2f6cff'}]});
+    return 'Use the graph below to identify its key features.'+g;
+  },
+  answerHTML:function(p){
+    return '<div class="answer"><span>y-intercept: (0,</span>'+inBox('yint')+'<span>)</span></div>'+
+      '<div class="answer" style="margin-top:10px"><span>Horizontal asymptote: y =</span>'+inBox('asym')+'</div>'+
+      '<div class="qhead">Is this function modeling growth or decay?</div>'+mcHTML('q1MC',p.q1);
+  },
+  read:function(p){
+    var yi=parseRat(document.getElementById('yint').value);
+    var asy=parseRat(document.getElementById('asym').value);
+    var mc=mcSelected('q1MC');
+    if(yi===null||asy===null||mc===null) return null;
+    return {yint:yi, asym:asy, mc:mc};
+  },
+  check:function(p,ans){
+    var ok = req(ans.yint,p.yInt) && req(ans.asym,p.asym) && ans.mc===p.q1.correct;
+    markMC('q1MC',p.q1.correct,ans.mc);
+    return ok;
+  },
+  hints:function(p){
+    return [
+      'The y-intercept is the point where the curve crosses the vertical axis \u2014 look at the marked point above x = 0.',
+      'The horizontal asymptote is the dashed line the curve keeps approaching but never touches.',
+      'A curve that climbs faster and faster as x increases is growth; one that flattens toward the asymptote as x increases is decay.'
+    ];
+  },
+  steps:function(p){
+    var s='';
+    s+='<span class="st">1. The marked point sits at x = 0, y = '+p.a+', so the y-intercept is (0, '+p.a+').</span>';
+    s+='<span class="st">2. The dashed line the curve approaches but never crosses is the horizontal asymptote, y = 0.</span>';
+    s+='<span class="st final">y-intercept: (0, '+p.a+'). Asymptote: y = 0. This graph shows '+((p.b.n/p.b.d)>1?'growth':'decay')+'.</span>';
+    return s;
+  },
+  emptyMsg:'Fill in the y-intercept and asymptote, and choose growth or decay.',
+  init:function(p){ wireMC('q1MC'); }
+};
+
+/* =====================================================================
+   A.9E — Model Data with Exponential Functions
+   ===================================================================== */
+var BASES_CLEAN=[R(2,1),R(3,1),R(1,2),R(1,3)];
+function genE(){
+  var b=rc(BASES_CLEAN);
+  var aBase=ri(1,6);
+  var a = (b.d===1) ? aBase : aBase*Math.pow(b.d,4);
+  var xs=[0,1,2,3,4];
+  var yR=[]; var cur=R(a,1);
+  xs.forEach(function(x,i){ yR.push(i===0?R(a,1):rmul(yR[i-1],b)); });
+  var ys=yR.map(function(v){ return v.n/v.d; });
+  var predX=5;
+  var predY=rmul(yR[4],b);
+  return {a:R(a,1), b:b, xs:xs, ys:ys, predX:predX, predY:predY};
+}
+var SE_A9E = {
+  id:'A.9E', letter:'E', short:'Model Data',
+  title:'Model Data with Exponential Functions',
+  blurb:'Write, using technology, exponential functions that provide a reasonable fit to data and make predictions for real-world problems.',
+
+  gen:function(){ return genE(); },
+  prompt:function(p){
+    return 'The table shows data collected over time. Write an exponential function f(x) = a(b)<sup>x</sup> that models this pattern, then use it to predict a future value.'+
+      tableHTML(p.xs,p.ys);
+  },
+  answerHTML:function(p){
+    return '<div class="answer"><span>f(x) =</span>'+inBox('a')+'<span>(</span>'+inBox('b')+'<span>)</span><sup>x</sup></div>'+
+      '<div class="answer" style="margin-top:14px"><span>Predict f('+p.predX+') =</span>'+inBox('py','wide')+'</div>';
+  },
+  read:function(p){
+    var a=parseRat(document.getElementById('a').value);
+    var b=parseRat(document.getElementById('b').value);
+    var py=parseRat(document.getElementById('py').value);
+    if(a===null||b===null||py===null) return null;
+    return {a:a,b:b,py:py};
+  },
+  check:function(p,ans){ return req(ans.a,p.a) && req(ans.b,p.b) && req(ans.py,p.predY); },
+  hints:function(p){
+    return [
+      'Divide each y-value by the one before it \u2014 that constant ratio is b.',
+      'a is simply the y-value in the table where x = 0.',
+      'To predict the next value, multiply the last table value by b one more time.'
+    ];
+  },
+  steps:function(p){
+    var ratioStr = fmtInt(p.ys[1])+' \u00f7 '+fmtInt(p.ys[0])+' = '+ratHTML(p.b);
+    var s='';
+    s+='<span class="st">1. Consecutive ratio: '+ratioStr+', so b = '+ratHTML(p.b)+'.</span>';
+    s+='<span class="st">2. Value at x = 0: a = '+p.a.n+'.</span>';
+    s+='<span class="st">3. Model: '+expHTML(p.a.n,p.b)+'</span>';
+    s+='<span class="st final">Prediction: f('+p.predX+') = '+fmtInt(p.ys[4])+' \u00d7 '+ratHTML(p.b)+' = '+ratHTML(p.predY)+'</span>';
+    return s;
+  },
+  emptyMsg:'Fill in a, b, and your prediction \u2014 fractions like 1/2 are fine.'
+};
+
+var SES=[SE_A9A, SE_A9B, SE_A9C, SE_A9D, SE_A9E];
+
+/* ===== THE FIXED CONTROLLER (unchanged between modules) ===== */
+var current={se:SES[0], p:null, done:false, recorded:false, hintIdx:0, hintLogged:false};
+var session={a:0,c:0};
+var $=function(s){return document.querySelector(s);};
+
+function stoneStats(id){
+  return (window.Portal && Portal.skill) ? Portal.skill(id) : {progress:0, attempts:0, mastered:false};
+}
+function renderRail(){
+  var host=$('#stones'); host.innerHTML='';
+  SES.forEach(function(se){
+    var st=stoneStats(se.id);
+    var cls='stone'+(se===current.se?' active':'')+(st.mastered?' mastered':st.attempts?' started':'');
+    var b=document.createElement('button');
+    b.type='button'; b.className=cls;
+    b.innerHTML='<span class="dot">'+(st.mastered?'\u2713':se.letter)+'</span>'+
+      '<span><span class="nm">'+se.id+' \u00b7 '+se.short+'</span>'+
+      '<span class="mini"><i style="width:'+Math.round(st.progress*100)+'%"></i></span></span>';
+    b.addEventListener('click', function(){ current.se=se; newProblem(); });
+    host.appendChild(b);
+  });
+}
+function newProblem(){
+  var se=current.se;
+  current.p=se.gen(); current.done=false; current.recorded=false; current.hintIdx=0; current.hintLogged=false;
+  $('#seTitle').innerHTML=se.title;
+  $('#seBlurb').textContent=se.blurb;
+  $('#seTag').textContent='TEKS '+se.id;
+  $('#prompt').innerHTML=se.prompt(current.p);
+  $('#answerArea').innerHTML=se.answerHTML(current.p);
+  $('#fb').textContent=''; $('#fb').className='fb';
+  $('#hintBox').className='note'; $('#hintBox').innerHTML='';
+  $('#stepsBox').className='stepsBox'; $('#stepsBox').innerHTML='';
+  $('#checkBtn').disabled=false;
+  if(se.init) se.init(current.p);
+  renderRail();
+  var first=$('#answerArea input'); if(first) first.focus();
+}
+function onCheck(){
+  if(current.done) return;
+  var se=current.se, ans=se.read(current.p);
+  if(!ans){
+    $('#fb').className='fb bad';
+    $('#fb').textContent=se.emptyMsg||'Fill in every box — fractions like 3/4 are fine.';
+    return;
+  }
+  var ok=se.check(current.p, ans);
+  if(se.allowRecheck){ if(ok) current.done=true; }
+  else { current.done=true; $('#checkBtn').disabled=true; if(se.reveal) se.reveal(current.p); }
+  if(!current.recorded){
+    current.recorded=true;
+    session.a++; if(ok) session.c++;
+    $('#sesScore').textContent=session.c+' / '+session.a;
+    if(window.Portal && Portal.record) Portal.record(se.id, ok);
+  }
+  $('#fb').className='fb '+(ok?'ok':'bad');
+  $('#fb').textContent= ok?'Correct \u2713'
+    : (se.allowRecheck?'Not quite \u2717 — read the tips, adjust, and check again.'
+                      :'Not quite \u2717 — open the steps to see the path.');
+  renderRail();
+}
+function onHint(){
+  var hints=current.se.hints(current.p);
+  var h=hints[Math.min(current.hintIdx, hints.length-1)];
+  current.hintIdx++;
+  var box=$('#hintBox'); box.classList.add('show');
+  box.innerHTML += (box.innerHTML?'<br>':'')+'\u2022 '+h;
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+function onSteps(){
+  var box=$('#stepsBox'); box.classList.add('show');
+  box.innerHTML=current.se.steps(current.p);
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+$('#checkBtn').addEventListener('click', onCheck);
+$('#hintBtn').addEventListener('click', onHint);
+$('#stepsBtn').addEventListener('click', onSteps);
+$('#nextBtn').addEventListener('click', newProblem);
+window.addEventListener('keydown', function(e){
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(e.key==='Enter' && tag!=='select'){ e.preventDefault(); onCheck(); }
+  if((e.key==='n'||e.key==='N') && tag!=='input'){ newProblem(); }
+});
+
+var want=new URLSearchParams(location.search).get('se');
+if(want){ var f=SES.filter(function(s){return s.id.toLowerCase()===want.toLowerCase();})[0]; if(f) current.se=f; }
+newProblem();
+
+})();
+</script>
+</body>
+</html>
