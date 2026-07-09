@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A.6 Studio — Writing &amp; Representing Quadratics</title>
+<style>
+  :root{
+    --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
+    --blue:#2f6cff; --teal:#36c2a0; --gold:#f4c431; --danger:#e5484d; --vio:#8e78ff;
+    --accent:#8e78ff; --shadow:0 8px 20px rgba(25,40,80,.06);   /* A.6 = quadratic section */
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100dvh}
+  body{margin:0; background:var(--bg); color:var(--ink); overflow:auto;
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
+  .wrap{width:min(1240px,100%); margin:14px auto; padding:0 12px}
+  .hdr{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow);
+    padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .back{font-weight:900; text-decoration:none; color:var(--blue); font-size:14px; padding:8px 12px;
+    border:1px solid var(--ui); border-radius:10px; background:#fff}
+  .hdr h1{margin:0; font-size:clamp(17px,2.6vw,22px); font-weight:900; flex:1; min-width:200px}
+  .hdr .eyebrow{display:block; font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900}
+  .pill{display:inline-block; padding:6px 12px; border-radius:999px; border:1px solid var(--ui);
+    background:#fff; font-weight:900; font-size:13px}
+  .pill b{color:var(--vio)}
+  .cols{display:grid; grid-template-columns:250px 1fr; gap:12px; align-items:start}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr} }
+  .rail{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:10px}
+  .rail .rh{font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900; padding:4px 8px 8px}
+  .stones{display:flex; flex-direction:column; position:relative}
+  .stones::before{content:""; position:absolute; left:24px; top:18px; bottom:18px; border-left:3px dotted #d5deff}
+  .stone{display:flex; align-items:center; gap:10px; padding:6px 8px; border:0; background:none;
+    border-radius:12px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink); width:100%}
+  .stone:hover{background:#f5f8ff}
+  .stone.active{background:#f2eeff; outline:2px solid #d3c9ff}
+  .stone .dot{width:34px; height:34px; flex:none; border-radius:50%; border:3px solid #d5deff; background:#fff;
+    z-index:1; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; color:var(--muted)}
+  .stone.started .dot{border-color:var(--accent); color:var(--ink)}
+  .stone.mastered .dot{background:var(--accent); border-color:var(--accent); color:#fff}
+  .stone .nm{font-weight:900; font-size:13px; line-height:1.2}
+  .stone .mini{height:5px; border-radius:999px; background:#edf2ff; margin-top:4px; overflow:hidden; width:110px}
+  .stone .mini i{display:block; height:100%; background:var(--accent); border-radius:999px}
+  @media (max-width:900px){
+    .rail{position:sticky; top:8px; z-index:5}
+    .stones{flex-direction:row; overflow-x:auto; gap:6px; padding-bottom:4px}
+    .stones::before{display:none}
+    .stone{flex:none; flex-direction:column; gap:4px; padding:6px; width:auto; min-width:74px}
+    .stone .mini{width:56px}
+    .stone .nm{font-size:11px; text-align:center; max-width:90px}
+  }
+  .main{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:16px}
+  .seHead{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;
+    border-bottom:1px dashed #e5e7eb; padding-bottom:10px; margin-bottom:12px}
+  .seHead h2{margin:0; font-size:19px; font-weight:900}
+  .seHead .blurb{color:var(--muted); font-weight:700; font-size:13px; margin-top:3px; max-width:640px}
+  .seTag{font-size:12px; font-weight:900; color:#4a2fae; background:#f4f1ff; border:1px solid var(--ui);
+    border-radius:999px; padding:6px 14px; white-space:nowrap}
+  .prompt{font-size:clamp(17px,2.4vw,21px); font-weight:800; line-height:1.55; margin:6px 0 14px}
+  .prompt .given{background:#f7f5ff; border:1px solid #e7e2ff; border-radius:12px; padding:8px 12px;
+    display:inline-block; margin-top:4px; font-size:clamp(18px,2.6vw,23px)}
+  .vfrac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle;
+    font-size:.72em; line-height:1.05; font-weight:900; margin:0 2px}
+  .vfrac span:first-child{border-bottom:2.5px solid currentColor; padding:0 4px}
+  .vfrac span:last-child{padding:0 4px}
+  sup{font-size:.7em}
+  table.ttab{border-collapse:collapse; margin-top:8px; font-size:clamp(16px,2.4vw,20px)}
+  .ttab th,.ttab td{border:2px solid #d9e2ff; padding:6px 16px; text-align:center; font-weight:900; min-width:54px}
+  .ttab th{background:#f1f6ff; color:#133a9a}
+  .answer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(20px,3.4vw,28px); font-weight:900; margin:10px 0 6px}
+  .answer .lbl{font-size:15px; color:var(--muted); width:100%; font-weight:900}
+  .in{height:56px; width:96px; border:2px solid var(--ui); border-radius:12px; text-align:center;
+    font-weight:900; font-size:22px; font-family:inherit; color:var(--ink)}
+  .in.wide{width:120px}
+  .in:focus-visible, .sel:focus-visible, button:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
+  .sel{height:56px; border:2px solid var(--ui); border-radius:12px; font-weight:900; font-size:20px;
+    font-family:inherit; color:var(--ink); background:#fff; padding:0 8px}
+  .sysRow{display:flex; align-items:center; gap:8px; margin:6px 0}
+  .radio{display:flex; gap:16px; flex-wrap:wrap; font-size:16px; margin-top:6px}
+  .radio label{display:flex; align-items:center; gap:6px; font-weight:800; cursor:pointer}
+  .radio input{accent-color:var(--vio); width:18px; height:18px}
+  .mc{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
+  @media (max-width:720px){ .mc{grid-template-columns:1fr} }
+  .mc button{border:2px solid var(--ui); background:#fff; border-radius:14px; padding:12px 14px;
+    font-family:inherit; font-weight:800; font-size:15.5px; text-align:left; cursor:pointer; color:var(--ink); line-height:1.5}
+  .mc button.sel{border-color:var(--vio); background:#f4f1ff}
+  .mc button:disabled{cursor:default; opacity:.85}
+  .mc button.right{border-color:#7de0a6; background:#eafff2}
+  .mc button.wrong{border-color:#ffb3b3; background:#fff3f3}
+  .btnRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center}
+  .btn{height:46px; border-radius:12px; border:1px solid var(--ui); background:#fff; font-weight:900;
+    padding:0 16px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink)}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.55; cursor:not-allowed}
+  .btn.check{border:0; background:linear-gradient(90deg,var(--vio),var(--blue)); color:#fff; min-width:110px}
+  .btn.hint{border:0; background:linear-gradient(90deg,#ffe6a8,#ffcf70); color:#081635}
+  .btn.steps{border:0; background:linear-gradient(90deg,#e3dcff,#c3b6ff); color:#081635}
+  .btn.next{background:#f7f5ff}
+  .fb{font-weight:900; font-size:17px; min-height:26px; margin-top:8px}
+  .fb.ok{color:#0b6b2f} .fb.bad{color:#a33232}
+  .note{background:#fff9d6; border:1px solid #ffe38a; color:#7a5a00; border-radius:12px; padding:10px 14px;
+    font-weight:800; font-size:14.5px; margin-top:10px; display:none; line-height:1.55}
+  .note.show{display:block}
+  .stepsBox{background:#f7f5ff; border:1px solid #e7e2ff; border-radius:12px; padding:12px 16px;
+    font-weight:800; font-size:15.5px; margin-top:10px; display:none; line-height:1.8}
+  .stepsBox.show{display:block}
+  .stepsBox .st{display:block; margin:2px 0}
+  .stepsBox .final{color:#4a2fae}
+  .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
+  .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden; flex-wrap:wrap}
+  .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
+    cursor:pointer; font-family:inherit; color:var(--ink)}
+  .drSeg button.active{background:#f4f1ff; color:#4a2fae}
+  .drTog button.active{background:#eafff7; color:#0c6d54}
+  .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <a class="back" href="../index.html">&larr; Portal</a>
+    <h1><span class="eyebrow">Section 2 &middot; Quadratic Functions</span>TEKS A.6 &middot; Writing &amp; Representing Quadratics</h1>
+    <span class="pill">This visit <b id="sesScore">0 / 0</b></span>
+  </div>
+  <div class="cols">
+    <div class="rail">
+      <div class="rh">Student Expectations</div>
+      <div class="stones" id="stones"></div>
+    </div>
+    <div class="main">
+      <div class="seHead">
+        <div>
+          <h2 id="seTitle"></h2>
+          <div class="blurb" id="seBlurb"></div>
+        </div>
+        <span class="seTag" id="seTag"></span>
+      </div>
+      <div class="prompt" id="prompt"></div>
+      <div id="answerArea"></div>
+      <div class="btnRow">
+        <button class="btn check" id="checkBtn">Check</button>
+        <button class="btn hint" id="hintBtn">Hint</button>
+        <button class="btn steps" id="stepsBtn">Show steps</button>
+        <button class="btn next" id="nextBtn">New problem</button>
+      </div>
+      <div class="fb" id="fb" aria-live="polite"></div>
+      <div class="note" id="hintBox"></div>
+      <div class="stepsBox" id="stepsBox"></div>
+      <div class="kbdnote">Fractions are welcome in any box &mdash; type 3/4 or &minus;3/4. Enter = check &middot; N = new problem.</div>
+    </div>
+  </div>
+</div>
+
+<script src="../portal.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* =====================================================================
+   PURE MATH LIBRARY (from Build Guide, Section 3)
+   ===================================================================== */
+function ri(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function rc(arr){ return arr[ri(0,arr.length-1)]; }
+function rnz(a,b){ var x=0; while(x===0) x=ri(a,b); return x; }
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=ri(0,i); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
+function R(n,d){ d=(d===undefined)?1:d; if(d<0){n=-n;d=-d;} var g=gcd(n,d); return {n:n/g, d:d/g}; }
+function radd(a,b){ return R(a.n*b.d + b.n*a.d, a.d*b.d); }
+function rsub(a,b){ return R(a.n*b.d - b.n*a.d, a.d*b.d); }
+function rmul(a,b){ return R(a.n*b.n, a.d*b.d); }
+function rdiv(a,b){ return R(a.n*b.d, a.d*b.n); }
+function rneg(a){ return R(-a.n, a.d); }
+function req(a,b){ return a.n*b.d === b.n*a.d; }
+function rzero(a){ return a.n===0; }
+function rint(x){ return R(x,1); }
+
+function parseRat(s){
+  if(s===null || s===undefined) return null;
+  s = String(s).trim().replace(/\u2212/g,'-').replace(/\s+/g,'');
+  if(!s || !/\d/.test(s)) return null;
+  var m = s.match(/^(-?\d+)\/(-?\d+)$/);
+  if(m){ var d=parseInt(m[2],10); if(!d) return null; return R(parseInt(m[1],10), d); }
+  if(/^-?\d+$/.test(s)) return R(parseInt(s,10),1);
+  m = s.match(/^(-)?(\d*)\.(\d+)$/);
+  if(m){ var neg=!!m[1], ip=m[2]||'0', fp=m[3];
+    var den=Math.pow(10,fp.length), num=parseInt(ip,10)*den + parseInt(fp,10);
+    return R(neg?-num:num, den); }
+  return null;
+}
+
+var MIN='\u2212';
+function fmtInt(x){ return x<0 ? MIN+Math.abs(x) : String(x); }
+function ratHTML(r){
+  if(r.d===1) return fmtInt(r.n);
+  var s = r.n<0 ? MIN : '';
+  return s+'<span class="vfrac"><span>'+Math.abs(r.n)+'</span><span>'+r.d+'</span></span>';
+}
+function ratText(r){ return r.d===1 ? String(r.n) : r.n+'/'+r.d; }
+/* signed term helper for step text: returns " + 5" or " \u2212 3" */
+function sgn(x){ return x<0 ? ' '+MIN+' '+Math.abs(x) : ' + '+x; }
+
+/* =====================================================================
+   UI HELPERS (from Build Guide, Section 4)
+   ===================================================================== */
+function inBox(id, wide){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off" />'; }
+function seg(id,cur,opts){
+  var h='<div class="drSeg" id="'+id+'" role="tablist">';
+  opts.forEach(function(o){ h+='<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>'; });
+  return h+'</div>';
+}
+function segWrap(label,id,cur,opts){
+  return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+    '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">'+label+'</span>'+
+    seg(id,cur,opts)+'</div>';
+}
+function wireSeg(id,cur,cb){
+  var box=document.getElementById(id); if(!box) return;
+  Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+    if(btn.getAttribute('data-v')===cur) btn.classList.add('active');
+    btn.addEventListener('click',function(){
+      Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){b.classList.remove('active');});
+      btn.classList.add('active'); cb(btn.getAttribute('data-v'));
+    });
+  });
+}
+
+/* =====================================================================
+   GRAPH HELPER — signed-grid parabola (adapted from plot(), Section 6A)
+   ===================================================================== */
+function plotParab(o){
+  o=o||{};
+  var Rg=o.Rg||6, S=Math.round(288/(2*Rg)), W=2*Rg*S, H=2*Rg*S, i;
+  function X(x){ return (x+Rg)*S; }
+  function Y(y){ return (Rg-y)*S; }
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="300" height="300" class="grid" xmlns="http://www.w3.org/2000/svg">';
+  for(i=-Rg;i<=Rg;i++){
+    s+='<line x1="'+X(i)+'" y1="0" x2="'+X(i)+'" y2="'+H+'" stroke="#e9eefb" stroke-width="1"/>';
+    s+='<line x1="0" y1="'+Y(i)+'" x2="'+W+'" y2="'+Y(i)+'" stroke="#e9eefb" stroke-width="1"/>';
+  }
+  s+='<line x1="'+X(0)+'" y1="0" x2="'+X(0)+'" y2="'+H+'" stroke="#9db4e8" stroke-width="2"/>';
+  s+='<line x1="0" y1="'+Y(0)+'" x2="'+W+'" y2="'+Y(0)+'" stroke="#9db4e8" stroke-width="2"/>';
+  for(i=-Rg;i<=Rg;i+=2){ if(i===0) continue;
+    s+='<text x="'+X(i)+'" y="'+(Y(0)+14)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="middle">'+i+'</text>';
+    s+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+4)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="end">'+i+'</text>';
+  }
+  /* sample the parabola y = a(x-h)^2 + k, breaking the polyline where it exits the grid */
+  var a=o.a, h=o.h, k=o.k, segs=[], cur=[], x, y;
+  for(x=-Rg; x<=Rg+1e-9; x+=0.1){
+    y=a*(x-h)*(x-h)+k;
+    if(y<=Rg+0.6 && y>=-Rg-0.6){ cur.push(X(x)+','+Y(Math.max(-Rg-0.6,Math.min(Rg+0.6,y)))); }
+    else { if(cur.length){ segs.push(cur.join(' ')); cur=[]; } }
+  }
+  if(cur.length) segs.push(cur.join(' '));
+  segs.forEach(function(pl){ s+='<polyline points="'+pl+'" fill="none" stroke="'+(o.color||'#8e78ff')+'" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>'; });
+  (o.points||[]).forEach(function(P){
+    s+='<circle cx="'+X(P.x)+'" cy="'+Y(P.y)+'" r="5.5" fill="'+(P.open?'#fff':(P.color||'#e5484d'))+'" stroke="'+(P.color||'#e5484d')+'" stroke-width="3"/>';
+    if(P.label) s+='<text x="'+(X(P.x)+9)+'" y="'+(Y(P.y)-8)+'" font-size="12" font-weight="900" fill="'+(P.color||'#e5484d')+'">'+P.label+'</text>';
+  });
+  (o.labels||[]).forEach(function(t,idx){
+    s+='<text x="'+(W-8)+'" y="'+(16+idx*16)+'" font-size="12" font-weight="900" fill="'+t.color+'" text-anchor="end">'+t.text+'</text>';
+  });
+  return s+'</svg>';
+}
+
+/* =====================================================================
+   QUADRATIC DISPLAY HELPERS (pretty-print forms; integer coeffs)
+   ===================================================================== */
+function xMinusH(h){
+  if(h===0) return 'x';
+  return h>0 ? ('x '+MIN+' '+h) : ('x + '+Math.abs(h));
+}
+function leadStr(a){ return a===1?'':(a===-1?MIN:fmtInt(a)); }
+function vertexFormHTML(a,h,k){
+  var s='f(x) = '+leadStr(a)+'('+xMinusH(h)+')<sup>2</sup>';
+  if(k>0) s+=' + '+k; else if(k<0) s+=' '+MIN+' '+Math.abs(k);
+  return s;
+}
+function standardFormHTML(a,b,c){
+  var s='f(x) = '+leadStr(a)+'x<sup>2</sup>';
+  if(b!==0) s += (b>0?' + ':' '+MIN+' ') + (Math.abs(b)===1?'':Math.abs(b)) + 'x';
+  if(c!==0) s += (c>0?' + ':' '+MIN+' ') + Math.abs(c);
+  return s;
+}
+function factoredFormHTML(a,r1,r2){
+  return 'f(x) = '+leadStr(a)+'('+xMinusH(r1)+')('+xMinusH(r2)+')';
+}
+
+/* small inline label for answer sections */
+function L(t){ return '<div style="font-size:14px;font-weight:900;color:var(--muted);margin:10px 0 4px">'+t+'</div>'; }
+function val(id){ var el=document.getElementById(id); return el?el.value:''; }
+
+/* =====================================================================
+   TODO ZONE 1 — per-SE generators / prompts / checkers / steps
+   ===================================================================== */
+
+/* ---------- A.6A : Domain & Range ---------- */
+var a6aMode='mix';
+function genA6A(){
+  var kind = a6aMode==='mix' ? rc(['vertex','standard','graph']) : a6aMode;
+  var a = rc([1,-1,2,-2]);
+  var h = ri(-4,4), k = ri(-5,5);
+  var b = -2*a*h, c = a*h*h + k;
+  return {kind:kind, a:a, h:h, k:k, b:b, c:c};
+}
+function promptA6A(p){
+  var body;
+  if(p.kind==='graph'){
+    body='The graph of a quadratic function is shown. State its <b>domain</b> and <b>range</b>.'+
+      plotParab({Rg:6, a:p.a, h:p.h, k:p.k, color:'#8e78ff',
+        points:[{x:p.h,y:p.k,color:'#e5484d',label:'vertex ('+fmtInt(p.h)+', '+fmtInt(p.k)+')'}]});
+  } else {
+    var eq = (p.kind==='vertex') ? vertexFormHTML(p.a,p.h,p.k) : standardFormHTML(p.a,p.b,p.c);
+    body='Consider the quadratic function below. State its <b>domain</b> and <b>range</b>.'+
+      '<div class="given">'+eq+'</div>';
+  }
+  return segWrap('SHOW','a6aSeg',a6aMode,[['mix','Mixed'],['vertex','Vertex form'],['standard','Standard form'],['graph','Graph']])+body;
+}
+function answerA6A(p){
+  var doms = shuffle([
+    {v:'all', t:'All real numbers'},
+    {v:'gx',  t:'x \u2265 '+fmtInt(p.h)},
+    {v:'lx',  t:'x \u2264 '+fmtInt(p.h)}
+  ]);
+  var domHTML='<div class="radio" id="a6a_dom">'+doms.map(function(o){
+    return '<label><input type="radio" name="a6a_dom" value="'+o.v+'"> '+o.t+'</label>';
+  }).join('')+'</div>';
+  var rangeHTML='<div class="answer"><span>y</span>'+
+    '<select class="sel" id="a6a_dir"><option value="">?</option><option value="ge">\u2265</option><option value="le">\u2264</option></select>'+
+    inBox('a6a_k')+'</div>';
+  return L('Domain')+domHTML+L('Range')+rangeHTML;
+}
+function readA6A(){
+  var dom=document.querySelector('input[name=a6a_dom]:checked');
+  var dir=val('a6a_dir');
+  var k=parseRat(val('a6a_k'));
+  if(!dom || !dir || !k) return null;
+  return {dom:dom.value, dir:dir, k:k};
+}
+function checkA6A(p,ans){
+  var okDom = ans.dom==='all';
+  var okDir = (p.a>0 && ans.dir==='ge') || (p.a<0 && ans.dir==='le');
+  var okK   = req(ans.k, rint(p.k));
+  return okDom && okDir && okK;
+}
+function stepsA6A(p){
+  var vtx='('+fmtInt(p.h)+', '+fmtInt(p.k)+')';
+  var s='<span class="st">1. Domain: a parabola stretches left and right forever, so every x-value works \u2192 all real numbers.</span>';
+  if(p.kind==='standard'){
+    s+='<span class="st">2. Find the vertex: x = '+MIN+'b/(2a) = '+MIN+'('+fmtInt(p.b)+') / (2\u00b7'+fmtInt(p.a)+') = '+fmtInt(p.h)+'.</span>';
+    s+='<span class="st">3. Vertex y-value: f('+fmtInt(p.h)+') = '+fmtInt(p.k)+', so the vertex is '+vtx+'.</span>';
+    s+='<span class="st">4. a = '+fmtInt(p.a)+' '+(p.a>0?'(opens up) \u2192 vertex is the minimum':'(opens down) \u2192 vertex is the maximum')+'.</span>';
+  } else {
+    s+='<span class="st">2. The vertex is '+vtx+'.</span>';
+    s+='<span class="st">3. a = '+fmtInt(p.a)+' '+(p.a>0?'(opens up) \u2192 vertex is the minimum':'(opens down) \u2192 vertex is the maximum')+'.</span>';
+  }
+  s+='<span class="st final">Domain: all real numbers &nbsp;&middot;&nbsp; Range: y '+(p.a>0?'\u2265':'\u2264')+' '+fmtInt(p.k)+'</span>';
+  return s;
+}
+function hintsA6A(p){
+  var h=['Domain first: can you substitute ANY number for x? What does that make the domain?'];
+  if(p.kind==='standard') h.push('Find the vertex before the range: x = '+MIN+'b/(2a), then compute the y-value.');
+  h.push('The parabola '+(p.a>0?'opens up, so the vertex is the LOWEST point':'opens down, so the vertex is the HIGHEST point')+'.');
+  h.push('Range is y '+(p.a>0?'\u2265':'\u2264')+' the vertex y-value.');
+  return h;
+}
+
+/* ---------- A.6B : Write vertex form / convert to standard form ---------- */
+var a6bMode='mix';
+function genA6B(){
+  var kind = a6bMode==='mix' ? rc(['write','expand']) : a6bMode;
+  var a = rc([1,-1,2,-2,3,-3]);
+  var k = ri(-5,5);
+  if(kind==='write'){
+    var h = ri(-4,4);
+    var d = rnz(-3,3);
+    var px = h + d, py = a*d*d + k;
+    return {kind:kind, a:a, h:h, k:k, px:px, py:py};
+  } else {
+    var h2 = rnz(-4,4);                     /* nonzero h keeps the expansion tidy */
+    var b = -2*a*h2, c = a*h2*h2 + k;
+    return {kind:kind, a:a, h:h2, k:k, b:b, c:c};
+  }
+}
+function promptA6B(p){
+  var body;
+  if(p.kind==='write'){
+    body='A parabola has vertex <span class="given">('+fmtInt(p.h)+', '+fmtInt(p.k)+')</span> and passes through the point '+
+      '<span class="given">('+fmtInt(p.px)+', '+fmtInt(p.py)+')</span>.<br>'+
+      'Write its equation in <b>vertex form</b> &nbsp;f(x) = a(x '+MIN+' h)<sup>2</sup> + k.';
+  } else {
+    body='Rewrite the function below in <b>standard form</b> &nbsp;f(x) = ax<sup>2</sup> + bx + c.'+
+      '<div class="given">'+vertexFormHTML(p.a,p.h,p.k)+'</div>';
+  }
+  return segWrap('TASK','a6bSeg',a6bMode,[['mix','Mixed'],['write','Write vertex form'],['expand','Convert to standard']])+body;
+}
+function answerA6B(p){
+  if(p.kind==='write'){
+    return '<div class="answer"><span class="lbl">f(x) = a(x '+MIN+' h)<sup>2</sup> + k</span>'+
+      '<span>a =</span>'+inBox('a6b_a')+'<span>h =</span>'+inBox('a6b_h')+'<span>k =</span>'+inBox('a6b_k')+'</div>';
+  }
+  return '<div class="answer"><span class="lbl">f(x) = ax<sup>2</sup> + bx + c</span>'+
+    '<span>a =</span>'+inBox('a6b_ea')+'<span>b =</span>'+inBox('a6b_eb')+'<span>c =</span>'+inBox('a6b_ec')+'</div>';
+}
+function readA6B(p){
+  if(p.kind==='write'){
+    var a=parseRat(val('a6b_a')), h=parseRat(val('a6b_h')), k=parseRat(val('a6b_k'));
+    return (a&&h&&k)?{a:a,h:h,k:k}:null;
+  }
+  var ea=parseRat(val('a6b_ea')), eb=parseRat(val('a6b_eb')), ec=parseRat(val('a6b_ec'));
+  return (ea&&eb&&ec)?{a:ea,b:eb,c:ec}:null;
+}
+function checkA6B(p,ans){
+  if(p.kind==='write'){
+    return req(ans.a,rint(p.a)) && req(ans.h,rint(p.h)) && req(ans.k,rint(p.k));
+  }
+  return req(ans.a,rint(p.a)) && req(ans.b,rint(p.b)) && req(ans.c,rint(p.c));
+}
+function stepsA6B(p){
+  if(p.kind==='write'){
+    var d=p.px-p.h;
+    var s='<span class="st">1. The vertex ('+fmtInt(p.h)+', '+fmtInt(p.k)+') gives h = '+fmtInt(p.h)+' and k = '+fmtInt(p.k)+'.</span>';
+    s+='<span class="st">2. Substitute the point ('+fmtInt(p.px)+', '+fmtInt(p.py)+'):  '+fmtInt(p.py)+' = a('+fmtInt(p.px)+' '+MIN+' '+fmtInt(p.h)+')<sup>2</sup> + '+fmtInt(p.k)+'.</span>';
+    s+='<span class="st">3. Simplify: '+fmtInt(p.py)+' = a('+fmtInt(d)+')<sup>2</sup> + '+fmtInt(p.k)+' = '+(d*d)+'a + '+fmtInt(p.k)+', so a = '+fmtInt(p.a)+'.</span>';
+    s+='<span class="st final">'+vertexFormHTML(p.a,p.h,p.k)+'</span>';
+    return s;
+  }
+  var m2h=-2*p.h, hh=p.h*p.h;
+  var s2='<span class="st">1. Expand the square: ('+xMinusH(p.h)+')<sup>2</sup> = x<sup>2</sup>'+sgn(m2h)+'x + '+hh+'.</span>';
+  s2+='<span class="st">2. Multiply every term by a = '+fmtInt(p.a)+':  x<sup>2</sup> term \u2192 '+leadStr(p.a)+'x<sup>2</sup>,  x term \u2192 '+fmtInt(p.b)+'x,  constant \u2192 '+fmtInt(p.a*hh)+'.</span>';
+  s2+='<span class="st">3. Add k = '+fmtInt(p.k)+' to the constant: '+fmtInt(p.a*hh)+sgn(p.k)+' = '+fmtInt(p.c)+'.</span>';
+  s2+='<span class="st final">'+standardFormHTML(p.a,p.b,p.c)+'</span>';
+  return s2;
+}
+function hintsA6B(p){
+  if(p.kind==='write'){
+    return ['The vertex (h, k) drops straight into f(x) = a(x '+MIN+' h)<sup>2</sup> + k.',
+            'Substitute the extra point for x and f(x), then solve for a.',
+            'a = (y '+MIN+' k) / (x '+MIN+' h)<sup>2</sup>.'];
+  }
+  return ['Start by expanding (x '+MIN+' h)<sup>2</sup> = x<sup>2</sup> '+MIN+' 2hx + h<sup>2</sup>.',
+          'Distribute a to every term, then add k to the constant.',
+          'b = '+MIN+'2ah  and  c = ah<sup>2</sup> + k.'];
+}
+
+/* ---------- A.6C : Write a quadratic from its solutions / graph ---------- */
+var a6cMode='mix';
+function genA6C(){
+  var form = a6cMode==='mix' ? rc(['factored','standard']) : a6cMode;
+  var rep = rc(['solutions','graph']);
+  var a, r1, r2;
+  if(rep==='graph'){
+    a = rc([1,-1]);
+    do { r1=ri(-4,4); r2=ri(-4,4); } while(r1===r2 || Math.abs(r1-r2)>4 || Math.abs(r1+r2)>4);
+  } else {
+    a = rc([1,1,1,-1,2]);
+    do { r1=ri(-5,5); r2=ri(-5,5); } while(r1===r2);
+  }
+  if(r1>r2){ var t=r1; r1=r2; r2=t; }
+  var b=-a*(r1+r2), c=a*r1*r2;
+  return {form:form, rep:rep, a:a, r1:r1, r2:r2, b:b, c:c};
+}
+function promptA6C(p){
+  var body;
+  if(p.rep==='graph'){
+    body='The graph below shows a quadratic function with its x-intercepts marked. '+
+      'Its leading coefficient has size 1 &mdash; use the way it opens to decide the sign of a. Write the function.'+
+      plotParab({Rg:6, a:p.a, h:(p.r1+p.r2)/2, k:-p.a*Math.pow((p.r1-p.r2)/2,2), color:'#8e78ff',
+        points:[{x:p.r1,y:0,label:'('+fmtInt(p.r1)+', 0)'},{x:p.r2,y:0,label:'('+fmtInt(p.r2)+', 0)'}]});
+  } else {
+    body='Write a quadratic function whose solutions (zeros) are '+
+      '<span class="given">x = '+fmtInt(p.r1)+'</span> and <span class="given">x = '+fmtInt(p.r2)+'</span>, '+
+      'with leading coefficient <span class="given">a = '+fmtInt(p.a)+'</span>.';
+  }
+  return segWrap('WRITE AS','a6cSeg',a6cMode,[['mix','Mixed'],['factored','Factored form'],['standard','Standard form']])+body;
+}
+function answerA6C(p){
+  if(p.form==='factored'){
+    return '<div class="answer"><span>f(x) =</span>'+inBox('a6c_a')+
+      '<span>( x '+MIN+'</span>'+inBox('a6c_r1')+'<span>)( x '+MIN+'</span>'+inBox('a6c_r2')+'<span>)</span></div>';
+  }
+  return '<div class="answer"><span>f(x) =</span>'+inBox('a6c_a')+
+    '<span>x<sup>2</sup> +</span>'+inBox('a6c_b')+'<span>x +</span>'+inBox('a6c_c')+'</div>';
+}
+function readA6C(p){
+  if(p.form==='factored'){
+    var a=parseRat(val('a6c_a')), r1=parseRat(val('a6c_r1')), r2=parseRat(val('a6c_r2'));
+    return (a&&r1&&r2)?{a:a,r1:r1,r2:r2}:null;
+  }
+  var a2=parseRat(val('a6c_a')), b=parseRat(val('a6c_b')), c=parseRat(val('a6c_c'));
+  return (a2&&b&&c)?{a:a2,b:b,c:c}:null;
+}
+function checkA6C(p,ans){
+  if(p.form==='factored'){
+    var okA=req(ans.a,rint(p.a));
+    var okR=(req(ans.r1,rint(p.r1))&&req(ans.r2,rint(p.r2))) ||
+            (req(ans.r1,rint(p.r2))&&req(ans.r2,rint(p.r1)));
+    return okA && okR;
+  }
+  return req(ans.a,rint(p.a)) && req(ans.b,rint(p.b)) && req(ans.c,rint(p.c));
+}
+function stepsA6C(p){
+  var s='<span class="st">1. Each solution becomes a factor:  x = '+fmtInt(p.r1)+' \u2192 ('+xMinusH(p.r1)+'),  x = '+fmtInt(p.r2)+' \u2192 ('+xMinusH(p.r2)+').</span>';
+  s+='<span class="st">2. Attach the leading coefficient a = '+fmtInt(p.a)+':  '+factoredFormHTML(p.a,p.r1,p.r2)+'.</span>';
+  if(p.form==='standard'){
+    s+='<span class="st">3. Multiply out:  b = '+MIN+'a(r\u2081+r\u2082) = '+fmtInt(p.b)+',  c = a\u00b7r\u2081\u00b7r\u2082 = '+fmtInt(p.c)+'.</span>';
+    s+='<span class="st final">'+standardFormHTML(p.a,p.b,p.c)+'</span>';
+  } else {
+    s+='<span class="st final">'+factoredFormHTML(p.a,p.r1,p.r2)+'</span>';
+  }
+  return s;
+}
+function hintsA6C(p){
+  var h=['A solution x = r means (x '+MIN+' r) is a factor. Watch the sign: x = '+MIN+'3 gives (x + 3).'];
+  if(p.rep==='graph') h.push('Read the two x-intercepts off the graph \u2014 those are the solutions. Opens up \u2192 a is positive; opens down \u2192 a is negative.');
+  h.push('Multiply the two factors together, then multiply by the leading coefficient a.');
+  h.push('For standard form: b = '+MIN+'a(r\u2081 + r\u2082) and c = a\u00b7r\u2081\u00b7r\u2082.');
+  return h;
+}
+
+/* =====================================================================
+   TODO ZONE 2 — the SES[] registry (Build Guide, Section 5)
+   ===================================================================== */
+var SES=[
+  { id:'A.6A', letter:'A', short:'Domain & Range',
+    title:'Domain and Range of Quadratic Functions',
+    blurb:'Determine the domain and range of quadratic functions and represent them using inequalities.',
+    gen:genA6A, prompt:promptA6A, answerHTML:answerA6A, read:function(){return readA6A();},
+    check:checkA6A, steps:stepsA6A, hints:hintsA6A,
+    emptyMsg:'Choose a domain, pick \u2265 or \u2264 for the range, and enter the vertex y-value.',
+    init:function(){ wireSeg('a6aSeg', a6aMode, function(v){ a6aMode=v; newProblem(); }); }
+  },
+  { id:'A.6B', letter:'B', short:'Write / Convert',
+    title:'Write Quadratics in Vertex &amp; Standard Form',
+    blurb:'Write a quadratic in vertex form f(x) = a(x \u2212 h)\u00b2 + k from a vertex and a point, and rewrite vertex form as standard form.',
+    gen:genA6B, prompt:promptA6B, answerHTML:answerA6B, read:function(p){return readA6B(p);},
+    check:checkA6B, steps:stepsA6B, hints:hintsA6B,
+    emptyMsg:'Fill in every box \u2014 fractions like 3/4 are fine.',
+    init:function(){ wireSeg('a6bSeg', a6bMode, function(v){ a6bMode=v; newProblem(); }); }
+  },
+  { id:'A.6C', letter:'C', short:'From Solutions',
+    title:'Write Quadratics from Solutions &amp; Graphs',
+    blurb:'Write a quadratic function given its real solutions or the graph of its related equation.',
+    gen:genA6C, prompt:promptA6C, answerHTML:answerA6C, read:function(p){return readA6C(p);},
+    check:checkA6C, steps:stepsA6C, hints:hintsA6C,
+    emptyMsg:'Fill in every box \u2014 fractions like 3/4 are fine.',
+    init:function(){ wireSeg('a6cSeg', a6cMode, function(v){ a6cMode=v; newProblem(); }); }
+  }
+];
+
+/* =====================================================================
+   THE FIXED CONTROLLER (Build Guide, Section 7) — do not edit
+   ===================================================================== */
+var current={se:SES[0], p:null, done:false, recorded:false, hintIdx:0, hintLogged:false};
+var session={a:0,c:0};
+var $=function(s){return document.querySelector(s);};
+
+function stoneStats(id){
+  return (window.Portal && Portal.skill) ? Portal.skill(id) : {progress:0, attempts:0, mastered:false};
+}
+function renderRail(){
+  var host=$('#stones'); host.innerHTML='';
+  SES.forEach(function(se){
+    var st=stoneStats(se.id);
+    var cls='stone'+(se===current.se?' active':'')+(st.mastered?' mastered':st.attempts?' started':'');
+    var b=document.createElement('button');
+    b.type='button'; b.className=cls;
+    b.innerHTML='<span class="dot">'+(st.mastered?'\u2713':se.letter)+'</span>'+
+      '<span><span class="nm">'+se.id+' \u00b7 '+se.short+'</span>'+
+      '<span class="mini"><i style="width:'+Math.round(st.progress*100)+'%"></i></span></span>';
+    b.addEventListener('click', function(){ current.se=se; newProblem(); });
+    host.appendChild(b);
+  });
+}
+function newProblem(){
+  var se=current.se;
+  current.p=se.gen(); current.done=false; current.recorded=false; current.hintIdx=0; current.hintLogged=false;
+  $('#seTitle').innerHTML=se.title;
+  $('#seBlurb').innerHTML=se.blurb;
+  $('#seTag').textContent='TEKS '+se.id;
+  $('#prompt').innerHTML=se.prompt(current.p);
+  $('#answerArea').innerHTML=se.answerHTML(current.p);
+  $('#fb').textContent=''; $('#fb').className='fb';
+  $('#hintBox').className='note'; $('#hintBox').innerHTML='';
+  $('#stepsBox').className='stepsBox'; $('#stepsBox').innerHTML='';
+  $('#checkBtn').disabled=false;
+  if(se.init) se.init(current.p);
+  renderRail();
+  var first=$('#answerArea input'); if(first) first.focus();
+}
+function onCheck(){
+  if(current.done) return;
+  var se=current.se, ans=se.read(current.p);
+  if(!ans){
+    $('#fb').className='fb bad';
+    $('#fb').textContent=se.emptyMsg||'Fill in every box \u2014 fractions like 3/4 are fine.';
+    return;
+  }
+  var ok=se.check(current.p, ans);
+  if(se.allowRecheck){ if(ok) current.done=true; }
+  else { current.done=true; $('#checkBtn').disabled=true; if(se.reveal) se.reveal(current.p); }
+  if(!current.recorded){
+    current.recorded=true;
+    session.a++; if(ok) session.c++;
+    $('#sesScore').textContent=session.c+' / '+session.a;
+    if(window.Portal && Portal.record) Portal.record(se.id, ok);
+  }
+  $('#fb').className='fb '+(ok?'ok':'bad');
+  $('#fb').textContent= ok?'Correct \u2713'
+    : (se.allowRecheck?'Not quite \u2717 \u2014 read the tips, adjust, and check again.'
+                      :'Not quite \u2717 \u2014 open the steps to see the path.');
+  renderRail();
+}
+function onHint(){
+  var hints=current.se.hints(current.p);
+  var h=hints[Math.min(current.hintIdx, hints.length-1)];
+  current.hintIdx++;
+  var box=$('#hintBox'); box.classList.add('show');
+  box.innerHTML += (box.innerHTML?'<br>':'')+'\u2022 '+h;
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+function onSteps(){
+  var box=$('#stepsBox'); box.classList.add('show');
+  box.innerHTML=current.se.steps(current.p);
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+$('#checkBtn').addEventListener('click', onCheck);
+$('#hintBtn').addEventListener('click', onHint);
+$('#stepsBtn').addEventListener('click', onSteps);
+$('#nextBtn').addEventListener('click', newProblem);
+window.addEventListener('keydown', function(e){
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(e.key==='Enter' && tag!=='select'){ e.preventDefault(); onCheck(); }
+  if((e.key==='n'||e.key==='N') && tag!=='input'){ newProblem(); }
+});
+
+/* deep link: teks-a6.html?se=A.6B */
+var want=new URLSearchParams(location.search).get('se');
+if(want){ var f=SES.filter(function(s){return s.id.toLowerCase()===want.toLowerCase();})[0]; if(f) current.se=f; }
+newProblem();
+
+})();
+</script>
+</body>
+</html>

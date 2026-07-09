@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A.8 Studio — Solving &amp; Modeling Quadratics</title>
+<style>
+  :root{
+    --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
+    --blue:#2f6cff; --teal:#36c2a0; --gold:#f4c431; --danger:#e5484d; --vio:#8e78ff;
+    --accent:#8e78ff; --shadow:0 8px 20px rgba(25,40,80,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100dvh}
+  body{margin:0; background:var(--bg); color:var(--ink); overflow:auto;
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
+  .wrap{width:min(1240px,100%); margin:14px auto; padding:0 12px}
+  .hdr{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow);
+    padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .back{font-weight:900; text-decoration:none; color:var(--blue); font-size:14px; padding:8px 12px;
+    border:1px solid var(--ui); border-radius:10px; background:#fff}
+  .hdr h1{margin:0; font-size:clamp(17px,2.6vw,22px); font-weight:900; flex:1; min-width:200px}
+  .hdr .eyebrow{display:block; font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900}
+  .pill{display:inline-block; padding:6px 12px; border-radius:999px; border:1px solid var(--ui);
+    background:#fff; font-weight:900; font-size:13px}
+  .pill b{color:var(--blue)}
+  .cols{display:grid; grid-template-columns:250px 1fr; gap:12px; align-items:start}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr} }
+  .rail{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:10px}
+  .rail .rh{font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900; padding:4px 8px 8px}
+  .stones{display:flex; flex-direction:column; position:relative}
+  .stones::before{content:""; position:absolute; left:24px; top:18px; bottom:18px; border-left:3px dotted #d5deff}
+  .stone{display:flex; align-items:center; gap:10px; padding:6px 8px; border:0; background:none;
+    border-radius:12px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink); width:100%}
+  .stone:hover{background:#f5f8ff}
+  .stone.active{background:#eef4ff; outline:2px solid #bcd2ff}
+  .stone .dot{width:34px; height:34px; flex:none; border-radius:50%; border:3px solid #d5deff; background:#fff;
+    z-index:1; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; color:var(--muted)}
+  .stone.started .dot{border-color:var(--accent); color:var(--ink)}
+  .stone.mastered .dot{background:var(--accent); border-color:var(--accent); color:#fff}
+  .stone .nm{font-weight:900; font-size:13px; line-height:1.2}
+  .stone .mini{height:5px; border-radius:999px; background:#edf2ff; margin-top:4px; overflow:hidden; width:110px}
+  .stone .mini i{display:block; height:100%; background:var(--accent); border-radius:999px}
+  @media (max-width:900px){
+    .rail{position:sticky; top:8px; z-index:5}
+    .stones{flex-direction:row; overflow-x:auto; gap:6px; padding-bottom:4px}
+    .stones::before{display:none}
+    .stone{flex:none; flex-direction:column; gap:4px; padding:6px; width:auto; min-width:74px}
+    .stone .mini{width:56px}
+    .stone .nm{font-size:11px; text-align:center; max-width:90px}
+  }
+  .main{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:16px}
+  .seHead{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;
+    border-bottom:1px dashed #e5e7eb; padding-bottom:10px; margin-bottom:12px}
+  .seHead h2{margin:0; font-size:19px; font-weight:900}
+  .seHead .blurb{color:var(--muted); font-weight:700; font-size:13px; margin-top:3px; max-width:640px}
+  .seTag{font-size:12px; font-weight:900; color:#133a9a; background:#f1f6ff; border:1px solid var(--ui);
+    border-radius:999px; padding:6px 14px; white-space:nowrap}
+  .prompt{font-size:clamp(17px,2.4vw,21px); font-weight:800; line-height:1.55; margin:6px 0 14px}
+  .prompt .given{background:#f6f9ff; border:1px solid #e7edff; border-radius:12px; padding:10px 14px;
+    display:inline-block; margin-top:8px; font-size:clamp(19px,3vw,26px)}
+  .vfrac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle;
+    font-size:.72em; line-height:1.05; font-weight:900; margin:0 2px}
+  .vfrac span:first-child{border-bottom:2.5px solid currentColor; padding:0 4px}
+  .vfrac span:last-child{padding:0 4px}
+  table.ttab{border-collapse:collapse; margin-top:8px; font-size:clamp(16px,2.4vw,20px)}
+  .ttab th,.ttab td{border:2px solid #d9e2ff; padding:6px 16px; text-align:center; font-weight:900; min-width:54px}
+  .ttab th{background:#f1f6ff; color:#133a9a}
+  .answer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(20px,3.4vw,28px); font-weight:900; margin:10px 0 6px}
+  .answer .lbl{font-size:15px; color:var(--muted); width:100%; font-weight:900}
+  .in{height:56px; width:96px; border:2px solid var(--ui); border-radius:12px; text-align:center;
+    font-weight:900; font-size:22px; font-family:inherit; color:var(--ink)}
+  .in.wide{width:120px}
+  .in:focus-visible, .sel:focus-visible, button:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
+  .sel{height:56px; border:2px solid var(--ui); border-radius:12px; font-weight:900; font-size:20px;
+    font-family:inherit; color:var(--ink); background:#fff; padding:0 8px}
+  .sysRow{display:flex; align-items:center; gap:8px; margin:6px 0}
+  .radio{display:flex; gap:16px; flex-wrap:wrap; font-size:16px; margin-top:6px}
+  .radio label{display:flex; align-items:center; gap:6px; font-weight:800; cursor:pointer}
+  .radio input{accent-color:var(--blue); width:18px; height:18px}
+  .mc{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
+  @media (max-width:720px){ .mc{grid-template-columns:1fr} }
+  .mc button{border:2px solid var(--ui); background:#fff; border-radius:14px; padding:12px 14px;
+    font-family:inherit; font-weight:800; font-size:15.5px; text-align:left; cursor:pointer; color:var(--ink); line-height:1.5}
+  .mc button.sel{border-color:var(--blue); background:#f1f6ff}
+  .mc button:disabled{cursor:default; opacity:.85}
+  .mc button.right{border-color:#7de0a6; background:#eafff2}
+  .mc button.wrong{border-color:#ffb3b3; background:#fff3f3}
+  .btnRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center}
+  .btn{height:46px; border-radius:12px; border:1px solid var(--ui); background:#fff; font-weight:900;
+    padding:0 16px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink)}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.55; cursor:not-allowed}
+  .btn.check{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635; min-width:110px}
+  .btn.hint{border:0; background:linear-gradient(90deg,#ffe6a8,#ffcf70); color:#081635}
+  .btn.steps{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
+  .btn.next{background:#f6f9ff}
+  .fb{font-weight:900; font-size:17px; min-height:26px; margin-top:8px}
+  .fb.ok{color:#0b6b2f} .fb.bad{color:#a33232}
+  .note{background:#fff9d6; border:1px solid #ffe38a; color:#7a5a00; border-radius:12px; padding:10px 14px;
+    font-weight:800; font-size:14.5px; margin-top:10px; display:none; line-height:1.55}
+  .note.show{display:block}
+  .stepsBox{background:#f6f9ff; border:1px solid #e7edff; border-radius:12px; padding:12px 16px;
+    font-weight:800; font-size:15.5px; margin-top:10px; display:none; line-height:1.8}
+  .stepsBox.show{display:block}
+  .stepsBox .st{display:block; margin:2px 0}
+  .stepsBox .final{color:#133a9a}
+  .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
+  .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
+  .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
+    cursor:pointer; font-family:inherit; color:var(--ink)}
+  .drSeg button.active{background:#f1f6ff; color:#133a9a}
+  .drTog button.active{background:#eafff7; color:#0c6d54}
+  .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <a class="back" href="../index.html">&larr; Portal</a>
+    <h1><span class="eyebrow">Section 2 &middot; Quadratic Functions</span>TEKS A.8 &middot; Solving &amp; Modeling Quadratics</h1>
+    <span class="pill">This visit <b id="sesScore">0 / 0</b></span>
+  </div>
+  <div class="cols">
+    <div class="rail">
+      <div class="rh">Student Expectations</div>
+      <div class="stones" id="stones"></div>
+    </div>
+    <div class="main">
+      <div class="seHead">
+        <div>
+          <h2 id="seTitle"></h2>
+          <div class="blurb" id="seBlurb"></div>
+        </div>
+        <span class="seTag" id="seTag"></span>
+      </div>
+      <div class="prompt" id="prompt"></div>
+      <div id="answerArea"></div>
+      <div class="btnRow">
+        <button class="btn check" id="checkBtn">Check</button>
+        <button class="btn hint" id="hintBtn">Hint</button>
+        <button class="btn steps" id="stepsBtn">Show steps</button>
+        <button class="btn next" id="nextBtn">New problem</button>
+      </div>
+      <div class="fb" id="fb" aria-live="polite"></div>
+      <div class="note" id="hintBox"></div>
+      <div class="stepsBox" id="stepsBox"></div>
+      <div class="kbdnote">Fractions are welcome in any box &mdash; type 3/4 or &minus;3/4. Enter = check &middot; N = new problem.</div>
+    </div>
+  </div>
+</div>
+
+<script src="../portal.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ===== PURE MATH LIBRARY ===== */
+function ri(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function rc(arr){ return arr[ri(0,arr.length-1)]; }
+function rnz(a,b){ var x=0; while(x===0) x=ri(a,b); return x; }
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
+function R(n,d){ d=(d===undefined)?1:d; if(d<0){n=-n;d=-d;} var g=gcd(n,d); return {n:n/g, d:d/g}; }
+function req(a,b){ return a.n*b.d === b.n*a.d; }
+function rzero(a){ return a.n===0; }
+function rint(x){ return R(x,1); }
+function parseRat(s){
+  if(s===null || s===undefined) return null;
+  s = String(s).trim().replace(/\u2212/g,'-').replace(/\s+/g,'');
+  if(!s || !/\d/.test(s)) return null;
+  var m = s.match(/^(-?\d+)\/(-?\d+)$/);
+  if(m){ var d=parseInt(m[2],10); if(!d) return null; return R(parseInt(m[1],10), d); }
+  if(/^-?\d+$/.test(s)) return R(parseInt(s,10),1);
+  m = s.match(/^(-)?(\d*)\.(\d+)$/);
+  if(m){ var neg=!!m[1], ip=m[2]||'0', fp=m[3];
+    var den=Math.pow(10,fp.length), num=parseInt(ip,10)*den + parseInt(fp,10);
+    return R(neg?-num:num, den); }
+  return null;
+}
+var MIN='\u2212';
+function fmtInt(x){ return x<0 ? MIN+Math.abs(x) : String(x); }
+function ratHTML(r){
+  if(r.d===1) return fmtInt(r.n);
+  var s = r.n<0 ? MIN : '';
+  return s+'<span class="vfrac"><span>'+Math.abs(r.n)+'</span><span>'+r.d+'</span></span>';
+}
+function ratText(r){ return r.d===1 ? String(r.n) : r.n+'/'+r.d; }
+
+/* ---- quadratic-specific display helpers ---- */
+function quadEqHTML(a,b,c){
+  var s = (a===1?'':(a===-1?MIN:fmtInt(a))) + 'x<sup>2</sup>';
+  if(b!==0){ s += (b>0?' + ':' '+MIN+' '); var ab=Math.abs(b); s += (ab===1?'':String(ab))+'x'; }
+  if(c!==0){ s += (c>0?' + ':' '+MIN+' ') + Math.abs(c); }
+  s += ' = 0';
+  return s;
+}
+function sqrtEqHTML(h,k){
+  var inner='x';
+  if(h!==0) inner += (h>0? ' '+MIN+' '+h : ' + '+(-h));
+  return '('+inner+')<sup>2</sup> = '+k;
+}
+function vertexHTML(a,h,k){
+  var s='f(x) = ';
+  s += (a===1?'':(a===-1?MIN:fmtInt(a)));
+  s += '(x ';
+  s += (h>=0? MIN+' '+h : '+ '+(-h));
+  s += ')<sup>2</sup>';
+  if(k!==0) s += (k>0?' + ':' '+MIN+' ')+Math.abs(k);
+  return s;
+}
+function tableHTML(xs,ys){
+  var h='<table class="ttab"><tr><th>x</th>';
+  xs.forEach(function(x){ h+='<td>'+fmtInt(x)+'</td>'; });
+  h+='</tr><tr><th>y</th>';
+  ys.forEach(function(y){ h+='<td>'+fmtInt(y)+'</td>'; });
+  h+='</tr></table>';
+  return h;
+}
+
+/* ---- UI helpers ---- */
+function inBox(id, wide){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off" />'; }
+function seg(id,cur,opts){
+  var h='<div class="drSeg" id="'+id+'" role="tablist">';
+  opts.forEach(function(o){ h+='<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>'; });
+  return h+'</div>';
+}
+function segWrap(label,id,cur,opts){
+  return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+    '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">'+label+'</span>'+
+    seg(id,cur,opts)+'</div>';
+}
+function wireSeg(id,cur,cb){
+  var box=document.getElementById(id); if(!box) return;
+  Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+    if(btn.getAttribute('data-v')===cur) btn.classList.add('active');
+    btn.addEventListener('click',function(){
+      Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){b.classList.remove('active');});
+      btn.classList.add('active'); cb(btn.getAttribute('data-v'));
+    });
+  });
+}
+
+/* ---- curved-graph renderer (signed grid, parabola path) ---- */
+function plotParab(o){
+  o=o||{}; var Rg=o.Rg||9, S=Math.round(288/(2*Rg)), W=2*Rg*S, H=W, i;
+  function X(x){ return (x+Rg)*S; }
+  function Y(y){ return (Rg-y)*S; }
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="300" height="300" class="grid" xmlns="http://www.w3.org/2000/svg">';
+  for(i=-Rg;i<=Rg;i++){
+    s+='<line x1="'+X(i)+'" y1="0" x2="'+X(i)+'" y2="'+H+'" stroke="#e9eefb" stroke-width="1"/>';
+    s+='<line x1="0" y1="'+Y(i)+'" x2="'+W+'" y2="'+Y(i)+'" stroke="#e9eefb" stroke-width="1"/>';
+  }
+  s+='<line x1="'+X(0)+'" y1="0" x2="'+X(0)+'" y2="'+H+'" stroke="#9db4e8" stroke-width="2"/>';
+  s+='<line x1="0" y1="'+Y(0)+'" x2="'+W+'" y2="'+Y(0)+'" stroke="#9db4e8" stroke-width="2"/>';
+  for(i=-Rg;i<=Rg;i+=2){ if(i===0) continue;
+    s+='<text x="'+X(i)+'" y="'+(Y(0)+14)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="middle">'+i+'</text>';
+    s+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+4)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="end">'+i+'</text>';
+  }
+  (o.parabs||[]).forEach(function(P){
+    var d='', pen=false, x, y;
+    for(x=-Rg; x<=Rg+1e-9; x+=0.08){
+      y=P.a*(x-P.h)*(x-P.h)+P.k;
+      if(y<=Rg && y>=-Rg){ d+=(pen?'L':'M')+X(x).toFixed(1)+' '+Y(y).toFixed(1)+' '; pen=true; }
+      else pen=false;
+    }
+    s+='<path d="'+d+'" fill="none" stroke="'+(P.color||'#8e78ff')+'" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>';
+  });
+  (o.vlines||[]).forEach(function(V){
+    s+='<line x1="'+X(V.x)+'" y1="0" x2="'+X(V.x)+'" y2="'+H+'" stroke="'+(V.color||'#f4c431')+'" stroke-width="2.5"'+(V.dash?' stroke-dasharray="8 6"':'')+'/>';
+  });
+  (o.points||[]).forEach(function(Pt){
+    s+='<circle cx="'+X(Pt.x)+'" cy="'+Y(Pt.y)+'" r="5.5" fill="'+(Pt.color||'#e5484d')+'" stroke="'+(Pt.color||'#e5484d')+'" stroke-width="3"/>';
+  });
+  return s+'</svg>';
+}
+function rootsGraph(a,r1,r2){
+  var r1v=r1.n/r1.d, r2v=r2.n/r2.d;
+  var h=(r1v+r2v)/2;
+  var k=a*(h-r1v)*(h-r2v);
+  var Rg=Math.max(9, Math.ceil(Math.max(Math.abs(r1v),Math.abs(r2v),Math.abs(h))+2));
+  return plotParab({Rg:Rg, parabs:[{a:a,h:h,k:k,color:'#8e78ff'}],
+    vlines:[{x:h,color:'#f4c431',dash:true}],
+    points:[{x:r1v,y:0,color:'#e5484d'},{x:r2v,y:0,color:'#e5484d'}]});
+}
+
+/* =====================================================================
+   A.8A — Solve Quadratic Equations (factoring / square roots /
+          completing the square / quadratic formula)
+   ===================================================================== */
+var cModeA='mix';
+
+function genFactorCTS(){
+  var r1i=ri(-7,7), r2i=(Math.random()<0.22)?r1i:ri(-7,7);
+  var a=1, b=-(r1i+r2i), c=r1i*r2i;
+  return {a:a,b:b,c:c,r1:R(r1i,1),r2:R(r2i,1)};
+}
+function genFormula(){
+  if(Math.random()<0.5){
+    var r1i=ri(-6,6), r2i=ri(-6,6);
+    return {a:1,b:-(r1i+r2i),c:r1i*r2i,r1:R(r1i,1),r2:R(r2i,1)};
+  } else {
+    var aC=rc([2,3]), n=ri(-5,5), m;
+    do{ m=rnz(-5,5); }while(m % aC===0);
+    var b=-(aC*n+m), c=m*n;
+    return {a:aC,b:b,c:c,r1:R(m,aC),r2:R(n,1)};
+  }
+}
+function genSqrt(){
+  var h=ri(-6,6), s=ri(1,6), k=s*s;
+  return {h:h,k:k,r1:R(h-s,1),r2:R(h+s,1)};
+}
+
+var SE_A8A = {
+  id:'A.8A', letter:'A', short:'Solve Quad.',
+  title:'Solve Quadratic Equations',
+  blurb:'Solve quadratic equations having real solutions by factoring, taking square roots, completing the square, and applying the quadratic formula.',
+
+  gen:function(){
+    var kind=(cModeA==='mix')?rc(['factor','sqrt','cts','formula']):cModeA;
+    var p = kind==='sqrt' ? genSqrt() : (kind==='formula' ? genFormula() : genFactorCTS());
+    p.kind=kind;
+    return p;
+  },
+  prompt:function(p){
+    var selector = segWrap('METHOD','methSeg',cModeA,
+      [['mix','Mixed'],['factor','Factoring'],['sqrt','Square Roots'],['cts','Complete Square'],['formula','Quad. Formula']]);
+    var body;
+    if(p.kind==='sqrt'){
+      body='Solve for <b>x</b> using square roots:<br><span class="given">'+sqrtEqHTML(p.h,p.k)+'</span>';
+    } else {
+      var tag = p.kind==='factor' ? 'by factoring' : (p.kind==='cts' ? 'by completing the square' : 'using the quadratic formula');
+      body='Solve '+tag+':<br><span class="given">'+quadEqHTML(p.a,p.b,p.c)+'</span>';
+    }
+    return selector+body;
+  },
+  answerHTML:function(p){
+    return '<div class="answer"><span class="lbl">Enter both solutions (any order):</span>'+
+      '<span>x =</span>'+inBox('x1')+'<span>or&nbsp;x =</span>'+inBox('x2')+'</div>';
+  },
+  read:function(p){
+    var a1=parseRat(document.getElementById('x1').value);
+    var a2=parseRat(document.getElementById('x2').value);
+    if(a1===null||a2===null) return null;
+    return {x1:a1,x2:a2};
+  },
+  check:function(p,ans){
+    var m1 = req(ans.x1,p.r1) && req(ans.x2,p.r2);
+    var m2 = req(ans.x1,p.r2) && req(ans.x2,p.r1);
+    return m1||m2;
+  },
+  hints:function(p){
+    var h=[];
+    if(p.kind==='factor'){
+      h.push('Find two numbers that multiply to c and add to b.');
+      h.push('Write the equation as (x '+MIN+' r\u2081)(x '+MIN+' r\u2082) = 0, then set each factor to 0.');
+    } else if(p.kind==='sqrt'){
+      h.push('Isolate the squared expression first.');
+      h.push('Taking a square root of both sides gives TWO solutions: +\u221a and \u2212\u221a.');
+    } else if(p.kind==='cts'){
+      h.push('Move the constant term to the other side of the equation.');
+      h.push('Add (b/2)\u00b2 to both sides to make the left side a perfect-square trinomial, then take the square root.');
+    } else {
+      h.push('Identify a, b, and c, then substitute into x = (\u2212b \u00b1 \u221a(b\u00b2\u22124ac)) / (2a).');
+      h.push('Simplify the discriminant b\u00b2\u22124ac first \u2014 it works out to a perfect square here.');
+    }
+    h.push('Order doesn\u2019t matter \u2014 put either solution in either box.');
+    return h;
+  },
+  steps:function(p){
+    var g = rootsGraph(p.a!==undefined?p.a:1, p.r1, p.r2);
+    var s='';
+    if(p.kind==='sqrt'){
+      var sign = p.h>=0 ? (MIN+' '+p.h) : ('+ '+(-p.h));
+      s+='<span class="st">1. The equation is already isolated: (x '+sign+')<sup>2</sup> = '+p.k+'</span>';
+      s+='<span class="st">2. Take the square root of both sides: x '+sign+' = \u00b1'+Math.sqrt(p.k)+'</span>';
+      s+='<span class="st">3. Solve for x: x = '+fmtInt(p.h)+' \u00b1 '+Math.sqrt(p.k)+'</span>';
+      s+='<span class="st final">Solutions: x = '+ratHTML(p.r1)+' or x = '+ratHTML(p.r2)+'</span>';
+    } else if(p.kind==='factor'){
+      var r1n=p.r1.n, r2n=p.r2.n;
+      s+='<span class="st">1. Start with '+quadEqHTML(p.a,p.b,p.c)+'</span>';
+      s+='<span class="st">2. Factor: (x '+(r1n>=0?MIN+' '+r1n:'+ '+(-r1n))+')(x '+(r2n>=0?MIN+' '+r2n:'+ '+(-r2n))+') = 0</span>';
+      s+='<span class="st">3. Set each factor equal to 0 and solve for x.</span>';
+      s+='<span class="st final">Solutions: x = '+ratHTML(p.r1)+' or x = '+ratHTML(p.r2)+'</span>';
+    } else if(p.kind==='cts'){
+      var half=p.b/2, sq=half*half;
+      s+='<span class="st">1. Move the constant: x<sup>2</sup> '+(p.b>=0?'+ '+p.b:MIN+' '+(-p.b))+'x = '+fmtInt(-p.c)+'</span>';
+      s+='<span class="st">2. Add (b/2)\u00b2 = ('+fmtInt(half)+')\u00b2 = '+fmtInt(sq)+' to both sides.</span>';
+      s+='<span class="st">3. Write the left side as a perfect square, then take the square root of both sides.</span>';
+      s+='<span class="st final">Solutions: x = '+ratHTML(p.r1)+' or x = '+ratHTML(p.r2)+'</span>';
+    } else {
+      var disc=p.b*p.b-4*p.a*p.c;
+      s+='<span class="st">1. Identify a = '+fmtInt(p.a)+', b = '+fmtInt(p.b)+', c = '+fmtInt(p.c)+'.</span>';
+      s+='<span class="st">2. Discriminant: b\u00b2 \u2212 4ac = '+fmtInt(disc)+'</span>';
+      s+='<span class="st">3. x = ('+fmtInt(-p.b)+' \u00b1 \u221a'+disc+') / '+(2*p.a)+'</span>';
+      s+='<span class="st final">Solutions: x = '+ratHTML(p.r1)+' or x = '+ratHTML(p.r2)+'</span>';
+    }
+    s += '<div style="margin-top:10px">'+g+'</div>';
+    return s;
+  },
+  emptyMsg:'Enter both x-values \u2014 fractions like 3/2 are fine.',
+  init:function(p){ wireSeg('methSeg',cModeA,function(v){ cModeA=v; newProblem(); }); }
+};
+
+/* =====================================================================
+   A.8B — Model Data with Quadratic Functions (vertex form + prediction)
+   ===================================================================== */
+function genDataModel(){
+  var a = rc([-3,-2,-1,1,2]);
+  var h = ri(-4,5);
+  var k = ri(2,9);
+  var xs=[h-2,h-1,h,h+1,h+2];
+  var ys=xs.map(function(x){ return a*(x-h)*(x-h)+k; });
+  var predX = (Math.random()<0.5) ? (h+3) : (h-3);
+  var predY = a*(predX-h)*(predX-h)+k;
+  return {a:R(a,1),h:R(h,1),k:R(k,1),xs:xs,ys:ys,predX:predX,predY:R(predY,1)};
+}
+
+var SE_A8B = {
+  id:'A.8B', letter:'B', short:'Model Data',
+  title:'Model Data with Quadratic Functions',
+  blurb:'Write, using technology, quadratic functions that provide a reasonable fit to data to estimate solutions and make predictions for real-world problems.',
+
+  gen:function(){ return genDataModel(); },
+  prompt:function(p){
+    return 'The table shows data collected from an experiment. Write a quadratic function in vertex form that models the pattern, then use your model to make a prediction.<br>'+
+      tableHTML(p.xs,p.ys);
+  },
+  answerHTML:function(p){
+    return '<div class="answer"><span class="lbl">Vertex-form model:</span>'+
+        '<span>f(x) =</span>'+inBox('a')+'<span>(x '+MIN+'</span>'+inBox('h')+'<span>)</span><sup>2</sup><span>+</span>'+inBox('k')+
+      '</div>'+
+      '<div class="answer" style="margin-top:14px"><span class="lbl">Use your model to predict:</span>'+
+        '<span>f('+fmtInt(p.predX)+') =</span>'+inBox('py','wide')+
+      '</div>';
+  },
+  read:function(p){
+    var a=parseRat(document.getElementById('a').value);
+    var h=parseRat(document.getElementById('h').value);
+    var k=parseRat(document.getElementById('k').value);
+    var py=parseRat(document.getElementById('py').value);
+    if(a===null||h===null||k===null||py===null) return null;
+    return {a:a,h:h,k:k,py:py};
+  },
+  check:function(p,ans){
+    return req(ans.a,p.a) && req(ans.h,p.h) && req(ans.k,p.k) && req(ans.py,p.predY);
+  },
+  hints:function(p){
+    return [
+      'Find the vertex in the table \u2014 it\u2019s the point where y stops decreasing/increasing and turns around; that gives you h and k.',
+      'Use a nearby point (x, y) with the vertex (h, k): solve a = (y \u2212 k) / (x \u2212 h)\u00b2.',
+      'Once a, h, and k are set, substitute the prediction\u2019s x-value into f(x) = a(x '+MIN+' h)\u00b2 + k to finish.'
+    ];
+  },
+  steps:function(p){
+    var vi = p.xs.indexOf(p.h.n);
+    var otherX = p.xs[vi===0?1:0];
+    var otherY = p.ys[vi===0?1:0];
+    var g = plotParab({
+      Rg: Math.max(9, Math.ceil(Math.max(Math.abs(p.h.n),Math.abs(p.predX))+3)),
+      parabs:[{a:p.a.n,h:p.h.n,k:p.k.n,color:'#8e78ff'}],
+      vlines:[{x:p.h.n,color:'#f4c431',dash:true}],
+      points:[{x:p.predX,y:p.predY.n,color:'#e5484d'}]
+    });
+    var s='';
+    s+='<span class="st">1. Read the vertex straight from the table: the y-values turn around at x = '+fmtInt(p.h.n)+', y = '+fmtInt(p.k.n)+', so (h, k) = ('+fmtInt(p.h.n)+', '+fmtInt(p.k.n)+').</span>';
+    s+='<span class="st">2. Use another table point ('+fmtInt(otherX)+', '+fmtInt(otherY)+') to solve for a: a = (y \u2212 k) / (x \u2212 h)\u00b2 = ('+fmtInt(otherY)+' \u2212 '+fmtInt(p.k.n)+') / ('+fmtInt(otherX)+' \u2212 '+fmtInt(p.h.n)+')\u00b2 = '+fmtInt(p.a.n)+'.</span>';
+    s+='<span class="st">3. Model: '+vertexHTML(p.a.n,p.h.n,p.k.n)+'</span>';
+    s+='<span class="st final">Prediction: f('+fmtInt(p.predX)+') = '+fmtInt(p.a.n)+'('+fmtInt(p.predX)+' '+MIN+' ('+fmtInt(p.h.n)+'))\u00b2 + '+fmtInt(p.k.n)+' = '+fmtInt(p.predY.n)+'</span>';
+    s += '<div style="margin-top:10px">'+g+'</div>';
+    return s;
+  },
+  emptyMsg:'Fill in a, h, k, and your prediction \u2014 fractions like 3/2 are fine.'
+};
+
+var SES=[SE_A8A, SE_A8B];
+
+/* ===== THE FIXED CONTROLLER (unchanged between modules) ===== */
+var current={se:SES[0], p:null, done:false, recorded:false, hintIdx:0, hintLogged:false};
+var session={a:0,c:0};
+var $=function(s){return document.querySelector(s);};
+
+function stoneStats(id){
+  return (window.Portal && Portal.skill) ? Portal.skill(id) : {progress:0, attempts:0, mastered:false};
+}
+function renderRail(){
+  var host=$('#stones'); host.innerHTML='';
+  SES.forEach(function(se){
+    var st=stoneStats(se.id);
+    var cls='stone'+(se===current.se?' active':'')+(st.mastered?' mastered':st.attempts?' started':'');
+    var b=document.createElement('button');
+    b.type='button'; b.className=cls;
+    b.innerHTML='<span class="dot">'+(st.mastered?'\u2713':se.letter)+'</span>'+
+      '<span><span class="nm">'+se.id+' \u00b7 '+se.short+'</span>'+
+      '<span class="mini"><i style="width:'+Math.round(st.progress*100)+'%"></i></span></span>';
+    b.addEventListener('click', function(){ current.se=se; newProblem(); });
+    host.appendChild(b);
+  });
+}
+function newProblem(){
+  var se=current.se;
+  current.p=se.gen(); current.done=false; current.recorded=false; current.hintIdx=0; current.hintLogged=false;
+  $('#seTitle').textContent=se.title;
+  $('#seBlurb').textContent=se.blurb;
+  $('#seTag').textContent='TEKS '+se.id;
+  $('#prompt').innerHTML=se.prompt(current.p);
+  $('#answerArea').innerHTML=se.answerHTML(current.p);
+  $('#fb').textContent=''; $('#fb').className='fb';
+  $('#hintBox').className='note'; $('#hintBox').innerHTML='';
+  $('#stepsBox').className='stepsBox'; $('#stepsBox').innerHTML='';
+  $('#checkBtn').disabled=false;
+  if(se.init) se.init(current.p);
+  renderRail();
+  var first=$('#answerArea input'); if(first) first.focus();
+}
+function onCheck(){
+  if(current.done) return;
+  var se=current.se, ans=se.read(current.p);
+  if(!ans){
+    $('#fb').className='fb bad';
+    $('#fb').textContent=se.emptyMsg||'Fill in every box — fractions like 3/4 are fine.';
+    return;
+  }
+  var ok=se.check(current.p, ans);
+  if(se.allowRecheck){ if(ok) current.done=true; }
+  else { current.done=true; $('#checkBtn').disabled=true; if(se.reveal) se.reveal(current.p); }
+  if(!current.recorded){
+    current.recorded=true;
+    session.a++; if(ok) session.c++;
+    $('#sesScore').textContent=session.c+' / '+session.a;
+    if(window.Portal && Portal.record) Portal.record(se.id, ok);
+  }
+  $('#fb').className='fb '+(ok?'ok':'bad');
+  $('#fb').textContent= ok?'Correct \u2713'
+    : (se.allowRecheck?'Not quite \u2717 — read the tips, adjust, and check again.'
+                      :'Not quite \u2717 — open the steps to see the path.');
+  renderRail();
+}
+function onHint(){
+  var hints=current.se.hints(current.p);
+  var h=hints[Math.min(current.hintIdx, hints.length-1)];
+  current.hintIdx++;
+  var box=$('#hintBox'); box.classList.add('show');
+  box.innerHTML += (box.innerHTML?'<br>':'')+'\u2022 '+h;
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+function onSteps(){
+  var box=$('#stepsBox'); box.classList.add('show');
+  box.innerHTML=current.se.steps(current.p);
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+$('#checkBtn').addEventListener('click', onCheck);
+$('#hintBtn').addEventListener('click', onHint);
+$('#stepsBtn').addEventListener('click', onSteps);
+$('#nextBtn').addEventListener('click', newProblem);
+window.addEventListener('keydown', function(e){
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(e.key==='Enter' && tag!=='select'){ e.preventDefault(); onCheck(); }
+  if((e.key==='n'||e.key==='N') && tag!=='input'){ newProblem(); }
+});
+
+var want=new URLSearchParams(location.search).get('se');
+if(want){ var f=SES.filter(function(s){return s.id.toLowerCase()===want.toLowerCase();})[0]; if(f) current.se=f; }
+newProblem();
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>A.5 Studio — Solving Equations, Inequalities &amp; Systems</title>
+<style>
+  :root{
+    --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
+    --blue:#2f6cff; --teal:#36c2a0; --gold:#f4c431; --danger:#e5484d; --vio:#8e78ff;
+    --accent:#2f6cff; --shadow:0 8px 20px rgba(25,40,80,.06);   /* A.5 is 'linear' -> blue */
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100dvh}
+  body{margin:0; background:var(--bg); color:var(--ink); overflow:auto;
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif}
+  .wrap{width:min(1240px,100%); margin:14px auto; padding:0 12px}
+  .hdr{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow);
+    padding:12px 16px; margin-bottom:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .back{font-weight:900; text-decoration:none; color:var(--blue); font-size:14px; padding:8px 12px;
+    border:1px solid var(--ui); border-radius:10px; background:#fff}
+  .hdr h1{margin:0; font-size:clamp(17px,2.6vw,22px); font-weight:900; flex:1; min-width:200px}
+  .hdr .eyebrow{display:block; font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900}
+  .pill{display:inline-block; padding:6px 12px; border-radius:999px; border:1px solid var(--ui);
+    background:#fff; font-weight:900; font-size:13px}
+  .pill b{color:var(--blue)}
+  .cols{display:grid; grid-template-columns:250px 1fr; gap:12px; align-items:start}
+  @media (max-width:900px){ .cols{grid-template-columns:1fr} }
+  .rail{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:10px}
+  .rail .rh{font-size:11px; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; font-weight:900; padding:4px 8px 8px}
+  .stones{display:flex; flex-direction:column; position:relative}
+  .stones::before{content:""; position:absolute; left:24px; top:18px; bottom:18px; border-left:3px dotted #d5deff}
+  .stone{display:flex; align-items:center; gap:10px; padding:6px 8px; border:0; background:none;
+    border-radius:12px; cursor:pointer; text-align:left; font-family:inherit; color:var(--ink); width:100%}
+  .stone:hover{background:#f5f8ff}
+  .stone.active{background:#eef4ff; outline:2px solid #bcd2ff}
+  .stone .dot{width:34px; height:34px; flex:none; border-radius:50%; border:3px solid #d5deff; background:#fff;
+    z-index:1; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; color:var(--muted)}
+  .stone.started .dot{border-color:var(--accent); color:var(--ink)}
+  .stone.mastered .dot{background:var(--accent); border-color:var(--accent); color:#fff}
+  .stone .nm{font-weight:900; font-size:13px; line-height:1.2}
+  .stone .mini{height:5px; border-radius:999px; background:#edf2ff; margin-top:4px; overflow:hidden; width:110px}
+  .stone .mini i{display:block; height:100%; background:var(--accent); border-radius:999px}
+  @media (max-width:900px){
+    .rail{position:sticky; top:8px; z-index:5}
+    .stones{flex-direction:row; overflow-x:auto; gap:6px; padding-bottom:4px}
+    .stones::before{display:none}
+    .stone{flex:none; flex-direction:column; gap:4px; padding:6px; width:auto; min-width:74px}
+    .stone .mini{width:56px}
+    .stone .nm{font-size:11px; text-align:center; max-width:90px}
+  }
+  .main{background:var(--panel); border:1px solid var(--ui); border-radius:16px; box-shadow:var(--shadow); padding:16px}
+  .seHead{display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;
+    border-bottom:1px dashed #e5e7eb; padding-bottom:10px; margin-bottom:12px}
+  .seHead h2{margin:0; font-size:19px; font-weight:900}
+  .seHead .blurb{color:var(--muted); font-weight:700; font-size:13px; margin-top:3px; max-width:640px}
+  .seTag{font-size:12px; font-weight:900; color:#133a9a; background:#f1f6ff; border:1px solid var(--ui);
+    border-radius:999px; padding:6px 14px; white-space:nowrap}
+  .prompt{font-size:clamp(17px,2.4vw,21px); font-weight:800; line-height:1.55; margin:6px 0 14px}
+  .prompt .given{background:#f6f9ff; border:1px solid #e7edff; border-radius:12px; padding:10px 14px;
+    display:inline-block; margin-top:8px; font-size:clamp(19px,3vw,26px)}
+  .vfrac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle;
+    font-size:.72em; line-height:1.05; font-weight:900; margin:0 2px}
+  .vfrac span:first-child{border-bottom:2.5px solid currentColor; padding:0 4px}
+  .vfrac span:last-child{padding:0 4px}
+  table.ttab{border-collapse:collapse; margin-top:8px; font-size:clamp(16px,2.4vw,20px)}
+  .ttab th,.ttab td{border:2px solid #d9e2ff; padding:6px 16px; text-align:center; font-weight:900; min-width:54px}
+  .ttab th{background:#f1f6ff; color:#133a9a}
+  .answer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(20px,3.4vw,28px); font-weight:900; margin:10px 0 6px}
+  .answer .lbl{font-size:15px; color:var(--muted); width:100%; font-weight:900}
+  .in{height:56px; width:96px; border:2px solid var(--ui); border-radius:12px; text-align:center;
+    font-weight:900; font-size:22px; font-family:inherit; color:var(--ink)}
+  .in.wide{width:120px}
+  .in:focus-visible, .sel:focus-visible, button:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
+  .sel{height:56px; border:2px solid var(--ui); border-radius:12px; font-weight:900; font-size:20px;
+    font-family:inherit; color:var(--ink); background:#fff; padding:0 8px}
+  .sysRow{display:flex; align-items:center; gap:8px; margin:6px 0}
+  .radio{display:flex; gap:16px; flex-wrap:wrap; font-size:16px; margin-top:6px}
+  .radio label{display:flex; align-items:center; gap:6px; font-weight:800; cursor:pointer}
+  .radio input{accent-color:var(--blue); width:18px; height:18px}
+  .mc{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
+  @media (max-width:720px){ .mc{grid-template-columns:1fr} }
+  .mc button{border:2px solid var(--ui); background:#fff; border-radius:14px; padding:12px 14px;
+    font-family:inherit; font-weight:800; font-size:15.5px; text-align:left; cursor:pointer; color:var(--ink); line-height:1.5}
+  .mc button.sel{border-color:var(--blue); background:#f1f6ff}
+  .mc button:disabled{cursor:default; opacity:.85}
+  .mc button.right{border-color:#7de0a6; background:#eafff2}
+  .mc button.wrong{border-color:#ffb3b3; background:#fff3f3}
+  .btnRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center}
+  .btn{height:46px; border-radius:12px; border:1px solid var(--ui); background:#fff; font-weight:900;
+    padding:0 16px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink)}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.55; cursor:not-allowed}
+  .btn.check{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635; min-width:110px}
+  .btn.hint{border:0; background:linear-gradient(90deg,#ffe6a8,#ffcf70); color:#081635}
+  .btn.steps{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
+  .btn.next{background:#f6f9ff}
+  .fb{font-weight:900; font-size:17px; min-height:26px; margin-top:8px}
+  .fb.ok{color:#0b6b2f} .fb.bad{color:#a33232}
+  .note{background:#fff9d6; border:1px solid #ffe38a; color:#7a5a00; border-radius:12px; padding:10px 14px;
+    font-weight:800; font-size:14.5px; margin-top:10px; display:none; line-height:1.55}
+  .note.show{display:block}
+  .stepsBox{background:#f6f9ff; border:1px solid #e7edff; border-radius:12px; padding:12px 16px;
+    font-weight:800; font-size:15.5px; margin-top:10px; display:none; line-height:1.8}
+  .stepsBox.show{display:block}
+  .stepsBox .st{display:block; margin:2px 0}
+  .stepsBox .final{color:#133a9a}
+  .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
+  .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
+  .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
+    cursor:pointer; font-family:inherit; color:var(--ink)}
+  .drSeg button.active{background:#f1f6ff; color:#133a9a}
+  .drTog button.active{background:#eafff7; color:#0c6d54}
+  .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <a class="back" href="../index.html">&larr; Portal</a>
+    <h1><span class="eyebrow">Section 1 &middot; Linear Functions</span>TEKS A.5 &middot; Equations, Inequalities &amp; Systems</h1>
+    <span class="pill">This visit <b id="sesScore">0 / 0</b></span>
+  </div>
+  <div class="cols">
+    <div class="rail">
+      <div class="rh">Student Expectations</div>
+      <div class="stones" id="stones"></div>
+    </div>
+    <div class="main">
+      <div class="seHead">
+        <div>
+          <h2 id="seTitle"></h2>
+          <div class="blurb" id="seBlurb"></div>
+        </div>
+        <span class="seTag" id="seTag"></span>
+      </div>
+      <div class="prompt" id="prompt"></div>
+      <div id="answerArea"></div>
+      <div class="btnRow">
+        <button class="btn check" id="checkBtn">Check</button>
+        <button class="btn hint" id="hintBtn">Hint</button>
+        <button class="btn steps" id="stepsBtn">Show steps</button>
+        <button class="btn next" id="nextBtn">New problem</button>
+      </div>
+      <div class="fb" id="fb" aria-live="polite"></div>
+      <div class="note" id="hintBox"></div>
+      <div class="stepsBox" id="stepsBox"></div>
+      <div class="kbdnote">Fractions are welcome in any box &mdash; type 3/4 or &minus;3/4. Enter = check &middot; N = new problem.</div>
+    </div>
+  </div>
+</div>
+
+<script src="../portal.js"></script>
+<script>
+(function(){
+'use strict';
+
+/* ===================================================================
+   PURE MATH LIBRARY (Section 3 — copied verbatim)
+   =================================================================== */
+/* ---- randoms ---- */
+function ri(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+function rc(arr){ return arr[ri(0,arr.length-1)]; }
+function rnz(a,b){ var x=0; while(x===0) x=ri(a,b); return x; }
+function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=ri(0,i); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+
+/* ---- rationals ---- */
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
+function R(n,d){ d=(d===undefined)?1:d; if(d<0){n=-n;d=-d;} var g=gcd(n,d); return {n:n/g, d:d/g}; }
+function radd(a,b){ return R(a.n*b.d + b.n*a.d, a.d*b.d); }
+function rsub(a,b){ return R(a.n*b.d - b.n*a.d, a.d*b.d); }
+function rmul(a,b){ return R(a.n*b.n, a.d*b.d); }
+function rdiv(a,b){ return R(a.n*b.d, a.d*b.n); }
+function rneg(a){ return R(-a.n, a.d); }
+function req(a,b){ return a.n*b.d === b.n*a.d; }
+function rzero(a){ return a.n===0; }
+function rint(x){ return R(x,1); }
+
+/* ---- parse student input into a rational (or null) ---- */
+function parseRat(s){
+  if(s===null || s===undefined) return null;
+  s = String(s).trim().replace(/\u2212/g,'-').replace(/\s+/g,'');
+  if(!s || !/\d/.test(s)) return null;
+  var m = s.match(/^(-?\d+)\/(-?\d+)$/);
+  if(m){ var d=parseInt(m[2],10); if(!d) return null; return R(parseInt(m[1],10), d); }
+  if(/^-?\d+$/.test(s)) return R(parseInt(s,10),1);
+  m = s.match(/^(-)?(\d*)\.(\d+)$/);
+  if(m){ var neg=!!m[1], ip=m[2]||'0', fp=m[3];
+    var den=Math.pow(10,fp.length), num=parseInt(ip,10)*den + parseInt(fp,10);
+    return R(neg?-num:num, den); }
+  return null;
+}
+
+/* ---- display helpers ---- */
+var MIN='\u2212';
+function fmtInt(x){ return x<0 ? MIN+Math.abs(x) : String(x); }
+function ratHTML(r){
+  if(r.d===1) return fmtInt(r.n);
+  var s = r.n<0 ? MIN : '';
+  return s+'<span class="vfrac"><span>'+Math.abs(r.n)+'</span><span>'+r.d+'</span></span>';
+}
+function ratText(r){ return r.d===1 ? String(r.n) : r.n+'/'+r.d; }
+function siHTML(m,b){
+  var out='y = ';
+  if(req(m,rint(1))) out+='x';
+  else if(req(m,rint(-1))) out+=MIN+'x';
+  else out+=ratHTML(m)+'x';
+  if(!rzero(b)) out += (b.n>0?' + ':' '+MIN+' ') + ratHTML(R(Math.abs(b.n),b.d));
+  return out;
+}
+function ptStr(x,y){ return '('+fmtInt(x)+', '+fmtInt(y)+')'; }
+
+/* ---- nice slope/coefficient generation ---- */
+var FRACS = [[1,2],[-1,2],[1,3],[-1,3],[2,3],[-2,3],[3,2],[-3,2],[1,4],[-1,4],[3,4],[-3,4],[2,5],[-2,5],[5,2],[-5,2]];
+function niceSlope(allowInt){
+  if(allowInt!==false && Math.random()<0.45) return R(rnz(-4,4),1);
+  var f=rc(FRACS); return R(f[0],f[1]);
+}
+function latticeX(m){ return m.d * rnz(-3,3); }
+function makeLine(){ var m=niceSlope(true), b=rint(ri(-8,8)); return {m:m, b:b}; }
+
+/* ---- standard-form pretty print (Ax + By = C) ---- */
+function stdOf(m,b){
+  var A=m.n*b.d, B=-m.d*b.d, C=-b.n*m.d;
+  if(A<0){A=-A;B=-B;C=-C;}
+  var g=gcd(gcd(A,B),Math.abs(C)||1); A/=g; B/=g; C/=g;
+  return A+'x '+(B<0?MIN+' '+(-B):'+ '+B)+'y = '+fmtInt(C);
+}
+
+/* ===================================================================
+   UI HELPERS (Section 4 — copied verbatim)
+   =================================================================== */
+function inBox(id, wide){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off" />'; }
+function seg(id,cur,opts){
+  var h='<div class="drSeg" id="'+id+'" role="tablist">';
+  opts.forEach(function(o){ h+='<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>'; });
+  return h+'</div>';
+}
+function segWrap(label,id,cur,opts){
+  return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+    '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">'+label+'</span>'+
+    seg(id,cur,opts)+'</div>';
+}
+function wireSeg(id,cur,cb){
+  var box=document.getElementById(id); if(!box) return;
+  Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+    if(btn.getAttribute('data-v')===cur) btn.classList.add('active');
+    btn.addEventListener('click',function(){
+      Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){b.classList.remove('active');});
+      btn.classList.add('active'); cb(btn.getAttribute('data-v'));
+    });
+  });
+}
+
+/* ===================================================================
+   STATIC SVG GRID — plot() (Section 6A — copied verbatim)
+   =================================================================== */
+function plot(o){
+  o=o||{};
+  var Rg=o.Rg||6, S=Math.round(288/(2*Rg)), W=2*Rg*S, H=2*Rg*S, i;
+  function X(x){ return (x+Rg)*S; }
+  function Y(y){ return (Rg-y)*S; }
+  function clip(m,k){
+    var xL=-Rg,yL=m*xL+k,xR=Rg,yR=m*xR+k;
+    if(yL>Rg){xL=(Rg-k)/m;yL=Rg;} else if(yL<-Rg){xL=(-Rg-k)/m;yL=-Rg;}
+    if(yR>Rg){xR=(Rg-k)/m;yR=Rg;} else if(yR<-Rg){xR=(-Rg-k)/m;yR=-Rg;}
+    return [xL,yL,xR,yR];
+  }
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="300" height="300" class="grid" xmlns="http://www.w3.org/2000/svg">';
+  for(i=-Rg;i<=Rg;i++){
+    s+='<line x1="'+X(i)+'" y1="0" x2="'+X(i)+'" y2="'+H+'" stroke="#e9eefb" stroke-width="1"/>';
+    s+='<line x1="0" y1="'+Y(i)+'" x2="'+W+'" y2="'+Y(i)+'" stroke="#e9eefb" stroke-width="1"/>';
+  }
+  s+='<line x1="'+X(0)+'" y1="0" x2="'+X(0)+'" y2="'+H+'" stroke="#9db4e8" stroke-width="2"/>';
+  s+='<line x1="0" y1="'+Y(0)+'" x2="'+W+'" y2="'+Y(0)+'" stroke="#9db4e8" stroke-width="2"/>';
+  for(i=-Rg;i<=Rg;i+=2){ if(i===0) continue;
+    s+='<text x="'+X(i)+'" y="'+(Y(0)+14)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="middle">'+i+'</text>';
+    s+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+4)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="end">'+i+'</text>';
+  }
+  (o.lines||[]).forEach(function(L){ var c=clip(L.m,L.k);
+    s+='<line x1="'+X(c[0])+'" y1="'+Y(c[1])+'" x2="'+X(c[2])+'" y2="'+Y(c[3])+'" stroke="'+(L.color||'#2f6cff')+'" stroke-width="3.5" stroke-linecap="round"'+(L.dash?' stroke-dasharray="8 6"':'')+'/>'; });
+  (o.vlines||[]).forEach(function(V){
+    s+='<line x1="'+X(V.x)+'" y1="0" x2="'+X(V.x)+'" y2="'+H+'" stroke="'+(V.color||'#2f6cff')+'" stroke-width="3.5"'+(V.dash?' stroke-dasharray="8 6"':'')+'/>'; });
+  (o.points||[]).forEach(function(P){
+    s+='<circle cx="'+X(P.x)+'" cy="'+Y(P.y)+'" r="5.5" fill="'+(P.open?'#fff':(P.color||'#e5484d'))+'" stroke="'+(P.color||'#e5484d')+'" stroke-width="3"/>';
+    if(P.label) s+='<text x="'+(X(P.x)+9)+'" y="'+(Y(P.y)-8)+'" font-size="12" font-weight="900" fill="'+(P.color||'#e5484d')+'">'+P.label+'</text>'; });
+  (o.labels||[]).forEach(function(t,idx){
+    s+='<text x="'+(W-8)+'" y="'+(16+idx*16)+'" font-size="12" font-weight="900" fill="'+t.color+'" text-anchor="end">'+t.text+'</text>'; });
+  return s+'</svg>';
+}
+
+/* ===================================================================
+   TODO ZONE 1 — per-SE PURE generators / checkers / display
+   =================================================================== */
+
+/* ---- display helpers for linear expressions ---- */
+function axHTML(a){ if(a===0) return ''; if(a===1) return 'x'; if(a===-1) return MIN+'x'; return fmtInt(a)+'x'; }
+function linHTML(a,b){
+  if(a===0) return fmtInt(b);
+  var s=axHTML(a);
+  if(b===0) return s;
+  return s + (b>0? ' + '+b : ' '+MIN+' '+Math.abs(b));
+}
+function distLeftHTML(A,H){
+  var coef = (A===1)?'':(A===-1)?MIN:fmtInt(A);
+  var inner = 'x' + (H>0? ' + '+H : ' '+MIN+' '+Math.abs(H));
+  return coef+'('+inner+')';
+}
+function twoVarLHS(a,b){
+  var out='', first=true;
+  if(a!==0){ out += (a<0?MIN:'')+(Math.abs(a)===1?'':Math.abs(a))+'x'; first=false; }
+  if(b!==0){
+    if(first) out += (b<0?MIN:'')+(Math.abs(b)===1?'':Math.abs(b))+'y';
+    else      out += (b<0?' '+MIN+' ':' + ')+(Math.abs(b)===1?'':Math.abs(b))+'y';
+  }
+  return out||'0';
+}
+function stdEqHTML(a,b,c){ return twoVarLHS(a,b)+' = '+fmtInt(c); }
+function relSym(op){ return op==='lt'?'<':op==='gt'?'>':op==='le'?'\u2264':'\u2265'; }
+function flipOp(op){ return op==='lt'?'gt':op==='gt'?'lt':op==='le'?'ge':'le'; }
+function st(s,f){ return '<span class="st'+(f?' final':'')+'">'+s+'</span>'; }
+
+/* ---- shared solution picker (clean rationals) ---- */
+function pickX0(allowFrac){
+  if(allowFrac && Math.random()<0.45){
+    var q=rc([2,3,4]), p;
+    do{ p=rnz(-8,8); }while(gcd(Math.abs(p),q)!==1);
+    return R(p,q);
+  }
+  return R(ri(-7,7),1);
+}
+
+/* ---- shared builder: returns expanded left/right coeffs with clean solution x0 ----
+   For 'dist' it also returns the factored pieces {A,H,C,D}. */
+function buildLinear(kind,x0){
+  var q=x0.d, aL,bL,aR,bR,A,H,C,D;
+  if(kind==='dist'){
+    A=rnz(-5,5); var t=rnz(-3,3); C=A-q*t; H=rnz(-6,6); D=t*x0.n + A*H;
+    aL=A; bL=A*H; aR=C; bR=D;
+  } else {
+    var t2=rnz(-3,3), delta=q*t2;
+    aR=(kind==='basic')?0:rnz(-5,5);
+    aL=aR+delta;
+    if(aL===0){ aL=delta; aR=0; kind='basic'; }
+    bL=ri(-9,9); bR=t2*x0.n + bL;
+  }
+  return {kind:kind,aL:aL,bL:bL,aR:aR,bR:bR,A:A,H:H,C:C,D:D};
+}
+
+/* ================= A.5A — linear equations ================= */
+var eqMode='mix';
+function genEq(){
+  var kind=(eqMode==='mix')? rc(['basic','basic','dist','both','both']) : eqMode;
+  var x0=pickX0(true);
+  var b=buildLinear(kind,x0);
+  b.x0=x0; b.se='A.5A';
+  return b;
+}
+function eqLeft(p){ return (p.kind==='dist')? distLeftHTML(p.A,p.H) : linHTML(p.aL,p.bL); }
+function eqRight(p){
+  if(p.kind==='dist') return (p.C===0)? fmtInt(p.D) : linHTML(p.C,p.D);
+  if(p.kind==='basic') return fmtInt(p.bR);
+  return linHTML(p.aR,p.bR);
+}
+function eqSteps(p){
+  var out=st('Start:  '+eqLeft(p)+' = '+eqRight(p));
+  if(p.kind==='dist') out+=st('Distribute:  '+linHTML(p.aL,p.bL)+' = '+eqRight(p));
+  var d=p.aL-p.aR, RHS=p.bR-p.bL;
+  out+=st('Gather the x-terms on one side and the numbers on the other:  '+axHTML(d)+' = '+fmtInt(RHS));
+  if(d===1) out+=st('x = '+ratHTML(p.x0),true);
+  else if(d===-1) out+=st('Multiply both sides by '+MIN+'1:  x = '+ratHTML(p.x0),true);
+  else out+=st('Divide both sides by '+fmtInt(d)+':  x = '+ratHTML(p.x0),true);
+  return out;
+}
+function eqHints(p){
+  var h=['Get every x-term on one side and every constant on the other.'];
+  h.push(p.kind==='dist'
+    ? 'Distribute first: multiply the number outside the parentheses by each term inside, then combine.'
+    : 'Whatever you do to one side, do to the other so the equation stays balanced.');
+  h.push('Finish by dividing both sides by the number in front of x. A fraction answer is fine.');
+  return h;
+}
+
+/* ================= A.5B — linear inequalities ================= */
+var ineqMode='mix';
+function genIneq(){
+  var kind=(ineqMode==='mix')? rc(['basic','both','dist']) : ineqMode;
+  var x0=pickX0(true);
+  var b=buildLinear(kind,x0);
+  var rel0=rc(['lt','gt','le','ge']);
+  var d=b.aL-b.aR;
+  b.rel0=rel0; b.op=(d<0)?flipOp(rel0):rel0; b.x0=x0; b.se='A.5B';
+  return b;
+}
+function ineqSteps(p){
+  var out=st('Start:  '+eqLeft(p)+' '+relSym(p.rel0)+' '+eqRight(p));
+  if(p.kind==='dist') out+=st('Distribute:  '+linHTML(p.aL,p.bL)+' '+relSym(p.rel0)+' '+eqRight(p));
+  var d=p.aL-p.aR, RHS=p.bR-p.bL;
+  out+=st('Isolate the x-term:  '+axHTML(d)+' '+relSym(p.rel0)+' '+fmtInt(RHS));
+  if(d<0) out+=st('Divide by '+fmtInt(d)+' and FLIP the sign:  x '+relSym(p.op)+' '+ratHTML(p.x0),true);
+  else if(d===1) out+=st('x '+relSym(p.op)+' '+ratHTML(p.x0),true);
+  else out+=st('Divide by '+fmtInt(d)+':  x '+relSym(p.op)+' '+ratHTML(p.x0),true);
+  return out;
+}
+function ineqHints(p){
+  return [
+    'Solve it exactly like an equation — isolate x on one side.',
+    'Watch the sign: multiplying or dividing BOTH sides by a negative number flips <, >, \u2264, \u2265.',
+    'Pick the matching symbol in the dropdown, then type the boundary number.'
+  ];
+}
+
+/* ================= A.5C — systems of two equations ================= */
+var sysMode='mix';
+function genSys(){
+  var flavor=(sysMode==='mix')? rc(['graph','elim','word']) : sysMode;
+  var p={se:'A.5C',flavor:flavor};
+  if(flavor==='graph'){
+    var gx=ri(-4,4), gy=ri(-4,4), sl=[-3,-2,-1,0,1,2,3];
+    var m1=rc(sl), m2; do{ m2=rc(sl); }while(m2===m1);
+    p.m1=m1; p.k1=gy-m1*gx; p.m2=m2; p.k2=gy-m2*gx;
+    p.x0=R(gx,1); p.y0=R(gy,1);
+  } else if(flavor==='elim'){
+    var ex=ri(-5,5), ey=ri(-5,5), a1,b1,a2,b2,det;
+    do{ a1=rnz(-5,5); b1=rnz(-5,5); a2=rnz(-5,5); b2=rnz(-5,5); det=a1*b2-a2*b1; }while(det===0);
+    p.a1=a1; p.b1=b1; p.c1=a1*ex+b1*ey; p.a2=a2; p.b2=b2; p.c2=a2*ex+b2*ey;
+    p.x0=R(ex,1); p.y0=R(ey,1);
+  } else {
+    buildWord(p);
+  }
+  return p;
+}
+function buildWord(p){
+  var tpl=rc(['tickets','sumdiff','store']), x0,y0;
+  if(tpl==='tickets'){
+    x0=ri(2,9); y0=ri(2,9);
+    var A=rc([8,10,12]), C=rc([4,5,6]), T=x0+y0, Rev=A*x0+C*y0;
+    p.text='A theater sells adult tickets for $'+A+' and child tickets for $'+C+'. One show sold '
+      +T+' tickets in all and collected $'+Rev+'. How many adult and child tickets were sold?';
+    p.labX='Adults'; p.labY='Children';
+    p.eq1='x + y = '+T; p.eq2=A+'x + '+C+'y = '+Rev;
+  } else if(tpl==='sumdiff'){
+    x0=ri(6,15); y0=ri(1,x0-1);
+    var S=x0+y0, D=x0-y0;
+    p.text='The sum of two numbers is '+S+' and their difference is '+D+'. Find the two numbers.';
+    p.labX='Larger'; p.labY='Smaller';
+    p.eq1='x + y = '+S; p.eq2='x '+MIN+' y = '+D;
+  } else {
+    x0=ri(2,8); y0=ri(2,8);
+    var a=rc([3,4,5]), b=rc([1,2]), N=x0+y0, Cost=a*x0+b*y0;
+    p.text='Notebooks cost $'+a+' each and pens cost $'+b+' each. You buy '+N
+      +' items in all for $'+Cost+'. How many notebooks and how many pens did you buy?';
+    p.labX='Notebooks'; p.labY='Pens';
+    p.eq1='x + y = '+N; p.eq2=a+'x + '+b+'y = '+Cost;
+  }
+  p.tpl=tpl; p.x0=R(x0,1); p.y0=R(y0,1);
+}
+function sysSteps(p){
+  if(p.flavor==='graph'){
+    return st('Line 1:  y = '+linHTML(p.m1,p.k1))
+         + st('Line 2:  y = '+linHTML(p.m2,p.k2))
+         + st('The solution of the system is the single point the two lines share.')
+         + st('Solution:  '+ptStr(p.x0.n,p.y0.n),true);
+  }
+  if(p.flavor==='elim'){
+    var det=p.a1*p.b2-p.a2*p.b1, numX=p.c1*p.b2-p.c2*p.b1;
+    return st('(1)  '+stdEqHTML(p.a1,p.b1,p.c1))
+         + st('(2)  '+stdEqHTML(p.a2,p.b2,p.c2))
+         + st('Eliminate y (equation1&times;'+fmtInt(p.b2)+' minus equation2&times;'+fmtInt(p.b1)+'):  '+axHTML(det)+' = '+fmtInt(numX))
+         + st('x = '+ratHTML(p.x0))
+         + st('Substitute back to get y = '+ratHTML(p.y0),true);
+  }
+  return st('Let x = '+p.labX.toLowerCase()+' and y = '+p.labY.toLowerCase()+'.')
+       + st('(1)  '+p.eq1)
+       + st('(2)  '+p.eq2)
+       + st('Solve the system:  x = '+ratHTML(p.x0)+',  y = '+ratHTML(p.y0),true);
+}
+function sysHints(p){
+  if(p.flavor==='graph') return [
+    'The solution is the point where the two lines cross.',
+    'Read the x-coordinate first, then the y-coordinate.',
+    'The intersection sits on a lattice point — both coordinates are whole numbers.'];
+  if(p.flavor==='elim') return [
+    'Add or subtract the equations to cancel one variable, or solve one equation for a variable and substitute.',
+    'Once you know one variable, plug it back into either equation to get the other.',
+    'Check your pair in BOTH equations before entering it.'];
+  return [
+    'Name a variable for each unknown quantity (x and y).',
+    'Write one equation for the total count and one for the total value.',
+    'Solve the system by elimination or substitution.'];
+}
+
+/* ===================================================================
+   TODO ZONE 2 — the SES[] registry (Section 5 contract)
+   =================================================================== */
+var SES=[
+  {
+    id:'A.5A', letter:'A', short:'Equations', title:'Solve Linear Equations in One Variable',
+    blurb:'Solve linear equations in one variable, including those needing the distributive property and variables on both sides.',
+    gen:genEq,
+    prompt:function(p){
+      return segWrap('TYPE','eqSeg',eqMode,[['mix','Mixed'],['basic','Basic'],['dist','Distributive'],['both','Both sides']])
+        + 'Solve the equation for <b>x</b>.<br>'
+        + '<span class="given">'+eqLeft(p)+' = '+eqRight(p)+'</span>';
+    },
+    answerHTML:function(p){ return '<div class="answer"><span>x =</span>'+inBox('x','wide')+'</div>'; },
+    read:function(p){ var x=parseRat(document.getElementById('x').value); return x?{x:x}:null; },
+    check:function(p,a){ return req(a.x,p.x0); },
+    hints:eqHints, steps:eqSteps,
+    init:function(p){ wireSeg('eqSeg',eqMode,function(v){ eqMode=v; newProblem(); }); },
+    emptyMsg:'Enter a value for x — fractions like 3/4 or \u22125/2 are fine.'
+  },
+  {
+    id:'A.5B', letter:'B', short:'Inequalities', title:'Solve Linear Inequalities in One Variable',
+    blurb:'Solve linear inequalities in one variable, including those needing the distributive property and variables on both sides.',
+    gen:genIneq,
+    prompt:function(p){
+      return segWrap('TYPE','ineqSeg',ineqMode,[['mix','Mixed'],['basic','Basic'],['dist','Distributive'],['both','Both sides']])
+        + 'Solve the inequality for <b>x</b>. Give your answer as x&nbsp;(symbol)&nbsp;number.<br>'
+        + '<span class="given">'+eqLeft(p)+' '+relSym(p.rel0)+' '+eqRight(p)+'</span>';
+    },
+    answerHTML:function(p){
+      return '<div class="answer"><span>x</span>'+
+        '<select class="sel" id="op">'+
+          '<option value="lt">&lt;</option>'+
+          '<option value="gt">&gt;</option>'+
+          '<option value="le">\u2264</option>'+
+          '<option value="ge">\u2265</option>'+
+        '</select>'+inBox('bv','wide')+'</div>';
+    },
+    read:function(p){
+      var op=document.getElementById('op').value, v=parseRat(document.getElementById('bv').value);
+      return v?{op:op,val:v}:null;
+    },
+    check:function(p,a){ return a.op===p.op && req(a.val,p.x0); },
+    hints:ineqHints, steps:ineqSteps,
+    init:function(p){ wireSeg('ineqSeg',ineqMode,function(v){ ineqMode=v; newProblem(); }); },
+    emptyMsg:'Pick a symbol from the dropdown and enter the boundary number.'
+  },
+  {
+    id:'A.5C', letter:'C', short:'Systems', title:'Solve Systems of Two Linear Equations',
+    blurb:'Solve systems of two linear equations with two variables for mathematical and real-world problems.',
+    gen:genSys,
+    prompt:function(p){
+      var head=segWrap('TYPE','sysSeg',sysMode,[['mix','Mixed'],['graph','Graph'],['elim','Algebra'],['word','Word']]);
+      if(p.flavor==='graph'){
+        return head+'The two lines below are graphed. Find the solution of the system — the point where they cross (whole-number coordinates).'
+          +'<div style="margin-top:8px">'
+          +'<span class="given" style="font-size:18px;color:#2f6cff">y = '+linHTML(p.m1,p.k1)+'</span> &nbsp; '
+          +'<span class="given" style="font-size:18px;color:#e5484d">y = '+linHTML(p.m2,p.k2)+'</span></div>'
+          +plot({Rg:6,lines:[{m:p.m1,k:p.k1,color:'#2f6cff'},{m:p.m2,k:p.k2,color:'#e5484d'}]});
+      }
+      if(p.flavor==='elim'){
+        return head+'Solve the system of equations for x and y.<br>'
+          +'<span class="given" style="line-height:1.7">'+stdEqHTML(p.a1,p.b1,p.c1)+'<br>'+stdEqHTML(p.a2,p.b2,p.c2)+'</span>';
+      }
+      return head+'<div style="font-weight:800">'+p.text+'</div>';
+    },
+    answerHTML:function(p){
+      var lx=p.labX||'x', ly=p.labY||'y';
+      var note=(p.flavor==='word')?'<span class="lbl">Enter whole numbers.</span>':'';
+      return '<div class="answer">'+note+
+        '<span>'+lx+' =</span>'+inBox('sx','wide')+
+        '<span style="margin-left:14px">'+ly+' =</span>'+inBox('sy','wide')+'</div>';
+    },
+    read:function(p){
+      var x=parseRat(document.getElementById('sx').value), y=parseRat(document.getElementById('sy').value);
+      return (x&&y)?{x:x,y:y}:null;
+    },
+    check:function(p,a){ return req(a.x,p.x0)&&req(a.y,p.y0); },
+    hints:sysHints, steps:sysSteps,
+    init:function(p){ wireSeg('sysSeg',sysMode,function(v){ sysMode=v; newProblem(); }); },
+    emptyMsg:'Fill in both boxes — one value for each variable.'
+  }
+];
+
+/* ===================================================================
+   THE FIXED CONTROLLER (Section 7 — copied verbatim)
+   =================================================================== */
+var current={se:SES[0], p:null, done:false, recorded:false, hintIdx:0, hintLogged:false};
+var session={a:0,c:0};
+var $=function(s){return document.querySelector(s);};
+
+function stoneStats(id){
+  return (window.Portal && Portal.skill) ? Portal.skill(id) : {progress:0, attempts:0, mastered:false};
+}
+function renderRail(){
+  var host=$('#stones'); host.innerHTML='';
+  SES.forEach(function(se){
+    var st=stoneStats(se.id);
+    var cls='stone'+(se===current.se?' active':'')+(st.mastered?' mastered':st.attempts?' started':'');
+    var b=document.createElement('button');
+    b.type='button'; b.className=cls;
+    b.innerHTML='<span class="dot">'+(st.mastered?'\u2713':se.letter)+'</span>'+
+      '<span><span class="nm">'+se.id+' \u00b7 '+se.short+'</span>'+
+      '<span class="mini"><i style="width:'+Math.round(st.progress*100)+'%"></i></span></span>';
+    b.addEventListener('click', function(){ current.se=se; newProblem(); });
+    host.appendChild(b);
+  });
+}
+function newProblem(){
+  var se=current.se;
+  current.p=se.gen(); current.done=false; current.recorded=false; current.hintIdx=0; current.hintLogged=false;
+  $('#seTitle').textContent=se.title;
+  $('#seBlurb').textContent=se.blurb;
+  $('#seTag').textContent='TEKS '+se.id;
+  $('#prompt').innerHTML=se.prompt(current.p);
+  $('#answerArea').innerHTML=se.answerHTML(current.p);
+  $('#fb').textContent=''; $('#fb').className='fb';
+  $('#hintBox').className='note'; $('#hintBox').innerHTML='';
+  $('#stepsBox').className='stepsBox'; $('#stepsBox').innerHTML='';
+  $('#checkBtn').disabled=false;
+  if(se.init) se.init(current.p);
+  renderRail();
+  var first=$('#answerArea input'); if(first) first.focus();
+}
+function onCheck(){
+  if(current.done) return;
+  var se=current.se, ans=se.read(current.p);
+  if(!ans){
+    $('#fb').className='fb bad';
+    $('#fb').textContent=se.emptyMsg||'Fill in every box — fractions like 3/4 are fine.';
+    return;
+  }
+  var ok=se.check(current.p, ans);
+  if(se.allowRecheck){ if(ok) current.done=true; }
+  else { current.done=true; $('#checkBtn').disabled=true; if(se.reveal) se.reveal(current.p); }
+  if(!current.recorded){
+    current.recorded=true;
+    session.a++; if(ok) session.c++;
+    $('#sesScore').textContent=session.c+' / '+session.a;
+    if(window.Portal && Portal.record) Portal.record(se.id, ok);
+  }
+  $('#fb').className='fb '+(ok?'ok':'bad');
+  $('#fb').textContent= ok?'Correct \u2713'
+    : (se.allowRecheck?'Not quite \u2717 — read the tips, adjust, and check again.'
+                      :'Not quite \u2717 — open the steps to see the path.');
+  renderRail();
+}
+function onHint(){
+  var hints=current.se.hints(current.p);
+  var h=hints[Math.min(current.hintIdx, hints.length-1)];
+  current.hintIdx++;
+  var box=$('#hintBox'); box.classList.add('show');
+  box.innerHTML += (box.innerHTML?'<br>':'')+'\u2022 '+h;
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+function onSteps(){
+  var box=$('#stepsBox'); box.classList.add('show');
+  box.innerHTML=current.se.steps(current.p);
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
+$('#checkBtn').addEventListener('click', onCheck);
+$('#hintBtn').addEventListener('click', onHint);
+$('#stepsBtn').addEventListener('click', onSteps);
+$('#nextBtn').addEventListener('click', newProblem);
+window.addEventListener('keydown', function(e){
+  var tag=(e.target.tagName||'').toLowerCase();
+  if(e.key==='Enter' && tag!=='select'){ e.preventDefault(); onCheck(); }
+  if((e.key==='n'||e.key==='N') && tag!=='input'){ newProblem(); }
+});
+
+/* deep link: teks-a5.html?se=A.5C */
+var want=new URLSearchParams(location.search).get('se');
+if(want){ var f=SES.filter(function(s){return s.id.toLowerCase()===want.toLowerCase();})[0]; if(f) current.se=f; }
+newProblem();
+
+})();
+</script>
+</body>
+</html>
