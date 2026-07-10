@@ -716,7 +716,7 @@
   var GROUP_ORDER = ['skill', 'drill'];
 
   function itemHTML(app, i){
-    return '<li><a class="moreItem" href="'+esc(app.file)+'">'+
+    return '<li><a class="moreItem" href="'+esc(app.file)+'" target="_blank" rel="noopener">'+
       '<span class="glyph">'+(i+1)+'</span>'+
       '<span class="info"><span class="nm">'+esc(app.name)+'</span>'+
         '<span class="ds">'+esc(app.desc||'')+'</span></span>'+
