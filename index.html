@@ -137,15 +137,26 @@
   .chip-ok{color:var(--ok); background:#eafff2; border:1px solid #bfeacc; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
   .chip-prog{color:#7a5a00; background:#fff9d6; border:1px solid #ffe38a; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
   .chip-none{color:var(--muted); background:#f2f5fc; border:1px solid var(--ui); border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
-  /* Standard rows: emphasized. SE rows: nested, hidden until "Show details" or print. */
+  /* Three-view report:
+     - Summary : standard rows only (SE rows hidden)
+     - Roadmap : standard + SE rows, same columns as Summary
+     - Detail  : standard + SE rows, more columns (hints, level, attempts-to-mastery)
+     View is driven by data-view on #reportModal; row visibility follows. */
   tr.std-row td{background:#f5f8ff}
   tr.std-row td:first-child{border-left:3px solid var(--blue)}
-  tr.se-row{display:none}
-  #reportModal.expanded tr.se-row{display:table-row}
   tr.se-row td{padding-top:5px; padding-bottom:5px; font-size:12.5px; color:var(--muted); border-bottom:1px dashed #f1f5ff}
   tr.se-row td.se-label{padding-left:32px; font-weight:800; color:var(--ink)}
   tr.se-row td.num{color:var(--ink)}
-  #toggleDetail{font-size:13px}
+  #reportModal[data-view="summary"] tr.se-row{display:none}
+  /* View switcher tabs */
+  .viewSwitch{display:inline-flex; gap:4px; padding:4px; background:#eef3ff; border:1px solid var(--ui);
+    border-radius:12px; margin-bottom:6px}
+  .viewBtn{border:0; background:transparent; font-family:inherit; font-weight:900; font-size:13px;
+    color:var(--muted); padding:7px 14px; border-radius:8px; cursor:pointer}
+  .viewBtn:hover{color:var(--ink)}
+  .viewBtn.is-active{background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(25,40,80,.1)}
+  .viewCaption{color:var(--muted); font-size:12.5px; font-weight:700; margin:0 0 10px}
+  td.num.muted, td.muted{color:var(--muted); font-weight:700}
   .codeBox{margin-top:14px; display:flex; gap:8px; align-items:stretch}
   .codeBox textarea{
     flex:1; min-height:64px; border:2px solid var(--ui); border-radius:12px; padding:10px;
@@ -181,8 +192,8 @@
       display:block !important; overflow:visible !important; inset:auto !important}
     #reportModal .modalCard{box-shadow:none !important; border:0 !important; margin:0 !important; width:100% !important}
     .noprint{display:none !important}
-    /* Always show per-SE detail in print, regardless of the on-screen collapse state. */
-    tr.se-row{display:table-row !important}
+    /* Print reflects the on-screen view: Summary hides SE rows via the
+       [data-view="summary"] rule above; Roadmap/Detail show them. */
     /* Try to keep a standard and its SEs together on the page when possible. */
     tr.std-row, tr.se-row{page-break-inside:avoid; break-inside:avoid}
   }
@@ -256,14 +267,20 @@
     <div class="modalHead">
       <h3>Progress Report <span id="repName" style="color:var(--muted); font-size:15px"></span></h3>
       <div class="noprint" style="display:flex; gap:8px; flex-wrap:wrap">
-        <button class="btn" id="toggleDetail">Show details</button>
+        <button class="btn" id="csvBtn">Download CSV</button>
         <button class="btn" id="printBtn">Print</button>
         <button class="btn" id="closeReport">Close</button>
       </div>
     </div>
     <div class="modalBody">
+      <div class="viewSwitch noprint" role="tablist" aria-label="Report view">
+        <button class="viewBtn is-active" data-view="summary" role="tab">Summary</button>
+        <button class="viewBtn" data-view="roadmap" role="tab">Roadmap</button>
+        <button class="viewBtn" data-view="detail" role="tab">Detail</button>
+      </div>
+      <div class="viewCaption" id="viewCaption"></div>
       <table>
-        <thead><tr><th>Skill</th><th>Attempts</th><th>Correct</th><th>Recent 10</th><th>Status</th></tr></thead>
+        <thead id="repHead"></thead>
         <tbody id="repRows"></tbody>
       </table>
       <div class="codeBox noprint">
@@ -438,55 +455,187 @@
 
   /* ---------- report ----------
      For each standard the student has touched, emit ONE standard row (the
-     roll-up) followed by ONE row per SE in that standard (hidden by default,
-     shown when the modal has .expanded, always shown in print). This lets
-     the teacher see per-SE evidence, and prints/PDFs carry the full detail. */
+     roll-up) followed by ONE row per SE in that standard. Which view is
+     showing is driven by data-view on #reportModal; row VISIBILITY is CSS,
+     column SHAPE is JS (Detail adds hints/level/attempts-to-mastery). */
   function statusChip(st){
     if (!st.attempts) return '<span class="chip-none">Not started</span>';
     if (st.mastered)  return '<span class="chip-ok">Polished ✓</span>';
     return '<span class="chip-prog">In progress</span>';
   }
-  function openReport(){
+  function fmtDate(ms){
+    if (!ms) return '—';
+    var d = new Date(ms), y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'),
+        day = String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  }
+  function pct(x){ return Math.round(x*100)+'%'; }
+  function dashIfNone(v, fmt){ return v ? (fmt ? fmt(v) : v) : '—'; }
+
+  var VIEW_CAPTIONS = {
+    summary: 'Per-standard roll-up. One row per TEKS standard the student has practiced.',
+    roadmap: 'Standard + Student Expectation (SE) breakdown. Shows where the student is in the sequence.',
+    detail:  'All available diagnostic data per SE: hints used, level, and attempts it took to reach mastery.'
+  };
+
+  /* Build the <thead> row for the given view. */
+  function headHTML(view){
+    if (view === 'detail'){
+      return '<tr>'+
+        '<th>Skill</th>'+
+        '<th>Total Attempts</th><th>Total Correct</th><th>Overall</th>'+
+        '<th>Recent 10</th><th>Hints</th><th>Level</th>'+
+        '<th>Att. to Mastery</th><th>Last Active</th><th>Status</th></tr>';
+    }
+    // summary + roadmap share the same columns
+    return '<tr>'+
+      '<th>Skill</th><th>Total Attempts</th><th>Total Correct</th>'+
+      '<th>Overall</th><th>Recent 10</th><th>Last Active</th><th>Status</th></tr>';
+  }
+
+  /* Row for a standard or an SE, for the given view. `kind` = 'std' | 'se'. */
+  function rowHTML(view, kind, label, st){
+    var cls = (kind === 'std') ? 'std-row' : 'se-row';
+    var labelCell = (kind === 'std')
+      ? '<td>'+label+'</td>'
+      : '<td class="se-label">'+label+'</td>';
+    var overall = st.attempts ? pct(st.correct/st.attempts) : '—';
+    var recent  = st.attempts ? pct(st.recentAcc) : '—';
+    var last    = fmtDate(st.last);
+    if (view === 'detail'){
+      var atm = (st.attemptsToMastery != null) ? st.attemptsToMastery : '—';
+      var lv  = st.level || 1;
+      var hints = st.hints || 0;
+      return '<tr class="'+cls+'">'+labelCell+
+        '<td class="num">'+st.attempts+'</td>'+
+        '<td class="num">'+(st.attempts ? st.correct : '—')+'</td>'+
+        '<td class="num">'+overall+'</td>'+
+        '<td class="num">'+recent+'</td>'+
+        '<td class="num">'+hints+'</td>'+
+        '<td class="num">'+lv+'</td>'+
+        '<td class="num">'+atm+'</td>'+
+        '<td class="num muted">'+last+'</td>'+
+        '<td>'+statusChip(st)+'</td></tr>';
+    }
+    return '<tr class="'+cls+'">'+labelCell+
+      '<td class="num">'+st.attempts+'</td>'+
+      '<td class="num">'+(st.attempts ? st.correct : '—')+'</td>'+
+      '<td class="num">'+overall+'</td>'+
+      '<td class="num">'+recent+'</td>'+
+      '<td class="num muted">'+last+'</td>'+
+      '<td>'+statusChip(st)+'</td></tr>';
+  }
+
+  /* Number of columns in the current view — for the empty-state row. */
+  function colspan(view){ return view === 'detail' ? 10 : 7; }
+
+  function renderReport(view){
+    $('#reportModal').setAttribute('data-view', view);
+    $('#viewCaption').textContent = VIEW_CAPTIONS[view] || '';
+    $('#repHead').innerHTML = headHTML(view);
+    // Highlight the active tab
+    var btns = document.querySelectorAll('.viewBtn');
+    for (var i = 0; i < btns.length; i++){
+      btns[i].classList.toggle('is-active', btns[i].getAttribute('data-view') === view);
+    }
     var rows = '';
     Portal.REGISTRY.forEach(function(r){
       var st = Portal.skill(r.id);
-      if(!st.attempts) return;                    // skip standards the student hasn't touched
+      if (!st.attempts) return;                    // skip standards untouched
       var label = (r.code ? '<b>'+r.code+'</b> ' : '') + r.name;
-      rows += '<tr class="std-row"><td title="'+r.name.replace(/"/g,'&quot;')+'">'+label+'</td>' +
-              '<td class="num">'+st.attempts+'</td>' +
-              '<td class="num">'+st.correct+'</td>' +
-              '<td class="num">'+Math.round(st.recentAcc*100)+'%</td>' +
-              '<td>'+statusChip(st)+'</td></tr>';
-      // Per-SE detail rows for this standard.
+      rows += rowHTML(view, 'std', label, st);
       if (r.modules && r.modules.length){
         r.modules.forEach(function(mid){
-          var mst = Portal.skill(mid);
-          var mCorrect = mst.attempts ? mst.correct : '—';
-          var mRecent  = mst.attempts ? Math.round(mst.recentAcc*100)+'%' : '—';
-          rows += '<tr class="se-row"><td class="se-label">'+mid+'</td>' +
-                  '<td class="num">'+mst.attempts+'</td>' +
-                  '<td class="num">'+mCorrect+'</td>' +
-                  '<td class="num">'+mRecent+'</td>' +
-                  '<td>'+statusChip(mst)+'</td></tr>';
+          rows += rowHTML(view, 'se', mid, Portal.skill(mid));
         });
       }
     });
-    $('#repRows').innerHTML = rows || '<tr><td colspan="5" style="color:var(--muted)">No practice recorded yet — go answer some questions!</td></tr>';
+    if (!rows){
+      rows = '<tr><td colspan="'+colspan(view)+'" style="color:var(--muted)">'+
+        'No practice recorded yet — go answer some questions!</td></tr>';
+    }
+    $('#repRows').innerHTML = rows;
+  }
+
+  /* ---- CSV export (always full Detail; the on-screen view doesn't affect it) ---- */
+  function csvEscape(v){
+    var s = (v == null) ? '' : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function buildStudentCSV(){
+    var idText = Portal.studentId() || 'guest';
+    var nameText = Portal.studentName() || '';
+    var headers = ['id','name','level','skill_kind','skill_id','skill_name',
+      'total_attempts','total_correct','overall_accuracy','recent_10_accuracy',
+      'hints','current_level','attempts_to_mastery','last_active','status'];
+    var lines = [headers.map(csvEscape).join(',')];
+    function statusText(st){
+      if (!st.attempts) return 'Not started';
+      return st.mastered ? 'Polished' : 'In progress';
+    }
+    Portal.REGISTRY.forEach(function(r){
+      var st = Portal.skill(r.id);
+      // Standard-level row: gives you the roll-up alongside the SE rows so
+      // one CSV covers Summary/Roadmap/Detail-worth of info.
+      lines.push([
+        idText, nameText, 'standard', 'standard', r.id, r.name,
+        st.attempts, st.attempts?st.correct:'',
+        st.attempts?(st.correct/st.attempts).toFixed(4):'',
+        st.attempts?st.recentAcc.toFixed(4):'',
+        st.hints||0, st.level||1,
+        (st.attemptsToMastery != null ? st.attemptsToMastery : ''),
+        fmtDate(st.last), statusText(st)
+      ].map(csvEscape).join(','));
+      // SE-level rows
+      if (r.modules && r.modules.length){
+        r.modules.forEach(function(mid){
+          var mst = Portal.skill(mid);
+          lines.push([
+            idText, nameText, 'standard', 'se', mid, '',
+            mst.attempts, mst.attempts?mst.correct:'',
+            mst.attempts?(mst.correct/mst.attempts).toFixed(4):'',
+            mst.attempts?mst.recentAcc.toFixed(4):'',
+            mst.hints||0, mst.level||1,
+            (mst.attemptsToMastery != null ? mst.attemptsToMastery : ''),
+            fmtDate(mst.last), statusText(mst)
+          ].map(csvEscape).join(','));
+        });
+      }
+    });
+    return lines.join('\n');
+  }
+  function downloadStudentCSV(){
+    var csv = buildStudentCSV();
+    var idText = Portal.studentId() || 'guest';
+    var when = fmtDate(Date.now());
+    var fname = 'algebra1_' + idText + '_' + when + '.csv';
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = fname;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 500);
+  }
+
+  var _view = 'summary';   // current view, remembered across opens
+  function openReport(){
     $('#repName').textContent = Portal.studentName() ? '· '+Portal.studentName() : '';
     $('#repCode').value = Portal.reportCode();
-    // Always open collapsed; the toggle expands to reveal SE rows.
-    $('#reportModal').classList.remove('expanded');
-    $('#toggleDetail').textContent = 'Show details';
+    renderReport(_view);
     $('#reportModal').classList.add('show');
   }
   $('#reportBtn').addEventListener('click', openReport);
   $('#closeReport').addEventListener('click', function(){ $('#reportModal').classList.remove('show'); });
   $('#reportModal').addEventListener('click', function(e){ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
-  $('#toggleDetail').addEventListener('click', function(){
-    var expanded = $('#reportModal').classList.toggle('expanded');
-    this.textContent = expanded ? 'Hide details' : 'Show details';
+  // View switcher
+  document.querySelectorAll('.viewBtn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      _view = btn.getAttribute('data-view');
+      renderReport(_view);
+    });
   });
   $('#printBtn').addEventListener('click', function(){ window.print(); });
+  $('#csvBtn').addEventListener('click', downloadStudentCSV);
   $('#copyCode').addEventListener('click', function(){
     var ta = $('#repCode'); ta.select();
     try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
