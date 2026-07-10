@@ -163,15 +163,44 @@
   }
   .foot{color:var(--muted); font-size:12.5px; font-weight:700; margin-top:14px; text-align:center}
 
+  /* ---------- more practice (legacy apps) modal ---------- */
+  .moreCard{width:min(640px,96vw)}
+  .moreList{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:10px}
+  .moreItem{
+    display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--ui);
+    border-radius:14px; text-decoration:none; color:inherit; background:#fbfdff;
+  }
+  .moreItem:hover{background:#f2f6ff; border-color:#c3d0ff}
+  .moreItem .glyph{
+    width:42px; height:42px; flex:none; border-radius:12px; background:#eef4ff;
+    display:flex; align-items:center; justify-content:center; font-weight:900; font-size:17px; color:var(--blue);
+  }
+  .moreItem .info{flex:1; min-width:0}
+  .moreItem .nm{font-weight:900; font-size:15px}
+  .moreItem .ds{color:var(--muted); font-weight:700; font-size:12.5px; margin-top:2px}
+  .moreItem .go{flex:none; font-weight:900; color:var(--blue); font-size:13px}
+
   /* ---------- welcome / choose-mode modal ---------- */
   .chooseCard{width:min(520px,96vw)}
   .chooseBody{padding:20px}
   .chooseBody p.lead{margin:0 0 16px; color:var(--muted); font-weight:700; font-size:14.5px}
-  .modeBlock{border:1px solid var(--ui); border-radius:16px; padding:16px; margin-bottom:14px; background:#fbfdff}
+  .modeBlock{border:2px solid var(--ui); border-radius:16px; padding:16px; margin-bottom:0; background:#fbfdff}
   .modeBlock h4{margin:0 0 4px; font-size:16px; font-weight:900}
   .modeBlock .hint{color:var(--muted); font-weight:700; font-size:13px; margin:0 0 12px}
+  /* ID block: keep it aligned with the portal's primary blue action color. */
+  .modeBlock-id{border-color:#bcd0ff; background:#f5f8ff}
+  /* Guest block: warm amber accent so it reads as a genuinely different choice,
+     not a second copy of the ID block. */
+  .modeBlock-guest{border-color:#ffdb8a; background:#fffaf0}
+  .modeBlock-guest h4{color:#8a5b00}
+  .guest-btn{border-color:#ffdb8a; background:#fff3d6; color:#7a5100}
+  .guest-btn:hover{background:#ffe9b3}
+  /* Bold OR divider between the two choices */
+  .orDivider{display:flex; align-items:center; gap:12px; margin:16px 0; color:var(--muted)}
+  .orDivider::before, .orDivider::after{content:""; flex:1; height:2px; background:var(--ui)}
+  .orDivider span{font-weight:900; font-size:13px; letter-spacing:1.5px; color:var(--muted)}
   .warnline{color:#7a5a00; background:#fff8e8; border:1px solid #ffe38a; border-radius:10px;
-    padding:8px 12px; font-weight:800; font-size:12.5px; margin-top:2px}
+    padding:8px 12px; font-weight:800; font-size:12.5px; margin-top:10px}
   .idRow{display:flex; gap:8px; align-items:stretch; margin-top:4px}
   .idRow input{
     flex:1; height:46px; border:2px solid var(--ui); border-radius:12px; padding:0 14px;
@@ -222,6 +251,7 @@
       <span style="flex:1"></span>
       <button class="btn primary" id="continueBtn">Continue my path →</button>
       <button class="btn info" id="reportBtn">My report</button>
+      <button class="btn" id="moreBtn">More practice</button>
     </div>
   </div>
 
@@ -238,7 +268,7 @@
     <div class="chooseBody">
       <p class="lead">How do you want to work today?</p>
 
-      <div class="modeBlock">
+      <div class="modeBlock modeBlock-id">
         <h4>Enter ID to Save Progress</h4>
         <p class="hint">Use your ID to save and restore your progress.</p>
         <div class="idRow">
@@ -249,11 +279,12 @@
         <div class="msg" id="idMsg" aria-live="polite"></div>
       </div>
 
+      <div class="orDivider" role="separator"><span>OR</span></div>
 
-      <div class="modeBlock">
+      <div class="modeBlock modeBlock-guest">
         <h4>Guest Mode</h4>
         <p class="hint">Just here to practice? Jump straight in.</p>
-        <button class="btn" id="guestBtn">Continue as guest</button>
+        <button class="btn guest-btn" id="guestBtn">Continue as guest</button>
         <div class="warnline">Your progress won't be saved after this session.</div>
       </div>
     </div>
@@ -295,6 +326,23 @@
   </div>
 </div>
 
+<!-- ============ more practice (legacy apps) modal ============ -->
+<div class="modal" id="moreModal" role="dialog" aria-modal="true" aria-label="More practice apps">
+  <div class="modalCard moreCard">
+    <div class="modalHead">
+      <h3>More Practice</h3>
+      <div class="noprint"><button class="btn" id="closeMore">Close</button></div>
+    </div>
+    <div class="modalBody">
+      <p class="lead" style="margin:0 0 14px; color:var(--muted); font-weight:700; font-size:14px">
+        Extra practice apps from last year. These don't connect to your saved progress —
+        they're just for additional practice.
+      </p>
+      <ul class="moreList" id="moreList"></ul>
+    </div>
+  </div>
+</div>
+
 <script src="portal.js"></script>
 <script>
 (function(){
@@ -302,6 +350,18 @@
   var $ = function(s){ return document.querySelector(s); };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* ---------- LEGACY APPS ----------
+     Last year's standalone practice apps, linked from the "More practice"
+     modal. These do NOT call Portal.record()/hint() — they're independent
+     pages, so nothing here syncs or shows up in the report.
+     Drop each app's HTML file into the "more/" folder next to index.html,
+     then add one line below. `file` is the path relative to index.html. */
+  var LEGACY_APPS = [
+    { name: 'App name here',   desc: 'One line describing what it covers.', file: 'more/app1.html' },
+    { name: 'App name here 2', desc: 'One line describing what it covers.', file: 'more/app2.html' },
+    // Add the rest of your ~10 apps here, same shape.
+  ];
 
   /* ---------- build the four section cards ---------- */
   function ringSVG(pct, accent){
@@ -636,6 +696,30 @@
   });
   $('#printBtn').addEventListener('click', function(){ window.print(); });
   $('#csvBtn').addEventListener('click', downloadStudentCSV);
+
+  /* ---------- more practice (legacy apps) ---------- */
+  function renderMore(){
+    var host = $('#moreList');
+    if (!LEGACY_APPS.length){
+      host.innerHTML = '<li style="color:var(--muted); font-weight:700; font-size:13.5px">'+
+        'No apps listed yet — add entries to LEGACY_APPS in index.html.</li>';
+      return;
+    }
+    host.innerHTML = LEGACY_APPS.map(function(app, i){
+      return '<li><a class="moreItem" href="'+esc(app.file)+'">'+
+        '<span class="glyph">'+(i+1)+'</span>'+
+        '<span class="info"><span class="nm">'+esc(app.name)+'</span>'+
+          '<span class="ds">'+esc(app.desc||'')+'</span></span>'+
+        '<span class="go">Open →</span>'+
+      '</a></li>';
+    }).join('');
+  }
+  $('#moreBtn').addEventListener('click', function(){
+    renderMore();
+    $('#moreModal').classList.add('show');
+  });
+  $('#closeMore').addEventListener('click', function(){ $('#moreModal').classList.remove('show'); });
+  $('#moreModal').addEventListener('click', function(e){ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
   $('#copyCode').addEventListener('click', function(){
     var ta = $('#repCode'); ta.select();
     try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
