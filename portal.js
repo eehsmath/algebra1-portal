@@ -37,7 +37,7 @@
   /*  SYNC CONFIG                                                        */
   /*  Paste the Apps Script /exec deployment URL here after Part C.      */
   /* ------------------------------------------------------------------ */
-  var SYNC_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
+  var SYNC_URL = 'https://script.google.com/macros/s/AKfycbwvP9DR8ZfNloUR0Mn1IogfjyPB1kZKTP_ss1o8-sivIY2EYCIR9WBOoY5aX8qHRLnrCQ/exec';
 
   var LS_KEY = 'eehsAlg1.v1';          // student data (persists across sessions)
   var SS_KEY = 'eehsAlg1.guest.v1';    // guest data  (dies with the tab)
