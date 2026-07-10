@@ -37,7 +37,7 @@
   /*  SYNC CONFIG                                                        */
   /*  Paste the Apps Script /exec deployment URL here after Part C.      */
   /* ------------------------------------------------------------------ */
-  var SYNC_URL = 'https://script.google.com/macros/s/AKfycbwvP9DR8ZfNloUR0Mn1IogfjyPB1kZKTP_ss1o8-sivIY2EYCIR9WBOoY5aX8qHRLnrCQ/exec';
+  var SYNC_URL = 'PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE';
 
   var LS_KEY = 'eehsAlg1.v1';          // student data (persists across sessions)
   var SS_KEY = 'eehsAlg1.guest.v1';    // guest data  (dies with the tab)
@@ -199,12 +199,18 @@
     opts = opts || {};
     var d = load();
     var s = d.skills[skillId] || (d.skills[skillId] = { a: 0, c: 0, h: [], lv: 1, t: 0, hints: 0 });
+    var wasMastered = computeStats(s).mastered;    // capture pre-record state
     s.a += 1;
     if (correct) s.c += 1;
     s.h.push(correct ? 1 : 0);
     if (s.h.length > 20) s.h.shift();          // keep last 20 only
     if (opts.level) s.lv = opts.level;
     s.t = Date.now();
+    // Stamp attempts-at-mastery the first time this SE crosses the threshold.
+    // Never overwritten — this records the effort it took to get there, not the
+    // count today. Absent when not yet mastered.
+    var nowMastered = computeStats(s).mastered;
+    if (!wasMastered && nowMastered && s.am == null) s.am = s.a;
     var day = d.sessions[today()] || (d.sessions[today()] = { a: 0, c: 0 });
     day.a += 1;
     if (correct) day.c += 1;
@@ -232,7 +238,7 @@
        progress  = (attempts capped at 15 / 15) x recentAcc  -> 0..1 */
   function computeStats(s) {
     if (!s || !s.a) {
-      return { attempts: 0, correct: 0, recentAcc: 0, mastered: false, progress: 0, level: 1, last: 0, hints: 0 };
+      return { attempts: 0, correct: 0, recentAcc: 0, mastered: false, progress: 0, level: 1, last: 0, hints: 0, attemptsToMastery: null };
     }
     var last10 = s.h.slice(-10);
     var recentAcc = last10.length ? last10.reduce(function (x, y) { return x + y; }, 0) / last10.length : 0;
@@ -241,7 +247,8 @@
     return {
       attempts: s.a, correct: s.c, recentAcc: recentAcc,
       mastered: mastered, progress: progress,
-      level: s.lv || 1, last: s.t || 0, hints: s.hints || 0
+      level: s.lv || 1, last: s.t || 0, hints: s.hints || 0,
+      attemptsToMastery: (s.am != null ? s.am : null)
     };
   }
 
