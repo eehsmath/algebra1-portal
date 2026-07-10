@@ -94,6 +94,9 @@
     font-family:inherit; color:var(--ink); background:#fff; padding:0 8px}
   .sysRow{display:flex; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap}
   .radio{display:flex; gap:16px; flex-wrap:wrap; font-size:16px; margin-top:6px}
+  .qPart{padding-top:10px; margin-top:10px; border-top:1px dashed #e5e7eb}
+  .qPart:first-child{padding-top:0; margin-top:0; border-top:none}
+  .qLabel{font-size:11px; font-weight:900; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; margin-bottom:6px}
   .radio label{display:flex; align-items:center; gap:6px; font-weight:800; cursor:pointer}
   .radio input{accent-color:var(--blue); width:18px; height:18px}
 
@@ -106,6 +109,20 @@
   .mc button:disabled{cursor:default; opacity:.85}
   .mc button.right{border-color:#7de0a6; background:#eafff2}
   .mc button.wrong{border-color:#ffb3b3; background:#fff3f3}
+
+  /* qQuestion: a sub-question's prompt text \u2014 scaled like .prompt, a step below
+     the primary .answer size, since this is one of several stacked sub-questions */
+  .qQuestion{font-size:clamp(16px,2.2vw,19px); font-weight:800; margin-bottom:6px}
+  /* choice2: centered two-button A/B choice (yes/no, this/that) \u2014 proportioned
+     close to the established .mc scale, just centered and slightly roomier for two big options */
+  .choice2{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px}
+  @media (max-width:640px){ .choice2{grid-template-columns:1fr} }
+  .choice2 button{border:2px solid var(--ui); background:#fff; border-radius:14px; padding:13px 14px;
+    font-family:inherit; font-weight:800; font-size:clamp(15px,2vw,16.5px); text-align:center; cursor:pointer; color:var(--ink)}
+  .choice2 button.sel{border-color:var(--blue); background:#f1f6ff}
+  .choice2 button:disabled{cursor:default; opacity:.85}
+  .choice2 button.right{border-color:#7de0a6; background:#eafff2}
+  .choice2 button.wrong{border-color:#ffb3b3; background:#fff3f3}
 
   /* selector segments */
   .drSeg{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden; flex-wrap:wrap}
@@ -134,6 +151,19 @@
   .stepsBox .st{display:block; margin:2px 0}
   .stepsBox .final{color:#133a9a}
   .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
+
+  /* ---------- floating on-screen keyboard ---------- */
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKeyWide{grid-column:span 4; font-size:10.5px; min-width:0; white-space:normal; overflow-wrap:break-word; line-height:1.2; padding:7px 3px}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
 </style>
 </head>
 <body>
@@ -220,33 +250,64 @@ function parseRat(s){
 /* ---- display helpers (HTML strings) ---- */
 var MIN='\u2212';
 function fmtInt(x){ return x<0 ? MIN+Math.abs(x) : String(x); }
+/* same invisible-1 suppression as coefX, for plain JS-integer slopes (not rational
+   objects) \u2014 e.g. A.3F's p.L[i].m, which are raw numbers from rnz(), not R(). */
+function coefXInt(m){ return m===1?'x':(m===-1?MIN+'x':fmtInt(m)+'x'); }
 function ratHTML(r){
   if(r.d===1) return fmtInt(r.n);
   var s = r.n<0 ? MIN : '';
   return s+'<span class="vfrac"><span>'+Math.abs(r.n)+'</span><span>'+r.d+'</span></span>';
 }
 function ratText(r){ return r.d===1 ? String(r.n) : r.n+'/'+r.d; }
+/* coefficient prefix for "m * (...)" or "mx" terms \u2014 empty for m=1 (invisible 1),
+   a bare minus for m=-1, otherwise the rational itself. Standard math-notation
+   convention: 1x is always written as x, never "1x". */
+function coefPrefix(m){
+  if(req(m,rint(1))) return '';
+  if(req(m,rint(-1))) return MIN;
+  return ratHTML(m);
+}
+function coefX(m){ return coefPrefix(m)+'x'; }
 /* slope-intercept display: y = mx + b (m,b rationals) */
 function siHTML(m,b){
-  var out='y = ';
-  if(req(m,rint(1))) out+='x';
-  else if(req(m,rint(-1))) out+=MIN+'x';
-  else if(rzero(m)) out+='';
-  else out+=ratHTML(m)+'x';
   if(rzero(m)) return 'y = '+ratHTML(b);
+  var out='y = '+coefX(m);
   if(!rzero(b)) out += (b.n>0?' + ':' '+MIN+' ') + ratHTML(R(Math.abs(b.n),b.d));
   return out;
 }
 function ptStr(x,y){ return '('+fmtInt(x)+', '+fmtInt(y)+')'; }
 
+/* Ax + By = C term-string, coefficient-of-1 suppressed on both A and B (A,B,C are
+   already-reduced/scaled integers by the time this is called). */
+function stdTermsStr(A,B,C){
+  var Astr=(A===1?'':A);
+  var Bmag=Math.abs(B), Bstr=(Bmag===1?'':Bmag);
+  var by=(B<0?MIN+' '+Bstr:'+ '+Bstr)+'y';
+  return Astr+'x '+by+' = '+fmtInt(C);
+}
 /* standard form Ax + By = C with integer coefficients (m,b rationals) */
 function stdOf(m,b){
   var A=m.n*b.d, B=-m.d*b.d, C=-b.n*m.d;
   if(A<0){A=-A;B=-B;C=-C;}
   if(A===0 && B<0){B=-B;C=-C;}
   var g=gcd(gcd(A,B),Math.abs(C)||1); A/=g; B/=g; C/=g;
-  var by = (B<0?MIN+' '+(-B):'+ '+B)+'y';
-  return A+'x '+by+' = '+fmtInt(C);
+  return stdTermsStr(A,B,C);
+}
+/* standard form deliberately NOT reduced to lowest terms \u2014 reduces first, then
+   multiplies through by `factor` (an integer > 1, e.g. 2, 3, 4). Same line,
+   different-looking equation. Use for "these two equations describe the same
+   line" problems so the two givens are never printed identically \u2014 see A.3F's
+   inf case. Note: negative factors get re-normalized back to the same A-positive
+   result as their positive counterpart (matching stdOf's sign convention), so
+   they don't add distinctness \u2014 pass a positive integer > 1. */
+function stdOfScaled(m,b,factor){
+  var A=m.n*b.d, B=-m.d*b.d, C=-b.n*m.d;
+  if(A<0){A=-A;B=-B;C=-C;}
+  if(A===0 && B<0){B=-B;C=-C;}
+  var g=gcd(gcd(A,B),Math.abs(C)||1); A/=g; B/=g; C/=g;
+  A*=factor; B*=factor; C*=factor;
+  if(A<0){A=-A;B=-B;C=-C;}
+  return stdTermsStr(A,B,C);
 }
 
 /* nice slopes for generation */
@@ -274,10 +335,50 @@ function rhsStr(m,b){
   return s;
 }
 function ineqStr(m,b,op){ return 'y '+SYM[op]+' '+rhsStr(m,b); }
+var FLIP_OP={lt:'gt', gt:'lt', le:'ge', ge:'le'};
+/* standard-form inequality Ax + By (op) C, derived from "y op mx+b" (m,b plain
+   integers). Keeps A positive like stdOf's convention \u2014 but negating an
+   inequality FLIPS its direction (Bug 4, tweaking guide Part 2: the equality-case
+   sign-normalizing trick doesn't transfer to inequalities for free), so the
+   operator must flip whenever a sign-normalizing negation happens. Verified against
+   satIneq() across thousands of random points before wiring in (Part 3 protocol). */
+function ineqStdStr(m,b,op){
+  var A=-m, B=1, C=b, opOut=op;
+  if(A<0){ A=-A; B=-B; C=-C; opOut=FLIP_OP[op]; }
+  var Astr=(A===1?'':A);
+  var Bstr=(Math.abs(B)===1?'':Math.abs(B));
+  var by=(B<0?MIN+' '+Bstr:'+ '+Bstr)+'y';
+  return Astr+'x '+by+' '+SYM[opOut]+' '+fmtInt(C);
+}
 
 /* ====================== PURE: coordinate grid drawing ====================== */
 /* Centered grid on [-Rg,Rg]. lines: {m,k,color,dash}; vlines:{x,color,dash};
    points:{x,y,color,label,open}; labels:{text,color}. */
+/* Sutherland-Hodgman clip of a convex polygon (array of [x,y] pairs) against the
+   half-plane y >= mx+k (keepAbove=true) or y <= mx+k (keepAbove=false). Used to
+   draw a shaded inequality region clipped to the graph's viewport box \u2014 see
+   plot()'s `shades` option, first used by A.3H. Pure function, no DOM/state. */
+function clipPolyByHalfPlane(poly, m, k, keepAbove){
+  function isIn(pt){ return keepAbove ? (pt[1] >= m*pt[0]+k) : (pt[1] <= m*pt[0]+k); }
+  function edgeIntersect(p1,p2){
+    var x1=p1[0],y1=p1[1],x2=p2[0],y2=p2[1], dx=x2-x1, dy=y2-y1;
+    var denom = m*dx - dy;
+    var t = denom===0 ? 0 : (y1 - m*x1 - k)/denom;
+    return [x1+t*dx, y1+t*dy];
+  }
+  var result=[];
+  for(var i=0;i<poly.length;i++){
+    var curr=poly[i], prev=poly[(i-1+poly.length)%poly.length];
+    var currIn=isIn(curr), prevIn=isIn(prev);
+    if(currIn){
+      if(!prevIn) result.push(edgeIntersect(prev,curr));
+      result.push(curr);
+    } else if(prevIn){
+      result.push(edgeIntersect(prev,curr));
+    }
+  }
+  return result;
+}
 function plot(o){
   o=o||{};
   var Rg=o.Rg||6, S=Math.round(288/(2*Rg)), W=2*Rg*S, H=2*Rg*S, i;
@@ -300,9 +401,21 @@ function plot(o){
     s+='<text x="'+X(i)+'" y="'+(Y(0)+14)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="middle">'+i+'</text>';
     s+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+4)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="end">'+i+'</text>';
   }
+  /* shaded half-plane regions (optional) \u2014 drawn under lines/points, non-interactive
+     (pointer-events:none) since they're driven by a pulldown, not by clicking them. */
+  (o.shades||[]).forEach(function(Sh){
+    var poly=clipPolyByHalfPlane([[-Rg,-Rg],[Rg,-Rg],[Rg,Rg],[-Rg,Rg]], Sh.m, Sh.k, Sh.side==='above');
+    if(poly.length>=3){
+      var pts=poly.map(function(pt){ return X(pt[0])+','+Y(pt[1]); }).join(' ');
+      s+='<polygon points="'+pts+'" fill="'+(Sh.color||'#2f6cff')+'" fill-opacity="0.18" stroke="none" pointer-events="none"/>';
+    }
+  });
   (o.lines||[]).forEach(function(L){
     var c=clip(L.m,L.k);
-    s+='<line x1="'+X(c[0])+'" y1="'+Y(c[1])+'" x2="'+X(c[2])+'" y2="'+Y(c[3])+'" stroke="'+(L.color||'#2f6cff')+'" stroke-width="3.5" stroke-linecap="round"'+(L.dash?' stroke-dasharray="8 6"':'')+'/>';
+    var strokeColor = L.neutral ? '#b7c0dc' : (L.color||'#2f6cff');
+    var strokeW = L.neutral ? 2.5 : 3.5;
+    var dashArr = L.neutral ? '3 5' : (L.dash ? '8 6' : null);
+    s+='<line x1="'+X(c[0])+'" y1="'+Y(c[1])+'" x2="'+X(c[2])+'" y2="'+Y(c[3])+'" stroke="'+strokeColor+'" stroke-width="'+strokeW+'" stroke-linecap="round"'+(dashArr?' stroke-dasharray="'+dashArr+'"':'')+'/>';
   });
   (o.vlines||[]).forEach(function(V){
     s+='<line x1="'+X(V.x)+'" y1="0" x2="'+X(V.x)+'" y2="'+H+'" stroke="'+(V.color||'#2f6cff')+'" stroke-width="3.5"'+(V.dash?' stroke-dasharray="8 6"':'')+'/>';
@@ -369,6 +482,99 @@ function segWrap(label,id,cur,opts){
     '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">'+label+'</span>'+
     seg(id,cur,opts)+'</div>';
 }
+/* demoted secondary "FORM" selector \u2014 the A.2 convention (see tweaking guide Part 1.4):
+   smaller eyebrow, whole row at .75 opacity, .drSeg scaled to .9. First use in A.3. */
+function formWrap(id,cur,opts){
+  var h='<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px;opacity:.75">'+
+    '<span style="font-size:10.5px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FORM</span>'+
+    '<div class="drSeg" id="'+id+'" role="tablist" aria-label="Equation form" style="transform:scale(.9);transform-origin:left center">';
+  opts.forEach(function(o){ h+='<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>'; });
+  return h+'</div></div>';
+}
+
+/* ---------- floating keyboard: one button, types into whichever input last had focus ----------
+   Reusable across any SE with several small inline number/fraction boxes. Ported from A.2's
+   wireSharedKbd()/sharedKbdHTML(), parameterized (Part 1a of the tweaking guide) so a module
+   can request extra module-specific keys (e.g. A.3A's "undefined") without widening every
+   other module's keyboard. Tap the button to show it; it types into the last-focused box in
+   its scope; tap the button again to hide it. ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  var extra=(grid.dataset.extra||'').split(',').filter(Boolean);
+  SHARED_KEYS.concat(extra).forEach(function(k){
+    var b=document.createElement('button'); b.type='button';
+    b.className='drKey'+(k.length>1?' drKeyWide':''); b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT') sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function kbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function sharedKbdHTML(extraKeys){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid" data-extra="'+(extraKeys?extraKeys.join(','):'')+'"></div></div>'+
+  '</div>';
+}
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+var kbdDocWired=false;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
+}
 
 /* ---------- A.3A · Slope of a line (multiple representations) ---------- */
 var aMode='mix';
@@ -408,7 +614,7 @@ function eqStrA(p){
   if(p.kind==='horiz') return 'y = '+fmtInt(p.b);
   if(p.form==='si') return siHTML(p.m,p.b);
   if(p.form==='std') return stdOf(p.m,p.b);
-  return 'y '+MIN+' '+fmtInt(p.pe.y1)+' = '+ratHTML(p.m)+'(x '+MIN+' '+fmtInt(p.pe.x1)+')';
+  return 'y '+MIN+' '+fmtInt(p.pe.y1)+' = '+coefPrefix(p.m)+'(x '+MIN+' '+fmtInt(p.pe.x1)+')';
 }
 function promptA(p){
   var seghtml=segWrap('FROM','aSeg',aMode,[['mix','Mixed'],['pts','Two points'],['table','Table'],['graph','Graph'],['equation','Equation']]);
@@ -429,7 +635,8 @@ function promptA(p){
   return seghtml+body;
 }
 var slopeBoxHTML='<div class="answer"><span>slope m =</span><input class="in wide" id="aSlope" inputmode="text" autocomplete="off" /></div>'+
-  '<div class="lbl">Type a number or fraction (e.g. 3, −2, 3/4, 0). For a vertical line, type <b>undefined</b>.</div>';
+  '<div class="lbl">Type a number or fraction (e.g. 3, −2, 3/4, 0). For a vertical line, type <b>undefined</b>.</div>'+
+  sharedKbdHTML(['undefined']);
 function readA(){
   var s=document.getElementById('aSlope').value;
   if(/und/i.test(s)) return {undef:true};
@@ -501,7 +708,7 @@ function promptB(p){
   return seghtml+body+'<br><span style="font-size:15px;color:var(--muted)">Find the <b>rate of change</b> (in '+c.unit+' per '+c.per+'). A decrease is negative.</span>';
 }
 function answerB(p){
-  return '<div class="answer"><span>rate =</span>'+inBox('bRate','wide')+'<span style="font-size:15px;color:var(--muted)">'+p.ctx.unit+' per '+p.ctx.per+'</span></div>';
+  return '<div class="answer"><span>rate =</span>'+inBox('bRate','wide')+'<span style="font-size:15px;color:var(--muted)">'+p.ctx.unit+' per '+p.ctx.per+'</span></div>'+sharedKbdHTML();
 }
 function readB(){ var r=parseRat(document.getElementById('bRate').value); return r?{val:r}:null; }
 function checkB(p,a){ return req(a.val, rint(p.r)); }
@@ -528,8 +735,8 @@ function promptC(p){
   } else {
     body='Identify the key features of the graphed line.<br>'+
       plot({lines:[{m:rval(p.m), k:p.b.n}], points:[
-        {x:0, y:p.b.n, color:'#8e78ff', label:'y-int', open:false},
-        {x:p.x0, y:0, color:'#e5484d', label:'x-int', open:false}
+        {x:0, y:p.b.n, color:'#8e78ff', open:false},
+        {x:p.x0, y:0, color:'#e5484d', open:false}
       ]});
   }
   return seghtml+body;
@@ -537,22 +744,28 @@ function promptC(p){
 function answerC(){
   return '<div class="answer" style="display:block">'+
     '<div class="sysRow"><span>slope m =</span>'+inBox('cM')+'</div>'+
-    '<div class="sysRow"><span>y-intercept (y-value when x = 0):</span>'+inBox('cB')+'</div>'+
-    '<div class="sysRow"><span>x-intercept / zero (x-value when y = 0):</span>'+inBox('cX')+'</div>'+
-    '</div>';
+    '<div class="sysRow"><span>y-intercept: (</span>'+inBox('cBx')+'<span>, </span>'+inBox('cBy')+'<span>)</span></div>'+
+    '<div class="sysRow"><span>x-intercept / zero: (</span>'+inBox('cXx')+'<span>, </span>'+inBox('cXy')+'<span>)</span></div>'+
+    '</div>'+sharedKbdHTML();
 }
 function readC(){
   var m=parseRat(document.getElementById('cM').value),
-      b=parseRat(document.getElementById('cB').value),
-      x=parseRat(document.getElementById('cX').value);
-  return (m&&b&&x)?{m:m,b:b,x:x}:null;
+      byx=parseRat(document.getElementById('cBx').value),
+      byy=parseRat(document.getElementById('cBy').value),
+      xix=parseRat(document.getElementById('cXx').value),
+      xiy=parseRat(document.getElementById('cXy').value);
+  return (m&&byx&&byy&&xix&&xiy)?{m:m,byx:byx,byy:byy,xix:xix,xiy:xiy}:null;
 }
-function checkC(p,a){ return req(a.m,p.m) && req(a.b,p.b) && req(a.x,rint(p.x0)); }
+function checkC(p,a){
+  return req(a.m,p.m) &&
+         req(a.byx,R(0)) && req(a.byy,p.b) &&
+         req(a.xix,rint(p.x0)) && req(a.xiy,R(0));
+}
 function stepsC(p){
   return '<span class="st">1. Slope = coefficient of x \u2192 m = '+ratHTML(p.m)+'.</span>'+
-    '<span class="st">2. y-intercept = value when x = 0 \u2192 '+ptStr(0,p.b.n)+', so y = '+fmtInt(p.b.n)+'.</span>'+
-    '<span class="st">3. Zero / x-intercept = where y = 0: 0 = '+ratHTML(p.m)+'x + '+fmtInt(p.b.n)+' \u2192 x = '+fmtInt(p.x0)+'.</span>'+
-    '<span class="st final">Key features: slope '+ratHTML(p.m)+', y-intercept '+fmtInt(p.b.n)+', zero at x = '+fmtInt(p.x0)+'.</span>';
+    '<span class="st">2. y-intercept = value when x = 0 \u2192 '+ptStr(0,p.b.n)+'.</span>'+
+    '<span class="st">3. Zero / x-intercept = where y = 0: 0 = '+coefX(p.m)+' + '+fmtInt(p.b.n)+' \u2192 x = '+fmtInt(p.x0)+', so '+ptStr(p.x0,0)+'.</span>'+
+    '<span class="st final">Key features: slope '+ratHTML(p.m)+', y-intercept '+ptStr(0,p.b.n)+', zero at '+ptStr(p.x0,0)+'.</span>';
 }
 
 /* ---------- A.3D · Graph the solution set of a linear inequality ---------- */
@@ -566,26 +779,51 @@ function promptD(p){
     '<span style="font-size:15px;color:var(--muted)">The dot marks the test point '+ptStr(p.px,p.py)+'. Describe the graph, then decide whether that point is a solution.</span><br>'+
     plot({lines:[{m:p.m, k:p.b, color:'#9aa9c9', dash:true}], points:[{x:p.px,y:p.py,color:'#e5484d'}]});
 }
+var dSel=null;
 function answerD(){
   var sd='<select class="sel" id="dBound"><option value="">?</option><option value="solid">solid</option><option value="dashed">dashed</option></select>';
   var ab='<select class="sel" id="dShade"><option value="">?</option><option value="above">above</option><option value="below">below</option></select>';
   return '<div class="answer" style="display:block">'+
-    '<div class="sysRow"><span>Boundary line is</span>'+sd+'</div>'+
-    '<div class="sysRow"><span>Shade</span>'+ab+'<span>the line</span></div>'+
-    '<div class="radio"><span style="font-weight:900">Is the test point a solution?</span>'+
-      '<label><input type="radio" name="dSol" value="yes"> yes</label>'+
-      '<label><input type="radio" name="dSol" value="no"> no</label></div>'+
+    '<div class="qPart"><div class="qLabel">1 \u00b7 Boundary line</div>'+
+      '<div class="sysRow"><span>The boundary line is</span>'+sd+'</div></div>'+
+    '<div class="qPart"><div class="qLabel">2 \u00b7 Shading</div>'+
+      '<div class="sysRow"><span>Shade</span>'+ab+'<span>the line</span></div></div>'+
+    '<div class="qPart"><div class="qLabel">3 \u00b7 Test point</div>'+
+      '<div class="qQuestion">Is the test point a solution?</div>'+
+      '<div class="choice2" id="dSolChoice">'+
+        '<button type="button" data-v="yes">Yes</button>'+
+        '<button type="button" data-v="no">No</button>'+
+      '</div></div>'+
     '</div>';
+}
+function initD(){
+  dSel=null;
+  var box=document.getElementById('dSolChoice'); if(!box) return;
+  Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+    btn.addEventListener('click',function(){
+      if(current.done) return;
+      Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){b.classList.remove('sel');});
+      btn.classList.add('sel'); dSel=btn.getAttribute('data-v');
+    });
+  });
 }
 function readD(){
   var bd=document.getElementById('dBound').value, sh=document.getElementById('dShade').value;
-  var r=document.querySelector('input[name="dSol"]:checked');
-  return (bd&&sh&&r)?{bound:bd,shade:sh,sol:r.value==='yes'}:null;
+  return (bd&&sh&&dSel)?{bound:bd,shade:sh,sol:dSel==='yes'}:null;
 }
 function checkD(p,a){
   return a.bound===(isSolid(p.op)?'solid':'dashed') &&
          a.shade===(isAbove(p.op)?'above':'below') &&
          a.sol===p.sol;
+}
+function revealD(p){
+  var box=document.getElementById('dSolChoice'); if(!box) return;
+  var correctV = p.sol ? 'yes' : 'no';
+  Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+    var v=btn.getAttribute('data-v'); btn.disabled=true;
+    if(v===correctV) btn.classList.add('right');
+    else if(v===dSel) btn.classList.add('wrong');
+  });
 }
 function stepsD(p){
   var rhs=p.m*p.px+p.b;
@@ -594,6 +832,7 @@ function stepsD(p){
     '<span class="st">3. Test '+ptStr(p.px,p.py)+': is '+fmtInt(p.py)+' '+SYM[p.op]+' '+fmtInt(rhs)+'? '+(p.sol?'Yes':'No')+'.</span>'+
     '<span class="st final">So the point '+(p.sol?'is':'is not')+' in the solution set.</span>';
 }
+
 
 /* ---------- A.3E · Transformations of the parent f(x) = x ---------- */
 var eMode='mix';
@@ -653,7 +892,7 @@ function promptE(p){
 var eSel=null;
 function answerE(p){
   if(p.mode==='write'){
-    return '<div class="answer"><span>g(x) =</span>'+inBox('eM')+'<span>x +</span>'+inBox('eB')+'</div>';
+    return '<div class="answer"><span>g(x) =</span>'+inBox('eM')+'<span>x +</span>'+inBox('eB')+'</div>'+sharedKbdHTML();
   }
   var h='<div class="mc" id="eMC">';
   p.options.forEach(function(o,i){ h+='<button type="button" data-i="'+i+'">'+o+'</button>'; });
@@ -709,31 +948,43 @@ function stepsE(p){
 }
 
 /* ---------- A.3F · Graph systems of two linear equations (solve) ---------- */
-var fMode='mix';
+var fFormMode='mix';
+function pickForm(){ return fFormMode==='mix' ? rc(['si','std']) : fFormMode; }
+function eqDisplay(m,k,form){
+  var mr=rint(m), kr=rint(k);
+  return form==='std' ? stdOf(mr,kr) : siHTML(mr,kr);
+}
 function genF(){
-  var kind = fMode==='mix' ? (function(){var r=Math.random(); return r<0.72?'one':(r<0.86?'none':'inf');})() : fMode;
+  var r=Math.random(), kind = r<0.72?'one':(r<0.86?'none':'inf');
   if(kind==='none'){
     var m=rnz(-2,2), k1=rnz(-5,5), k2=k1; while(k2===k1) k2=rnz(-5,5);
-    return {se:'A.3F', kind:'none', L:[{m:m,k:k1},{m:m,k:k2}]};
+    return {se:'A.3F', kind:'none', L:[{m:m,k:k1},{m:m,k:k2}], form1:pickForm(), form2:pickForm()};
   }
   if(kind==='inf'){
-    var mi=rnz(-2,2), ki=rnz(-4,4);
-    return {se:'A.3F', kind:'inf', L:[{m:mi,k:ki},{m:mi,k:ki}]};
+    var mi=rnz(-2,2), ki=rnz(-4,4), scale=rc([2,3,4]);
+    return {se:'A.3F', kind:'inf', L:[{m:mi,k:ki},{m:mi,k:ki}], infScale:scale, form1:pickForm()};
   }
   var sx,sy,m1,m2,k1b,k2b,guard=0;
   do{ sx=rnz(-3,3); sy=rnz(-3,3); m1=rnz(-2,2); m2=m1; while(m2===m1) m2=rnz(-2,2);
       k1b=sy-m1*sx; k2b=sy-m2*sx; guard++;
   } while((Math.abs(k1b)>6||Math.abs(k2b)>6) && guard<60);
-  return {se:'A.3F', kind:'one', sx:sx, sy:sy, L:[{m:m1,k:k1b},{m:m2,k:k2b}]};
+  return {se:'A.3F', kind:'one', sx:sx, sy:sy, L:[{m:m1,k:k1b},{m:m2,k:k2b}], form1:pickForm(), form2:pickForm()};
 }
 function promptF(p){
-  var seghtml=segWrap('CASE','fSeg',fMode,[['mix','Mixed'],['one','One'],['none','None'],['inf','Same line']]);
-  var eqs='<div class="given">'+siHTML(rint(p.L[0].m),rint(p.L[0].k))+'</div> <div class="given">'+siHTML(rint(p.L[1].m),rint(p.L[1].k))+'</div>';
-  var g=plot({lines:[
-    {m:p.L[0].m,k:p.L[0].k,color:'#2f6cff'},
-    {m:p.L[1].m,k:p.L[1].k,color:'#e5484d', dash:(p.kind==='inf')}
-  ], labels:[{text:'line 1',color:'#2f6cff'},{text:'line 2',color:'#e5484d'}]});
-  return seghtml+'Graph the system and give its solution.'+eqs+g;
+  var formSel=formWrap('fFormSeg',fFormMode,[['mix','Mixed'],['std','Standard'],['si','Slope-intercept']]);
+  var eq1='<div class="given">'+eqDisplay(p.L[0].m,p.L[0].k,p.form1)+'</div>';
+  /* inf case: line 2 is ALWAYS a scaled standard-form equation, regardless of the FORM
+     selector \u2014 two true reduced slope-intercept equations for the same line are
+     necessarily identical (m,b are unique), so this override is the only way to
+     guarantee the two givens never look alike. In Standard mode this is simply an
+     honest second standard-form representation (different multiple); in Slope-intercept
+     mode it's a deliberate, documented exception to the selector. */
+  var eq2 = p.kind==='inf'
+    ? '<div class="given">'+stdOfScaled(rint(p.L[1].m),rint(p.L[1].k),p.infScale)+'</div>'
+    : '<div class="given">'+eqDisplay(p.L[1].m,p.L[1].k,p.form2)+'</div>';
+  var eqs=eq1+' '+eq2;
+  return formSel+'Solve this system of linear equations.'+eqs+
+    '<br><span style="font-size:15px;color:var(--muted)">Tip: graph both equations \u2014 on paper or in a tool like Desmos \u2014 to see where, or whether, the lines cross.</span>';
 }
 function answerF(){
   return '<div class="answer" style="display:block">'+
@@ -743,7 +994,7 @@ function answerF(){
       '<option value="none">no solution</option>'+
       '<option value="inf">infinitely many</option></select></div>'+
     '<div class="sysRow" id="fPt"><span>Point (</span>'+inBox('fx')+'<span>, </span>'+inBox('fy')+'<span>)</span></div>'+
-    '</div>';
+    '</div>'+sharedKbdHTML();
 }
 function readF(){
   var t=document.getElementById('fType').value;
@@ -765,7 +1016,7 @@ function stepsF(p){
     return '<span class="st">1. Both equations simplify to the same line.</span>'+
       '<span class="st final">2. Every point works \u2192 <b>infinitely many solutions</b>.</span>';
   return '<span class="st">1. The solution is where the graphs cross.</span>'+
-    '<span class="st">2. Set them equal: '+fmtInt(p.L[0].m)+'x + '+fmtInt(p.L[0].k)+' = '+fmtInt(p.L[1].m)+'x + '+fmtInt(p.L[1].k)+'.</span>'+
+    '<span class="st">2. Set them equal: '+coefXInt(p.L[0].m)+' + '+fmtInt(p.L[0].k)+' = '+coefXInt(p.L[1].m)+' + '+fmtInt(p.L[1].k)+'.</span>'+
     '<span class="st final">3. Solution: '+ptStr(p.sx,p.sy)+'.</span>';
 }
 
@@ -796,7 +1047,7 @@ function answerG(p){
   return '<div class="answer" style="display:block">'+
     '<div class="sysRow"><span>'+p.labels[2]+':</span>'+inBox('gx')+'</div>'+
     '<div class="sysRow"><span>equal cost: $</span>'+inBox('gy','wide')+'</div>'+
-    '</div>';
+    '</div>'+sharedKbdHTML();
 }
 function readG(){
   var x=parseRat(document.getElementById('gx').value), y=parseRat(document.getElementById('gy').value);
@@ -810,40 +1061,101 @@ function stepsG(p){
 }
 
 /* ---------- A.3H · Graph the solution set of a system of inequalities ---------- */
+var hFormMode='mix';
+function pickHForm(){ return hFormMode==='mix' ? rc(['si','std']) : hFormMode; }
+function ineqDisplay(m,b,op,form){ return form==='std' ? ineqStdStr(m,b,op) : ineqStr(m,b,op); }
 function genH(){
   var m1=rnz(-2,2), b1=rnz(-4,4), op1=rc(['lt','le','gt','ge']);
   var m2=rnz(-2,2), b2=rnz(-4,4), op2=rc(['lt','le','gt','ge']);
   var px=rnz(-5,5), py=rnz(-5,5);
   var s1=satIneq(op1,py,m1*px+b1), s2=satIneq(op2,py,m2*px+b2);
-  return {se:'A.3H', I:[{m:m1,b:b1,op:op1},{m:m2,b:b2,op:op2}], px:px, py:py, s1:s1, s2:s2, sol:s1&&s2};
+  return {se:'A.3H', I:[{m:m1,b:b1,op:op1},{m:m2,b:b2,op:op2}], px:px, py:py, s1:s1, s2:s2, sol:s1&&s2,
+    form1:pickHForm(), form2:pickHForm()};
 }
+var hSel=null, hShade1='none', hShade2='none';
+/* line style read off a solid/dashed/unset select: unset renders as a neutral
+   gray fine-dotted line (distinct from both real answers), instead of always
+   defaulting to dashed \u2014 which looked like a pre-committed answer. */
+function hLineStyle(v){ return v==='solid' ? {dash:false,neutral:false} : v==='dashed' ? {dash:true,neutral:false} : {dash:false,neutral:true}; }
+function renderHGraph(p){
+  var b1val=(document.getElementById('hB1')||{}).value||'', b2val=(document.getElementById('hB2')||{}).value||'';
+  var st1=hLineStyle(b1val), st2=hLineStyle(b2val), shades=[];
+  if(hShade1!=='none') shades.push({m:p.I[0].m,k:p.I[0].b,side:hShade1,color:'#2f6cff'});
+  if(hShade2!=='none') shades.push({m:p.I[1].m,k:p.I[1].b,side:hShade2,color:'#e5484d'});
+  return plot({shades:shades, lines:[
+    {m:p.I[0].m,k:p.I[0].b,color:'#2f6cff',dash:st1.dash,neutral:st1.neutral},
+    {m:p.I[1].m,k:p.I[1].b,color:'#e5484d',dash:st2.dash,neutral:st2.neutral}
+  ], points:[{x:p.px,y:p.py,color:'#8e78ff'}]});
+}
+/* re-render the graph in place \u2014 called whenever a boundary or shading dropdown
+   changes, so the picture stays in sync with the student's current selections.
+   The graph itself is display-only now (no click handling). */
+function renderHGraphInto(p){
+  var host=document.getElementById('hGraph'); if(!host) return;
+  host.innerHTML=renderHGraph(p);
+}
+function shSel(id){ return '<select class="sel" id="'+id+'"><option value="none">\u2014</option><option value="above">above</option><option value="below">below</option></select>'; }
 function promptH(p){
-  var eqs='<div class="given">'+ineqStr(p.I[0].m,p.I[0].b,p.I[0].op)+'</div> <div class="given">'+ineqStr(p.I[1].m,p.I[1].b,p.I[1].op)+'</div>';
-  var g=plot({lines:[
-    {m:p.I[0].m,k:p.I[0].b,color:'#9aa9c9',dash:true},
-    {m:p.I[1].m,k:p.I[1].b,color:'#c0c8de',dash:true}
-  ], points:[{x:p.px,y:p.py,color:'#e5484d'}]});
-  return 'Graph the solution set of this system. The dot is the test point '+ptStr(p.px,p.py)+'.'+eqs+g;
+  var formSel=formWrap('hFormSeg',hFormMode,[['mix','Mixed'],['std','Standard'],['si','Slope-intercept']]);
+  var eqs='<div class="given">'+ineqDisplay(p.I[0].m,p.I[0].b,p.I[0].op,p.form1)+'</div> <div class="given">'+ineqDisplay(p.I[1].m,p.I[1].b,p.I[1].op,p.form2)+'</div>';
+  var g='<div id="hGraph">'+renderHGraph(p)+'</div>';
+  var shadeCtl='<div class="qPart"><div class="qLabel">Optional \u00b7 shade to explore (not graded)</div>'+
+    '<div class="sysRow"><span style="color:#2f6cff">Shade inequality 1:</span>'+shSel('hShade1Sel')+'</div>'+
+    '<div class="sysRow"><span style="color:#e5484d">Shade inequality 2:</span>'+shSel('hShade2Sel')+'</div></div>';
+  return formSel+'Graph the solution set of this system. The dot is the test point '+ptStr(p.px,p.py)+'. Use the dropdowns below to set each boundary and, if you like, shade each region.'+eqs+g+shadeCtl;
 }
 function answerH(){
   function sd(id){ return '<select class="sel" id="'+id+'"><option value="">?</option><option value="solid">solid</option><option value="dashed">dashed</option></select>'; }
   return '<div class="answer" style="display:block">'+
-    '<div class="sysRow"><span>Boundary of inequality 1 is</span>'+sd('hB1')+'</div>'+
-    '<div class="sysRow"><span>Boundary of inequality 2 is</span>'+sd('hB2')+'</div>'+
-    '<div class="radio"><span style="font-weight:900">Is the test point in the solution set of the system?</span>'+
-      '<label><input type="radio" name="hSol" value="yes"> yes</label>'+
-      '<label><input type="radio" name="hSol" value="no"> no</label></div>'+
+    '<div class="qPart"><div class="qLabel">1 \u00b7 Boundary of inequality 1</div>'+
+      '<div class="sysRow"><span>The boundary is</span>'+sd('hB1')+'</div></div>'+
+    '<div class="qPart"><div class="qLabel">2 \u00b7 Boundary of inequality 2</div>'+
+      '<div class="sysRow"><span>The boundary is</span>'+sd('hB2')+'</div></div>'+
+    '<div class="qPart"><div class="qLabel">3 \u00b7 Test point</div>'+
+      '<div class="qQuestion">Is the test point in the solution set of the system?</div>'+
+      '<div class="choice2" id="hSolChoice">'+
+        '<button type="button" data-v="yes">Yes</button>'+
+        '<button type="button" data-v="no">No</button>'+
+      '</div></div>'+
     '</div>';
+}
+function initH(){
+  hSel=null; hShade1='none'; hShade2='none';
+  wireSeg('hFormSeg', hFormMode, function(v){ hFormMode=v; newProblem(); });
+  var b1sel=document.getElementById('hB1'), b2sel=document.getElementById('hB2');
+  var sh1sel=document.getElementById('hShade1Sel'), sh2sel=document.getElementById('hShade2Sel');
+  if(b1sel) b1sel.addEventListener('change', function(){ renderHGraphInto(current.p); });
+  if(b2sel) b2sel.addEventListener('change', function(){ renderHGraphInto(current.p); });
+  if(sh1sel) sh1sel.addEventListener('change', function(){ hShade1=sh1sel.value; renderHGraphInto(current.p); });
+  if(sh2sel) sh2sel.addEventListener('change', function(){ hShade2=sh2sel.value; renderHGraphInto(current.p); });
+  var box=document.getElementById('hSolChoice');
+  if(box){
+    Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+      btn.addEventListener('click',function(){
+        if(current.done) return;
+        Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){b.classList.remove('sel');});
+        btn.classList.add('sel'); hSel=btn.getAttribute('data-v');
+      });
+    });
+  }
 }
 function readH(){
   var b1=document.getElementById('hB1').value, b2=document.getElementById('hB2').value;
-  var r=document.querySelector('input[name="hSol"]:checked');
-  return (b1&&b2&&r)?{b1:b1,b2:b2,sol:r.value==='yes'}:null;
+  return (b1&&b2&&hSel)?{b1:b1,b2:b2,sol:hSel==='yes'}:null;
 }
 function checkH(p,a){
   return a.b1===(isSolid(p.I[0].op)?'solid':'dashed') &&
          a.b2===(isSolid(p.I[1].op)?'solid':'dashed') &&
          a.sol===p.sol;
+}
+function revealH(p){
+  var box=document.getElementById('hSolChoice'); if(!box) return;
+  var correctV = p.sol ? 'yes' : 'no';
+  Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+    var v=btn.getAttribute('data-v'); btn.disabled=true;
+    if(v===correctV) btn.classList.add('right');
+    else if(v===hSel) btn.classList.add('wrong');
+  });
 }
 function stepsH(p){
   var r1=p.I[0].m*p.px+p.I[0].b, r2=p.I[1].m*p.px+p.I[1].b;
@@ -858,7 +1170,7 @@ var SES=[
 { id:'A.3A', letter:'A', short:'Slope', title:'Determine the Slope of a Line',
   blurb:'Determine the slope of a line given a table of values, a graph, two points on the line, and an equation written in various forms, including y = mx + b, Ax + By = C, and y \u2212 y\u2081 = m(x \u2212 x\u2081).',
   gen:genA, prompt:promptA,
-  init:function(){ wireSeg('aSeg', aMode, function(v){ aMode=v; newProblem(); }); },
+  init:function(){ wireSeg('aSeg', aMode, function(v){ aMode=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:function(){ return slopeBoxHTML; },
   read:readA, check:checkA,
   emptyMsg:'Type the slope \u2014 a number, a fraction like 3/4, or the word undefined.',
@@ -875,7 +1187,7 @@ var SES=[
 { id:'A.3B', letter:'B', short:'Rate of Change', title:'Rate of Change in Context',
   blurb:'Calculate the rate of change of a linear function represented tabularly, graphically, or algebraically in context of mathematical and real-world problems.',
   gen:genB, prompt:promptB,
-  init:function(){ wireSeg('bSeg', bMode, function(v){ bMode=v; newProblem(); }); },
+  init:function(){ wireSeg('bSeg', bMode, function(v){ bMode=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:answerB, read:readB, check:checkB,
   hints:function(){ return ['Rate of change = (change in the output) \u00f7 (change in the input).',
     'Line up two points, subtract, and divide. If the quantity is going down, the rate is negative.']; },
@@ -884,17 +1196,17 @@ var SES=[
 { id:'A.3C', letter:'C', short:'Key Features', title:'Graph & Identify Key Features',
   blurb:'Graph linear functions on the coordinate plane and identify key features, including x-intercept, y-intercept, zeros, and slope, in mathematical and real-world problems.',
   gen:genC, prompt:promptC,
-  init:function(){ wireSeg('cSeg', cMode, function(v){ cMode=v; newProblem(); }); },
+  init:function(){ wireSeg('cSeg', cMode, function(v){ cMode=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:answerC, read:readC, check:checkC,
-  emptyMsg:'Fill in all three key features \u2014 slope, y-intercept, and the zero (x-intercept).',
-  hints:function(){ return ['The y-intercept is where the line crosses the y-axis (x = 0).',
-    'The zero / x-intercept is where the line crosses the x-axis (y = 0). Set y = 0 and solve for x.',
+  emptyMsg:'Fill in the slope and both intercepts \u2014 write each intercept as a full coordinate pair (x, y).',
+  hints:function(){ return ['The y-intercept is where the line crosses the y-axis \u2014 that always happens at x = 0.',
+    'The zero / x-intercept is where the line crosses the x-axis \u2014 that always happens at y = 0. Set y = 0 and solve for x.',
     'Slope is the coefficient of x once the equation reads y = mx + b.']; },
   steps:stepsC },
 
 { id:'A.3D', letter:'D', short:'Graph Inequality', title:'Graph a Linear Inequality',
   blurb:'Graph the solution set of linear inequalities in two variables on the coordinate plane.',
-  gen:genD, prompt:promptD, answerHTML:answerD, read:readD, check:checkD,
+  gen:genD, prompt:promptD, init:function(){ initD(); }, answerHTML:answerD, read:readD, check:checkD, reveal:revealD,
   emptyMsg:'Pick the boundary style, the shading side, and whether the point is a solution.',
   hints:function(){ return ['\u2264 or \u2265 \u2192 solid boundary (the line is included). &lt; or &gt; \u2192 dashed.',
     'Solve so y is alone. y &gt; / \u2265 shades above the line; y &lt; / \u2264 shades below.',
@@ -904,7 +1216,7 @@ var SES=[
 { id:'A.3E', letter:'E', short:'Transformations', title:'Transform the Parent Function f(x) = x',
   blurb:'Determine the effects on the graph of the parent function f(x) = x when f(x) is replaced by af(x), f(x) + d, f(x \u2212 c), and f(bx) for specific values of a, b, c, and d.',
   gen:genE, prompt:promptE,
-  init:function(p){ wireSeg('eSeg', eMode, function(v){ eMode=v; newProblem(); }); initE(p); },
+  init:function(p){ wireSeg('eSeg', eMode, function(v){ eMode=v; newProblem(); }); initE(p); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:answerE, read:readE, check:checkE, reveal:revealE,
   emptyMsg:'Enter the transformed equation, or tap the effect that matches.',
   hints:function(p){
@@ -917,16 +1229,19 @@ var SES=[
 { id:'A.3F', letter:'F', short:'Solve Systems', title:'Graph Systems of Equations',
   blurb:'Graph systems of two linear equations in two variables on the coordinate plane and determine the solutions if they exist.',
   gen:genF, prompt:promptF,
-  init:function(){ wireSeg('fSeg', fMode, function(v){ fMode=v; newProblem(); }); },
+  init:function(){ wireSeg('fFormSeg', fFormMode, function(v){ fFormMode=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:answerF, read:readF, check:checkF,
   emptyMsg:'Choose the solution type \u2014 and if there\u2019s one point, type its coordinates.',
   hints:function(){ return ['The solution is the point where the two lines cross.',
-    'Same slope, different intercepts \u2192 parallel \u2192 no solution. Identical equations \u2192 the same line \u2192 infinitely many.']; },
+    'If an equation is in standard form (Ax + By = C), solve it for y first so you can compare slopes directly.',
+    'Same slope, different intercepts \u2192 parallel \u2192 no solution. If the two equations describe the exact same line \u2014 even when they don\u2019t look alike at first \u2014 that\u2019s infinitely many.']; },
   steps:stepsF },
 
 { id:'A.3G', letter:'G', short:'Estimate Systems', title:'Estimate System Solutions (Real-World)',
   blurb:'Estimate graphically the solutions to systems of two linear equations with two variables in real-world problems.',
-  gen:genG, prompt:promptG, answerHTML:answerG, read:readG, check:checkG,
+  gen:genG, prompt:promptG,
+  init:function(){ wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
+  answerHTML:answerG, read:readG, check:checkG,
   emptyMsg:'Read the crossing point off the graph: the input where the two costs meet, and that cost.',
   hints:function(){ return ['Two plans cost the same where their lines intersect \u2014 find that crossing point.',
     'Set the two cost expressions equal and solve, or trace each line to where they meet.']; },
@@ -934,10 +1249,12 @@ var SES=[
 
 { id:'A.3H', letter:'H', short:'Systems of Inequalities', title:'Graph Systems of Inequalities',
   blurb:'Graph the solution set of systems of two linear inequalities in two variables on the coordinate plane.',
-  gen:genH, prompt:promptH, answerHTML:answerH, read:readH, check:checkH,
+  gen:genH, prompt:promptH, init:function(){ initH(); }, answerHTML:answerH, read:readH, check:checkH, reveal:revealH,
   emptyMsg:'Set both boundary styles and decide whether the point lies in the overlap.',
   hints:function(){ return ['Graph each inequality; the solution set of the system is the region where the two shadings overlap.',
-    '\u2264/\u2265 \u2192 solid boundary, &lt;/&gt; \u2192 dashed. A point solves the system only if it satisfies BOTH inequalities.']; },
+    '\u2264/\u2265 \u2192 solid boundary, &lt;/&gt; \u2192 dashed. A point solves the system only if it satisfies BOTH inequalities.',
+    'The boundary and shading dropdowns update the graph live \u2014 use the "shade to explore" pulldowns to see each region.',
+    'If an inequality is in standard form (Ax + By op C), solve it for y first so you can tell which side to shade.']; },
   steps:stepsH }
 ];
 
