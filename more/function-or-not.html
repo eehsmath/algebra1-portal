@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Function or Not? – Quick Classifier Drill</title>
+<style>
+  :root{
+    --bg:#f8fafc; --panel:#ffffff; --ink:#0f172a; --muted:#64748b;
+    --line:#e2e8f0; --ok:#22c55e; --err:#ef4444; --accent:#0ea5e9;
+  }
+  html,body{height:100%}
+  body{
+    margin:0; background:linear-gradient(180deg,#f8fafc 0,#e2e8f0 100%);
+    color:var(--ink); font-family:system-ui,-apple-system,Segoe UI,Inter,Roboto,Arial,sans-serif;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .app{
+    width:min(1100px,96vw); background:var(--panel); border:1px solid var(--line);
+    border-radius:18px; box-shadow:0 4px 24px rgba(15,23,42,.08); padding:18px;
+  }
+  .top{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;}
+  h1{margin:0; font-size:22px; letter-spacing:.2px; color:#0f172a}
+  .stats{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+  .pill{border:1px solid var(--line); background:#f1f5f9; padding:6px 10px; border-radius:999px; font-weight:800; color:#334155}
+  .big{font-size:18px}
+  .board{
+    margin-top:8px; background:#f8fafc; border:1px solid var(--line); border-radius:14px;
+    padding:16px; display:grid; grid-template-columns: 1fr; gap:12px;
+  }
+  .prompt{ text-align:center; font-size: clamp(42px, 7.5vw, 72px); font-weight:900; letter-spacing:.4px; color:#0f172a }
+  .under{ text-align:center; color:var(--muted); font-size:14px; margin-top:-8px }
+  .canvas{
+    background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:12px;
+    display:flex; align-items:center; justify-content:center; min-height:360px;
+  }
+  .mapWrap{ display:flex; gap:60px; align-items:center; justify-content:center; }
+  .setOval{
+    border:3px solid #0ea5e9; border-radius:50%; 
+    background:#ffffff; padding:20px 30px;
+    display:flex; flex-direction:column; gap:14px; align-items:center;
+    min-width:120px; min-height:300px; justify-content:center;
+    box-shadow:0 2px 8px rgba(14,165,233,.15);
+  }
+  .setLabel{
+    font-size:20px; font-weight:900; color:#0ea5e9; margin-bottom:8px;
+  }
+  .element{
+    font-size:28px; font-weight:800; color:#0f172a;
+    padding:4px 8px;
+  }
+  table{ border-collapse:collapse; width:min(520px, 100%); font-size:28px; font-weight:800; color:#0f172a; }
+  th,td{ border:1px solid #cbd5e1; padding:10px 14px; text-align:center; }
+  th{ background:#f1f5f9; color:#475569; font-size:20px; letter-spacing:.3px; font-weight:900 }
+  .gWrap{ width:min(560px, 100%); }
+  .caption{ color:#64748b; font-size:14px; text-align:center; margin-top:6px }
+  .controls{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:center; }
+  .btn{
+    border:0; border-radius:12px; padding:12px 16px; font-weight:900; letter-spacing:.2px;
+    background:#f1f5f9; color:#334155; cursor:pointer; transition:all .2s;
+  }
+  .btn:hover{ background:#e2e8f0 }
+  .btn.primary{ background:#0ea5e9; color:#fff }
+  .btn.primary:hover{ background:#0284c7 }
+  .btn.ghost{ background:#ffffff; border:1px solid var(--line); font-size:14px; padding:10px 14px }
+  .btn:disabled{ opacity:.6; cursor:not-allowed }
+  .choice{ display:flex; gap:14px; align-items:center; justify-content:center; font-size:18px; }
+  .choice label{ display:flex; gap:8px; align-items:center; padding:10px 12px; background:#ffffff; border:2px solid #cbd5e1; border-radius:10px; cursor:pointer; transition:all .2s }
+  .choice label:hover{ border-color:#0ea5e9; background:#f0f9ff }
+  input[type="radio"]{ width:20px; height:20px; accent-color:#0ea5e9 }
+  .feedback{ text-align:center; min-height:28px; font-weight:900; letter-spacing:.3px; }
+  .ok{ color:var(--ok) } .err{ color:var(--err) }
+  .timer{ font-weight:900; color:#f59e0b }
+  .why{ text-align:center; color:#334155; font-size:16px; }
+  .why strong{ color:#0f172a }
+  .small{ color:#64748b; font-size:12px; text-align:center; margin-top:6px }
+  svg{ max-width:100%; height:auto }
+  .vlt-line{ stroke:#ef4444; stroke-width:2.5; stroke-dasharray:8,4; }
+  .vlt-circle{ fill:#ef4444; stroke:#ffffff; stroke-width:2.5; }
+
+
+/* === Chromebook & Mobile Safety Overrides (Function Classifier) === */
+
+/* Fit inside Google Sites iframes; allow vertical scroll on short screens */
+html, body { height:auto; min-height:100dvh; }
+body { overflow:auto; }
+
+/* Respect parent container width more reliably than vw in embeds */
+.app { width:min(1100px, 100%); }
+
+/* On short viewports (Chromebooks, split view, landscape phones),
+   stop centering that can clip content; let the page scroll. */
+@media (max-height: 820px){
+  body{
+    align-items:flex-start;       /* was center; prevents bottom clipping */
+    padding:12px;                 /* slightly tighter padding */
+  }
+  .app{ margin:0 auto; }          /* keep it centered horizontally */
+}
+
+/* Keep the main controls reachable while the board scrolls */
+@media (max-height: 820px){
+  .controls{
+    position: sticky;
+    top: 8px;
+    z-index: 3;
+    background: var(--panel);
+    padding: 8px 10px;
+    border-radius: 10px;
+    box-shadow: 0 6px 16px rgba(15,23,42,.06);
+  }
+}
+
+/* Make big text shrink instead of pushing buttons off-screen */
+.prompt{ font-size: clamp(28px, 6.5vw, 72px); }
+.why{ font-size: clamp(14px, 2.8vw, 16px); }
+.big{ font-size: clamp(14px, 2.8vw, 18px); }
+.choice{ font-size: clamp(16px, 3.5vw, 18px); }
+
+/* Canvas/card sizing: don’t overgrow the viewport on short screens */
+.canvas{
+  min-height: clamp(260px, 40dvh, 360px);
+  max-height: min(72dvh, 680px);
+}
+
+/* Map/table/graph blocks adapt on phones */
+@media (max-width: 700px){
+  .mapWrap{ gap: 20px; flex-wrap: wrap; }
+  .setOval{ min-height: 220px; padding:16px 22px; }
+  table{ font-size: clamp(18px, 5.6vw, 24px); }
+  th{ font-size: clamp(16px, 4.8vw, 20px); }
+  .element{ font-size: clamp(20px, 6vw, 26px); }
+}
+
+/* Buttons wrap nicely on narrow screens */
+@media (max-width: 700px){
+  .controls{ flex-wrap: wrap; gap:8px; }
+  .btn, #typeSelect{ flex: 1 1 180px; }
+}
+
+/* Optional: add a little breathing room between stacked sections on small screens */
+@media (max-width: 700px), (max-height: 820px){
+  .board{ gap: 14px; }
+}
+
+
+
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="top">
+      <h1>Function or Not?</h1>
+      <div class="stats">
+        <div class="pill big">Streak: <span id="streak">0</span></div>
+        <div class="pill">Best: <span id="best">0</span></div>
+        <div class="pill">Timed: <span id="timedState">Off</span></div>
+        <div class="pill timer" id="timer" aria-live="polite" style="display:none">60</div>
+      </div>
+    </div>
+
+    <div class="board">
+      <div class="prompt" id="prompt">Classify this relation</div>
+      <div class="under" id="sub">Choose "Function" if every x maps to exactly one y.</div>
+
+      <div class="canvas" id="canvas" aria-live="polite"></div>
+
+      <div class="choice" role="radiogroup" aria-label="Is it a function?">
+        <label><input type="radio" name="ans" value="function"> Function</label>
+        <label><input type="radio" name="ans" value="not"> Not a function</label>
+      </div>
+
+      <div class="controls">
+        <button id="submitBtn" class="btn primary">Submit</button>
+        <button id="nextBtn" class="btn">Next</button>
+        <button id="timedBtn" class="btn ghost">Start Timed (60s)</button>
+        <select id="typeSelect" class="btn ghost">
+          <option value="random">Random</option>
+          <option value="map">Diagram</option>
+          <option value="table">Table</option>
+          <option value="graph">Graph</option>
+          <option value="coordinates">Coordinates</option>
+        </select>
+      </div>
+
+      <div id="feedback" class="feedback"></div>
+      <div id="why" class="why"></div>
+      <div class="small">Shortcuts: <strong>F</strong> = Function, <strong>N</strong> = Not, <strong>Enter</strong> = Submit, <strong>Space</strong> = Next, <strong>T</strong> = Timed toggle</div>
+    </div>
+  </div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const randInt = (a,b) => Math.floor(Math.random()*(b-a+1))+a;
+  const choice = arr => arr[Math.floor(Math.random()*arr.length)];
+  const shuffle = arr => arr.sort(()=>Math.random()-.5);
+
+  const poolX = [-4,-3,-2,-1,0,1,2,3,4,5,6];
+  const poolY = [-6,-4,-3,-2,-1,0,1,2,3,4,6];
+
+  // STATE - locked during a round
+  let currentProblem = null; // {type, isFunction, pairs, graphType}
+  let locked = false;
+  let streak = 0, best = 0;
+  let timed = false, timeLeft = 60, timerId = null;
+
+  // GENERATE NEW PROBLEM
+  function generateProblem() {
+    const questionType = $('typeSelect').value;
+    let displayType;
+    
+    if(questionType === 'random'){
+      displayType = choice(['map','table','coordinates','graph_continuous','graph_points']);
+    } else if(questionType === 'graph'){
+      displayType = choice(['graph_continuous','graph_points']);
+    } else {
+      displayType = questionType;
+    }
+
+    let isFunc;
+    const pairs = [];
+    let graphType = null;
+
+    if(displayType === 'graph_continuous'){
+      // For continuous graphs, decide function status BEFORE generating the graph type
+      isFunc = Math.random() < 0.6;
+      
+      if(isFunc){
+        // These are all functions by definition
+        graphType = choice(['linear','quadratic','cubic','absolute','sqrt','rational']);
+      } else {
+        // These are all non-functions by definition
+        graphType = choice(['circle','ellipse','sideways_parabola']);
+      }
+      
+      // Generate sample points for visualization only
+      // The pairs are just for drawing, not for determining function status
+      if(isFunc){
+        // For functions, we don't need discrete points, but we generate some for bounds
+        for(let i = 0; i <= 20; i++){
+          const x = -6 + i * 0.6;
+          const y = evalFunction(x, graphType);
+          if(y !== null && !isNaN(y) && Math.abs(y) <= 10) {
+            pairs.push([x,y]);
+          }
+        }
+      } else {
+        // For non-functions, generate points that show the multi-valued nature
+        for(let i = 0; i < 8; i++){
+          const [x,y] = evalNonFunction(graphType, i);
+          if(x !== null && y !== null) pairs.push([x,y]);
+        }
+      }
+    } else if(displayType === 'graph_points'){
+      // Discrete points
+      isFunc = Math.random() < 0.6;
+      const n = randInt(4,6);
+      const xs = shuffle(poolX.slice()).slice(0,n);
+      
+      if(isFunc){
+        xs.forEach(x => pairs.push([x, choice(poolY)]));
+      } else {
+        const dupX = choice(xs);
+        xs.forEach(x => pairs.push([x, choice(poolY)]));
+        let newY = choice(poolY);
+        const existingY = pairs.find(p=>p[0]===dupX)[1];
+        let safety = 0;
+        while(newY === existingY && safety++ < 10) newY = choice(poolY);
+        pairs.push([dupX, newY]);
+      }
+    } else {
+      // Table, map, coordinates - discrete data
+      isFunc = Math.random() < 0.6;
+      const n = randInt(4,6);
+      const xs = shuffle(poolX.slice()).slice(0, isFunc ? n : n-1);
+      xs.forEach(x => pairs.push([x, choice(poolY)]));
+      if(!isFunc){
+        const dupX = choice(xs);
+        let newY = choice(poolY);
+        const existingY = pairs.find(p=>p[0]===dupX)[1];
+        let safety = 0;
+        while(newY === existingY && safety++ < 10) newY = choice(poolY);
+        pairs.push([dupX, newY]);
+      }
+    }
+
+    return {
+      type: displayType,
+      isFunction: isFunc,
+      pairs: shuffle(pairs),
+      graphType: graphType
+    };
+  }
+
+  function evalFunction(x, type){
+    switch(type){
+      case 'linear': return 0.5 * x + 1;
+      case 'quadratic': return 0.2 * x * x - 1;
+      case 'cubic': return 0.05 * x * x * x - 0.3 * x;
+      case 'absolute': return Math.abs(x) - 2;
+      case 'sqrt': return x >= 0 ? Math.sqrt(x) * 2 - 1 : null;
+      case 'rational': return x !== 0 ? 3 / x : null;
+      default: return x;
+    }
+  }
+
+  function evalNonFunction(type, idx){
+    if(type === 'circle'){
+      const r = 3;
+      const angle = (idx / 8) * Math.PI * 2;
+      const x = r * Math.cos(angle);
+      const y = r * Math.sin(angle);
+      return [x, y];
+    } else if(type === 'ellipse'){
+      const rx = 3.5, ry = 2;
+      const angle = (idx / 8) * Math.PI * 2;
+      const x = rx * Math.cos(angle);
+      const y = ry * Math.sin(angle);
+      return [x, y];
+    } else if(type === 'sideways_parabola'){
+      const y = -4 + idx;
+      const x = 0.25 * y * y - 2;
+      return [x, y];
+    }
+    return [null, null];
+  }
+
+  // RENDER
+  function render(){
+    const canvas = $('canvas');
+    canvas.innerHTML = '';
+    $('feedback').textContent = '';
+    $('feedback').className = 'feedback';
+    $('why').textContent = '';
+
+    const p = currentProblem;
+    if(!p) return;
+
+    if(p.type === 'map') renderMap(canvas, p.pairs);
+    else if(p.type === 'table') renderTable(canvas, p.pairs);
+    else if(p.type === 'coordinates') renderCoords(canvas, p.pairs);
+    else if(p.type === 'graph_points') renderPointsGraph(canvas, p.pairs);
+    else if(p.type === 'graph_continuous') renderContinuousGraph(canvas, p.graphType, p.isFunction);
+  }
+
+  function renderMap(canvas, pairs){
+    const wrap = document.createElement('div');
+    wrap.className = 'mapWrap';
+
+    const dom = Array.from(new Set(pairs.map(p=>p[0]))).sort((a,b)=>a-b);
+    const ran = Array.from(new Set(pairs.map(p=>p[1]))).sort((a,b)=>a-b);
+
+    const leftOval = document.createElement('div');
+    leftOval.className = 'setOval';
+    leftOval.id = 'leftOval';
+    const leftLabel = document.createElement('div');
+    leftLabel.className = 'setLabel';
+    leftLabel.textContent = 'X';
+    leftOval.appendChild(leftLabel);
+    dom.forEach(x => {
+      const el = document.createElement('div');
+      el.className = 'element';
+      el.textContent = x;
+      el.id = `x-${x}`;
+      leftOval.appendChild(el);
+    });
+
+    const rightOval = document.createElement('div');
+    rightOval.className = 'setOval';
+    rightOval.id = 'rightOval';
+    const rightLabel = document.createElement('div');
+    rightLabel.className = 'setLabel';
+    rightLabel.textContent = 'Y';
+    rightOval.appendChild(rightLabel);
+    ran.forEach(y => {
+      const el = document.createElement('div');
+      el.className = 'element';
+      el.textContent = y;
+      el.id = `y-${y}`;
+      rightOval.appendChild(el);
+    });
+
+    wrap.appendChild(leftOval);
+    wrap.appendChild(rightOval);
+    canvas.appendChild(wrap);
+
+    requestAnimationFrame(() => {
+      const wrapRect = wrap.getBoundingClientRect();
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.style.position = 'absolute';
+      svg.style.top = '0';
+      svg.style.left = '0';
+      svg.style.width = '100%';
+      svg.style.height = '100%';
+      svg.style.pointerEvents = 'none';
+      wrap.style.position = 'relative';
+      
+      const defs = document.createElementNS('http://www.w3.org/2000/svg','defs');
+      const marker = document.createElementNS('http://www.w3.org/2000/svg','marker');
+      marker.setAttribute('id','arrowMap');
+      marker.setAttribute('viewBox','0 0 10 10');
+      marker.setAttribute('refX','10'); marker.setAttribute('refY','5');
+      marker.setAttribute('markerWidth','6'); marker.setAttribute('markerHeight','6');
+      marker.setAttribute('orient','auto');
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d','M 0 0 L 10 5 L 0 10 z');
+      path.setAttribute('fill','#0ea5e9');
+      marker.appendChild(path); defs.appendChild(marker); svg.appendChild(defs);
+
+      pairs.forEach(([x,y]) => {
+        const startEl = document.getElementById(`x-${x}`);
+        const endEl = document.getElementById(`y-${y}`);
+        
+        if(startEl && endEl) {
+          const startRect = startEl.getBoundingClientRect();
+          const endRect = endEl.getBoundingClientRect();
+          const x1 = startRect.right - wrapRect.left;
+          const y1 = startRect.top + startRect.height/2 - wrapRect.top;
+          const x2 = endRect.left - wrapRect.left;
+          const y2 = endRect.top + endRect.height/2 - wrapRect.top;
+          
+          const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+          line.setAttribute('x1', x1);
+          line.setAttribute('y1', y1);
+          line.setAttribute('x2', x2);
+          line.setAttribute('y2', y2);
+          line.setAttribute('stroke','#0ea5e9');
+          line.setAttribute('stroke-width','2');
+          line.setAttribute('marker-end','url(#arrowMap)');
+          svg.appendChild(line);
+        }
+      });
+      
+      wrap.appendChild(svg);
+    });
+  }
+
+  function renderTable(canvas, pairs){
+    const tbl = document.createElement('table');
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    trh.innerHTML = '<th>x</th><th>y</th>';
+    thead.appendChild(trh);
+    const tb = document.createElement('tbody');
+    pairs.forEach(([x,y])=>{
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td>${x}</td><td>${y}</td>`;
+      tb.appendChild(tr);
+    });
+    tbl.append(thead,tb);
+    canvas.appendChild(tbl);
+  }
+
+  function renderCoords(canvas, pairs){
+    const coordWrap = document.createElement('div');
+    coordWrap.style.textAlign = 'center';
+    coordWrap.style.fontSize = '24px';
+    coordWrap.style.fontWeight = '800';
+    coordWrap.style.color = '#0f172a';
+    coordWrap.style.lineHeight = '1.8';
+    coordWrap.style.padding = '30px';
+    coordWrap.style.display = 'flex';
+    coordWrap.style.flexWrap = 'wrap';
+    coordWrap.style.gap = '8px';
+    coordWrap.style.justifyContent = 'center';
+    coordWrap.style.alignItems = 'center';
+    
+    pairs.forEach(([x,y], idx) => {
+      const coordSpan = document.createElement('span');
+      coordSpan.style.whiteSpace = 'nowrap';
+      coordSpan.textContent = `(${x}, ${y})`;
+      coordWrap.appendChild(coordSpan);
+      
+      if(idx < pairs.length - 1){
+        const comma = document.createElement('span');
+        comma.textContent = ',';
+        comma.style.marginRight = '4px';
+        coordWrap.appendChild(comma);
+      }
+    });
+    
+    const caption = document.createElement('div');
+    caption.className = 'caption';
+    caption.style.marginTop = '20px';
+    caption.textContent = 'Check if any x-value appears with different y-values';
+    
+    const wrap = document.createElement('div');
+    wrap.appendChild(coordWrap);
+    wrap.appendChild(caption);
+    canvas.appendChild(wrap);
+  }
+
+  function renderPointsGraph(canvas, pairs){
+    const w = 560, h = 360, pad = 40;
+    const xs = pairs.map(p=>p[0]), ys = pairs.map(p=>p[1]);
+    const xmin = Math.min(...xs, -6), xmax = Math.max(...xs, 6);
+    const ymin = Math.min(...ys, -6), ymax = Math.max(...ys, 6);
+    const sx = (x)=> pad + (x - xmin)/(xmax - xmin || 1) * (w - 2*pad);
+    const sy = (y)=> h - pad - (y - ymin)/(ymax - ymin || 1) * (h - 2*pad);
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+    svg.classList.add('gWrap');
+    svg.id = 'graphSvg';
+
+    const axes = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const axX = document.createElementNS('http://www.w3.org/2000/svg','line');
+    axX.setAttribute('x1', pad); axX.setAttribute('y1', sy(0));
+    axX.setAttribute('x2', w-pad); axX.setAttribute('y2', sy(0));
+    axX.setAttribute('stroke','#cbd5e1'); axX.setAttribute('stroke-width','2');
+    const axY = document.createElementNS('http://www.w3.org/2000/svg','line');
+    axY.setAttribute('x1', sx(0)); axY.setAttribute('y1', pad);
+    axY.setAttribute('x2', sx(0)); axY.setAttribute('y2', h-pad);
+    axY.setAttribute('stroke','#cbd5e1'); axY.setAttribute('stroke-width','2');
+    axes.append(axX,axY); svg.appendChild(axes);
+
+    const gPts = document.createElementNS('http://www.w3.org/2000/svg','g');
+    pairs.forEach(([x,y])=>{
+      const c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      c.setAttribute('cx', sx(x)); c.setAttribute('cy', sy(y));
+      c.setAttribute('r', '8'); 
+      c.setAttribute('fill', '#0ea5e9'); 
+      c.setAttribute('stroke', '#0284c7'); 
+      c.setAttribute('stroke-width','2.5');
+      c.dataset.x = x;
+      c.dataset.y = y;
+      gPts.appendChild(c);
+    });
+    svg.appendChild(gPts);
+
+    const cap = document.createElement('div');
+    cap.className='caption';
+    cap.textContent = 'Use the vertical line test - does any vertical line pass through more than one point?';
+
+    const wrap = document.createElement('div');
+    wrap.appendChild(svg); wrap.appendChild(cap);
+    canvas.appendChild(wrap);
+  }
+
+  function renderContinuousGraph(canvas, graphType, isFunction){
+    const w = 560, h = 360, pad = 40;
+    const xmin = -6, xmax = 6;
+    const ymin = -6, ymax = 6;
+    const sx = (x)=> pad + (x - xmin)/(xmax - xmin || 1) * (w - 2*pad);
+    const sy = (y)=> h - pad - (y - ymin)/(ymax - ymin || 1) * (h - 2*pad);
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox',`0 0 ${w} ${h}`);
+    svg.classList.add('gWrap');
+    svg.id = 'graphSvg';
+
+    const axes = document.createElementNS('http://www.w3.org/2000/svg','g');
+    const axX = document.createElementNS('http://www.w3.org/2000/svg','line');
+    axX.setAttribute('x1', pad); axX.setAttribute('y1', sy(0));
+    axX.setAttribute('x2', w-pad); axX.setAttribute('y2', sy(0));
+    axX.setAttribute('stroke','#cbd5e1'); axX.setAttribute('stroke-width','2');
+    const axY = document.createElementNS('http://www.w3.org/2000/svg','line');
+    axY.setAttribute('x1', sx(0)); axY.setAttribute('y1', pad);
+    axY.setAttribute('x2', sx(0)); axY.setAttribute('y2', h-pad);
+    axY.setAttribute('stroke','#cbd5e1'); axY.setAttribute('stroke-width','2');
+    axes.append(axX,axY); svg.appendChild(axes);
+
+    const pathData = [];
+    const steps = 200;
+    
+    if(isFunction){
+      // Draw function graphs
+      for(let i = 0; i <= steps; i++){
+        const t = i / steps;
+        const x = xmin + t * (xmax - xmin);
+        const y = evalFunction(x, graphType);
+        
+        if(y === null || isNaN(y) || Math.abs(y) > 10) {
+          if(pathData.length > 0 && pathData[pathData.length - 1] !== 'break'){
+            pathData.push('break');
+          }
+          continue;
+        }
+        
+        const px = sx(x);
+        const py = sy(y);
+        
+        if(pathData.length === 0 || pathData[pathData.length - 1] === 'break'){
+          pathData.push(`M ${px} ${py}`);
+        } else {
+          pathData.push(`L ${px} ${py}`);
+        }
+      }
+    } else {
+      // Draw non-function graphs (circles, ellipses, sideways parabolas)
+      if(graphType === 'circle'){
+        for(let i = 0; i <= steps; i++){
+          const angle = (i / steps) * Math.PI * 2;
+          const x = 3 * Math.cos(angle);
+          const y = 3 * Math.sin(angle);
+          const px = sx(x);
+          const py = sy(y);
+          if(i === 0) pathData.push(`M ${px} ${py}`);
+          else pathData.push(`L ${px} ${py}`);
+        }
+      } else if(graphType === 'ellipse'){
+        for(let i = 0; i <= steps; i++){
+          const angle = (i / steps) * Math.PI * 2;
+          const x = 3.5 * Math.cos(angle);
+          const y = 2 * Math.sin(angle);
+          const px = sx(x);
+          const py = sy(y);
+          if(i === 0) pathData.push(`M ${px} ${py}`);
+          else pathData.push(`L ${px} ${py}`);
+        }
+      } else if(graphType === 'sideways_parabola'){
+        for(let i = 0; i <= steps; i++){
+          const y = ymin + (i / steps) * (ymax - ymin);
+          const x = 0.25 * y * y - 2;
+          const px = sx(x);
+          const py = sy(y);
+          if(i === 0) pathData.push(`M ${px} ${py}`);
+          else pathData.push(`L ${px} ${py}`);
+        }
+      }
+    }
+    
+    // Filter out 'break' markers and join the path
+    const filteredPath = pathData.filter(d => d !== 'break').join(' ');
+    
+    if(filteredPath){
+      const curvePath = document.createElementNS('http://www.w3.org/2000/svg','path');
+      curvePath.setAttribute('d', filteredPath);
+      curvePath.setAttribute('stroke','#38bdf8');
+      curvePath.setAttribute('stroke-width','3');
+      curvePath.setAttribute('fill','none');
+      curvePath.setAttribute('opacity','0.8');
+      svg.appendChild(curvePath);
+    }
+
+    const cap = document.createElement('div');
+    cap.className='caption';
+    cap.textContent = 'Use the vertical line test - does any vertical line cross the graph more than once?';
+
+    const wrap = document.createElement('div');
+    wrap.appendChild(svg); wrap.appendChild(cap);
+    canvas.appendChild(wrap);
+  }
+
+  // Show vertical line test AFTER incorrect submission
+  function showVerticalLineTest(){
+    const svg = document.getElementById('graphSvg');
+    if(!svg || !currentProblem) return;
+    
+    const w = 560, h = 360, pad = 40;
+    let xmin = -6, xmax = 6, ymin = -6, ymax = 6;
+    let sx, sy;
+    
+    // For point graphs, recalculate scale based on actual points
+    if(currentProblem.type === 'graph_points'){
+      const xs = currentProblem.pairs.map(p=>p[0]);
+      const ys = currentProblem.pairs.map(p=>p[1]);
+      xmin = Math.min(...xs, -6);
+      xmax = Math.max(...xs, 6);
+      ymin = Math.min(...ys, -6);
+      ymax = Math.max(...ys, 6);
+    }
+    
+    sx = (x)=> pad + (x - xmin)/(xmax - xmin || 1) * (w - 2*pad);
+    sy = (y)=> h - pad - (y - ymin)/(ymax - ymin || 1) * (h - 2*pad);
+    
+    let dupX = null;
+    let dupYValues = [];
+    
+    // Find the x-coordinate with multiple y-values
+    if(currentProblem.type === 'graph_points'){
+      const xVals = {};
+      currentProblem.pairs.forEach(([x,y]) => {
+        if(!xVals[x]) xVals[x] = [];
+        xVals[x].push(y);
+      });
+      
+      for(let x in xVals){
+        if(xVals[x].length > 1){
+          dupX = Number(x);
+          dupYValues = xVals[x];
+          break;
+        }
+      }
+    } else if(currentProblem.type === 'graph_continuous'){
+      // For continuous non-function graphs, find a representative x with multiple y values
+      if(currentProblem.graphType === 'circle'){
+        dupX = 0;
+        dupYValues = [3, -3];
+      } else if(currentProblem.graphType === 'ellipse'){
+        dupX = 0;
+        dupYValues = [2, -2];
+      } else if(currentProblem.graphType === 'sideways_parabola'){
+        dupX = -1;
+        dupYValues = [2, -2];
+      }
+    }
+    
+    if(dupX === null) return;
+    
+    // Draw vertical line
+    const vLine = document.createElementNS('http://www.w3.org/2000/svg','line');
+    vLine.classList.add('vlt-line');
+    vLine.setAttribute('x1', sx(dupX));
+    vLine.setAttribute('y1', pad);
+    vLine.setAttribute('x2', sx(dupX));
+    vLine.setAttribute('y2', h - pad);
+    svg.appendChild(vLine);
+    
+    // Draw circles at intersection points
+    dupYValues.forEach(y => {
+      const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+      circle.classList.add('vlt-circle');
+      circle.setAttribute('cx', sx(dupX));
+      circle.setAttribute('cy', sy(y));
+      circle.setAttribute('r', '10');
+      svg.appendChild(circle);
+    });
+  }
+
+  // SUBMIT
+  function submit() {
+    if(locked || !currentProblem) return;
+    const selected = document.querySelector('input[name="ans"]:checked');
+    if(!selected){ 
+      $('feedback').className='feedback err';
+      $('feedback').textContent='Pick an option first.';
+      setTimeout(()=>{
+        if(!locked){
+          $('feedback').textContent='';
+          $('feedback').className='feedback';
+        }
+      },1000);
+      return;
+    }
+    locked = true;
+    document.querySelectorAll('input[name="ans"]').forEach(r=>r.disabled=true);
+
+    const userSaysFunction = selected.value === 'function';
+    const correct = (userSaysFunction === currentProblem.isFunction);
+
+    if(correct){
+      $('feedback').className='feedback ok';
+      $('feedback').textContent='Correct ✓';
+      
+      // ALWAYS show explanation for correct answers
+      if(currentProblem.isFunction){
+        $('why').innerHTML = '<strong>This is a function</strong> – Each x-value maps to exactly one y-value.';
+      } else {
+        $('why').innerHTML = '<strong>Not a function</strong> – At least one x-value maps to multiple y-values.';
+      }
+      
+      streak++; $('streak').textContent = String(streak);
+      if(streak>best){ best=streak; $('best').textContent = String(best); }
+    }else{
+      $('feedback').className='feedback err';
+      $('feedback').textContent='Incorrect ✗';
+      
+      // ALWAYS provide explanation for incorrect answers
+      if(currentProblem.type === 'graph_continuous'){
+        // For continuous graphs, explain based on the graph type
+        if(currentProblem.isFunction){
+          $('why').innerHTML = '<strong>This is a function</strong> – The vertical line test passes. Each x-value maps to exactly one y-value.';
+        } else {
+          $('why').innerHTML = '<strong>Not a function</strong> – The vertical line test fails. Some vertical lines cross the graph more than once.';
+          // Show vertical line test visualization for continuous graphs
+          showVerticalLineTest();
+        }
+      } else {
+        // For all discrete representations (including graph_points)
+        const xVals = {};
+        currentProblem.pairs.forEach(([x,y]) => {
+          if(!xVals[x]) xVals[x] = [];
+          xVals[x].push(y);
+        });
+        
+        const duplicateX = Object.keys(xVals).find(x => xVals[x].length > 1);
+        if(duplicateX){
+          $('why').innerHTML = `<strong>Not a function</strong> – x = ${duplicateX} maps to multiple y-values: ${xVals[duplicateX].join(', ')}`;
+          
+          // Show vertical line test visualization for point graphs
+          if(currentProblem.type === 'graph_points'){
+            showVerticalLineTest();
+          }
+        } else {
+          $('why').innerHTML = '<strong>This is a function</strong> – Each x-value maps to exactly one y-value.';
+        }
+      }
+      
+      streak = 0; $('streak').textContent = '0';
+    }
+
+    $('submitBtn').disabled = true;
+    $('nextBtn').focus();
+  }
+
+  // NEXT PROBLEM
+  function next() {
+    locked = false;
+    currentProblem = generateProblem();
+    render();
+    
+    document.querySelectorAll('input[name="ans"]').forEach(r => {
+      r.checked = false;
+      r.disabled = false;
+    });
+    
+    $('submitBtn').disabled = false;
+    $('feedback').textContent = '';
+    $('feedback').className = 'feedback';
+    $('why').textContent = '';
+  }
+
+  // TIMER
+  function startTimed() {
+    if(timed){
+      stopTimed();
+      return;
+    }
+    timed = true;
+    timeLeft = 60;
+    streak = 0;
+    $('streak').textContent = '0';
+    $('timedState').textContent = 'On';
+    $('timer').style.display = 'inline-block';
+    $('timer').textContent = String(timeLeft);
+    $('timedBtn').textContent = 'Stop Timed';
+    
+    timerId = setInterval(() => {
+      timeLeft--;
+      $('timer').textContent = String(timeLeft);
+      if(timeLeft <= 0){
+        stopTimed();
+        alert(`Time's up! Final streak: ${streak}`);
+      }
+    }, 1000);
+    
+    next();
+  }
+
+  function stopTimed() {
+    timed = false;
+    if(timerId){ clearInterval(timerId); timerId = null; }
+    $('timedState').textContent = 'Off';
+    $('timer').style.display = 'none';
+    $('timedBtn').textContent = 'Start Timed (60s)';
+  }
+
+  // EVENT LISTENERS
+  $('submitBtn').addEventListener('click', submit);
+  $('nextBtn').addEventListener('click', next);
+  $('timedBtn').addEventListener('click', startTimed);
+  
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if(e.target.tagName === 'SELECT') return;
+    
+    if(e.key === 'f' || e.key === 'F'){
+      document.querySelector('input[value="function"]').click();
+    } else if(e.key === 'n' || e.key === 'N'){
+      document.querySelector('input[value="not"]').click();
+    } else if(e.key === 'Enter' && !locked){
+      submit();
+    } else if(e.key === ' ' && locked){
+      e.preventDefault();
+      next();
+    } else if(e.key === 't' || e.key === 'T'){
+      startTimed();
+    }
+  });
+
+  // Initialize
+  next();
+})();
+</script>
+</body>
+</html>

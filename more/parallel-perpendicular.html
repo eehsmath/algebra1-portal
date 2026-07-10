@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Parallel/Perpendicular — Slope Drill</title>
+<style>
+  :root{
+    --bg:#0b0d10;
+    --card:#151922;
+    --ink:#e7ecf3;
+    --muted:#9fb0c8;
+    --accent:#6ee7ff;
+    --ok:#22c55e;
+    --err:#ef4444;
+  }
+  html,body{height:100%}
+  body{
+    margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial, sans-serif;
+    background: #0a0e1a; color:var(--ink);
+    display:flex; align-items:center; justify-content:center; padding:20px;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  /* Epic animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(110, 231, 255, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 80% 50%, rgba(157, 78, 221, 0.15) 0%, transparent 50%),
+      radial-gradient(circle at 50% 20%, rgba(34, 197, 94, 0.1) 0%, transparent 50%);
+    animation: gradientShift 20s ease infinite;
+    z-index: 0;
+  }
+  
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: 
+      linear-gradient(rgba(110, 231, 255, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(110, 231, 255, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    animation: gridFlow 30s linear infinite;
+    z-index: 0;
+  }
+  
+  @keyframes gradientShift {
+    0%, 100% { transform: translate(0, 0) rotate(0deg); }
+    33% { transform: translate(-5%, 5%) rotate(120deg); }
+    66% { transform: translate(5%, -5%) rotate(240deg); }
+  }
+  
+  @keyframes gridFlow {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(50px, 50px); }
+  }
+  
+  /* Floating geometric elements */
+  .geo-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+  
+  .geo-line {
+    opacity: 0.6;
+    filter: blur(0.5px);
+  }
+  
+  .par1 { animation: floatPar1 12s ease-in-out infinite; }
+  .par2 { animation: floatPar2 12s ease-in-out infinite 0.5s; }
+  .par3 { animation: floatPar1 15s ease-in-out infinite 1s; }
+  .par4 { animation: floatPar2 15s ease-in-out infinite 1.5s; }
+  .perp1 { animation: floatPerp1 10s ease-in-out infinite; }
+  .perp2 { animation: floatPerp2 10s ease-in-out infinite 0.3s; }
+  
+  @keyframes floatPar1 {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0.6; }
+    50% { transform: translateY(-30px) translateX(20px); opacity: 0.3; }
+  }
+  
+  @keyframes floatPar2 {
+    0%, 100% { transform: translateY(0) translateX(0); opacity: 0.6; }
+    50% { transform: translateY(-25px) translateX(15px); opacity: 0.4; }
+  }
+  
+  @keyframes floatPerp1 {
+    0%, 100% { transform: translateX(0) rotate(0deg); opacity: 0.6; }
+    50% { transform: translateX(-20px) rotate(-5deg); opacity: 0.3; }
+  }
+  
+  @keyframes floatPerp2 {
+    0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.6; }
+    50% { transform: translateY(20px) rotate(5deg); opacity: 0.4; }
+  }
+  
+  .app{
+    width:min(1000px, 96vw); 
+    background: rgba(21, 25, 34, 0.85);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(110, 231, 255, 0.1);
+    border-radius:18px; 
+    box-shadow: 
+      0 0 80px rgba(110, 231, 255, 0.1),
+      0 10px 30px rgba(0,0,0,.5),
+      inset 0 1px 0 rgba(255,255,255,0.1);
+    padding:20px;
+    position: relative;
+    z-index: 1;
+  }
+  .head{
+    display:flex; align-items:center; justify-content:flex-start; margin-bottom:14px;
+  }
+  .head h1{
+    font-size:20px; margin:0; font-weight:700; letter-spacing:.2px; 
+    color:#eaf6ff;
+    text-shadow: 0 0 30px rgba(110, 231, 255, 0.3);
+  }
+  
+  .btn{
+    border:0; border-radius:12px; padding:10px 16px; font-weight:700;
+    background: rgba(30, 38, 51, 0.8); 
+    color:#d9e7ff; cursor:pointer;
+    transition: all .3s ease;
+    border: 1px solid rgba(110, 231, 255, 0.2);
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+  }
+  .btn:hover{
+    background: rgba(40, 50, 70, 0.9);
+    box-shadow: 0 0 20px rgba(110, 231, 255, 0.3);
+    transform: translateY(-2px);
+  }
+  .btn:active{ transform: translateY(0); }
+  .btn:disabled{ opacity:.6; cursor:not-allowed; }
+  
+  /* Large circular Next button */
+  .next-container {
+    display: flex;
+    justify-content: center;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  
+  .btn-next {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid rgba(110, 231, 255, 0.4);
+    background: rgba(27, 144, 255, 0.15);
+    backdrop-filter: blur(10px);
+    color: #6ee7ff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .3s ease;
+    box-shadow: 
+      0 0 30px rgba(110, 231, 255, 0.2),
+      0 4px 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  .btn-next:hover {
+    transform: scale(1.1);
+    background: rgba(27, 144, 255, 0.25);
+    border-color: rgba(110, 231, 255, 0.7);
+    box-shadow: 
+      0 0 50px rgba(110, 231, 255, 0.4),
+      0 8px 25px rgba(0, 0, 0, 0.4);
+  }
+  
+  .btn-next:active {
+    transform: scale(1.05);
+  }
+  
+  .btn-next svg {
+    filter: drop-shadow(0 0 8px rgba(110, 231, 255, 0.6));
+  }
+
+  .btn.next{ 
+    background: rgba(43, 51, 66, 0.8);
+    border: 1px solid rgba(157, 78, 221, 0.3);
+    flex-shrink: 0;
+    flex-grow: 0;
+  }
+  .btn.next:hover{
+    box-shadow: 0 0 20px rgba(157, 78, 221, 0.4);
+  }
+
+  /* Options at top */
+  .options{
+    display:flex; gap:18px; flex-wrap:wrap; justify-content:center; margin:0 0 20px 0;
+  }
+  .chip{
+    display:flex; align-items:center; gap:10px; 
+    background: rgba(20, 26, 36, 0.6); 
+    padding:10px 14px; 
+    border-radius:999px;
+    border:1px solid rgba(110, 231, 255, 0.15); 
+    cursor:pointer; user-select:none;
+    transition: all .3s ease;
+    backdrop-filter: blur(10px);
+    white-space: nowrap;
+  }
+  .chip:hover{
+    background: rgba(30, 40, 56, 0.8);
+    border-color: rgba(110, 231, 255, 0.4);
+    box-shadow: 0 0 15px rgba(110, 231, 255, 0.2);
+    transform: translateY(-2px);
+  }
+  .chip:has(input:checked){
+    background: rgba(27, 144, 255, 0.2);
+    border-color: rgba(110, 231, 255, 0.6);
+    box-shadow: 0 0 20px rgba(110, 231, 255, 0.3);
+  }
+  .chip input{ accent-color:#1b90ff; width:16px; height:16px; cursor:pointer; }
+
+  .board{
+    display:grid; grid-template-columns: 1fr 14px 1fr; align-items:stretch;
+    border-radius:14px; overflow:hidden; 
+    border:1px solid rgba(110, 231, 255, 0.2);
+    background: rgba(15, 20, 28, 0.6);
+    box-shadow: 
+      inset 0 1px 20px rgba(0,0,0,0.3),
+      0 0 40px rgba(110, 231, 255, 0.05);
+  }
+  .panel{
+    display:flex; align-items:center; justify-content:center;
+    min-height:220px; padding:18px; text-align:center;
+    position: relative;
+  }
+  .panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(110, 231, 255, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .divider{
+    background: linear-gradient(180deg, 
+      rgba(110, 231, 255, 0.3) 0%, 
+      rgba(157, 78, 221, 0.3) 50%, 
+      rgba(110, 231, 255, 0.3) 100%);
+    box-shadow: 0 0 20px rgba(110, 231, 255, 0.3);
+  }
+  .panel h2{
+    font-size:14px; font-weight:700; color:var(--muted); letter-spacing:.5px; margin:0 0 10px;
+    text-shadow: 0 0 10px rgba(110, 231, 255, 0.2);
+  }
+  .slope{
+    display:flex; flex-direction:column; align-items:center; gap:12px;
+  }
+
+  /* Fraction styling */
+  .frac{
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    font-size: clamp(40px, 10vw, 90px); line-height:1.05; font-weight:800; letter-spacing:.5px;
+  }
+  .frac .num, .frac .den{ 
+    padding:0 .2em; 
+    text-shadow: 0 0 20px rgba(110, 231, 255, 0.5);
+  }
+  .frac .bar{
+    width:100%; height:6px; 
+    background: linear-gradient(90deg, 
+      rgba(110, 231, 255, 0.8) 0%, 
+      rgba(157, 78, 221, 0.8) 50%, 
+      rgba(110, 231, 255, 0.8) 100%);
+    border-radius:3px; margin:.08em 0;
+    box-shadow: 
+      0 0 10px rgba(110, 231, 255, 0.6),
+      0 0 20px rgba(157, 78, 221, 0.4);
+    animation: barPulse 3s ease-in-out infinite;
+  }
+  
+  @keyframes barPulse {
+    0%, 100% { opacity: 1; transform: scaleX(1); }
+    50% { opacity: 0.8; transform: scaleX(0.98); }
+  }
+  
+  .int{
+    font-size: clamp(40px, 10vw, 90px); font-weight:800; line-height:1.05; letter-spacing:.5px;
+    text-shadow: 0 0 20px rgba(110, 231, 255, 0.5);
+  }
+  .sign{ 
+    font-size: clamp(32px, 6vw, 54px); margin-right:.15em; opacity:.9;
+    text-shadow: 0 0 15px rgba(110, 231, 255, 0.4);
+  }
+
+  /* Large feedback */
+  .feedback{
+    text-align:center; font-weight:900; letter-spacing:.3px; margin:24px 0 12px 0; min-height:60px;
+    font-size: clamp(32px, 7vw, 54px); display:flex; align-items:center; justify-content:center;
+    animation: feedbackAppear 0.4s ease-out;
+  }
+  
+  @keyframes feedbackAppear {
+    0% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  
+  .ok{ 
+    color: var(--ok); 
+    text-shadow: 
+      0 0 20px rgba(34, 197, 94, 0.8),
+      0 0 40px rgba(34, 197, 94, 0.4),
+      0 0 60px rgba(34, 197, 94, 0.2);
+  }
+  .err{ 
+    color: var(--err); 
+    text-shadow: 
+      0 0 20px rgba(239, 68, 68, 0.8),
+      0 0 40px rgba(239, 68, 68, 0.4),
+      0 0 60px rgba(239, 68, 68, 0.2);
+  }
+
+  .meta{
+    display:flex; justify-content:center; gap:16px; 
+    color: rgba(159, 176, 200, 0.9); 
+    font-size:12px; margin-top:6px;
+    text-shadow: 0 0 10px rgba(110, 231, 255, 0.1);
+  }
+
+  /* Accessibility focus */
+  .btn:focus-visible, .chip:has(input:focus-visible){
+    outline: 3px solid #59c6ff; outline-offset: 2px;
+  }
+
+/* Mobile Safety Overrides */
+html, body { height:auto; min-height:100dvh; }
+body { overflow:auto; }
+.app { width:min(1000px, 100%); }
+  .head { 
+    position: sticky; top: 0; z-index: 3; 
+    background: rgba(21, 25, 34, 0.95); 
+    backdrop-filter: blur(20px);
+    margin-left: -20px;
+    margin-right: -20px;
+    margin-top: -20px;
+    padding: 20px 20px 14px 20px;
+    border-radius: 18px 18px 0 0;
+  }
+
+@media (max-height: 820px){
+  body { align-items:flex-start; }
+  .app { margin:12px auto; }
+}
+
+@media (max-width: 720px){
+  .board { grid-template-columns: 1fr; }
+  .divider { display:none; }
+  .panel { min-height: 180px; padding: 16px; }
+  .options { gap: 12px; }
+}
+
+.frac { font-size: clamp(28px, 10vw, 80px); }
+.int  { font-size: clamp(28px, 10vw, 80px); }
+.sign { font-size: clamp(22px, 7vw, 50px); }
+
+@media (max-width: 380px){
+  .chip { padding: 10px 12px; gap: 8px; }
+  .chip input { width:20px; height:20px; }
+}
+
+</style>
+</head>
+<body>
+  <!-- Floating geometric elements -->
+  <svg class="geo-bg" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="lineGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" style="stop-color:rgba(110,231,255,0.4);stop-opacity:1" />
+        <stop offset="100%" style="stop-color:rgba(110,231,255,0);stop-opacity:0" />
+      </linearGradient>
+      <linearGradient id="lineGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" style="stop-color:rgba(157,78,221,0.4);stop-opacity:1" />
+        <stop offset="100%" style="stop-color:rgba(157,78,221,0);stop-opacity:0" />
+      </linearGradient>
+    </defs>
+    <!-- Parallel lines -->
+    <line class="geo-line par1" x1="10%" y1="20%" x2="50%" y2="20%" stroke="url(#lineGrad1)" stroke-width="2"/>
+    <line class="geo-line par2" x1="10%" y1="30%" x2="50%" y2="30%" stroke="url(#lineGrad1)" stroke-width="2"/>
+    <!-- Perpendicular lines -->
+    <line class="geo-line perp1" x1="70%" y1="60%" x2="90%" y2="60%" stroke="url(#lineGrad2)" stroke-width="2"/>
+    <line class="geo-line perp2" x1="80%" y1="50%" x2="80%" y2="70%" stroke="url(#lineGrad2)" stroke-width="2"/>
+    <!-- More parallel -->
+    <line class="geo-line par3" x1="20%" y1="75%" x2="40%" y2="75%" stroke="url(#lineGrad1)" stroke-width="2"/>
+    <line class="geo-line par4" x1="20%" y1="82%" x2="40%" y2="82%" stroke="url(#lineGrad1)" stroke-width="2"/>
+  </svg>
+
+  <div class="app">
+    <div class="head">
+      <h1>Parallel/Perpendicular</h1>
+    </div>
+
+    <div class="controls-row">
+      <div class="options" role="radiogroup" aria-label="Choose the relationship">
+        <label class="chip"><input type="radio" name="rel" value="parallel"> Parallel</label>
+        <label class="chip"><input type="radio" name="rel" value="perpendicular"> Perpendicular</label>
+        <label class="chip"><input type="radio" name="rel" value="neither"> Neither</label>      
+      <button id="nextBtn" class="btn next">Next</button>
+    </div>
+
+    <div class="board" aria-live="polite">
+      <div class="panel">
+        <div class="slope">
+          <h2>Slope A</h2>
+          <div id="slopeA"></div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="panel">
+        <div class="slope">
+          <h2>Slope B</h2>
+          <div id="slopeB"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="feedback" class="feedback" aria-live="polite"></div>
+    <div id="meta" class="meta"></div>
+  </div>
+
+<script>
+(function(){
+  // -------- Utilities
+  const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+  const gcd = (a,b) => { a=Math.abs(a); b=Math.abs(b); while(b){ [a,b]=[b,a%b]; } return a||1; };
+  const simplify = (n,d) => {
+    if(d===0) throw new Error("Denominator cannot be zero");
+    if(d<0){ n=-n; d=-d; }
+    const g = gcd(n,d);
+    return {n: n/g, d: d/g};
+  };
+
+  // Render slope as big fraction (or integer)
+  function renderSlope(el, frac){
+    el.innerHTML = "";
+    const {n, d} = frac;
+    const neg = n < 0;
+    const absN = Math.abs(n);
+    const absD = Math.abs(d);
+
+    if (absD === 1) {
+      const wrap = document.createElement("div");
+      wrap.style.display = "flex"; wrap.style.alignItems = "center"; wrap.style.justifyContent = "center";
+      if(neg){ const s=document.createElement("span"); s.className="sign"; s.textContent="−"; wrap.appendChild(s); }
+      const int = document.createElement("span");
+      int.className="int"; int.textContent = String(absN);
+      wrap.appendChild(int);
+      el.appendChild(wrap);
+    } else {
+      const wrap = document.createElement("div");
+      wrap.style.display = "flex"; wrap.style.alignItems = "center"; wrap.style.justifyContent = "center";
+      if(neg){ const s=document.createElement("span"); s.className="sign"; s.textContent="−"; wrap.appendChild(s); }
+
+      const fracEl = document.createElement("span");
+      fracEl.className = "frac";
+      const num = document.createElement("span"); num.className = "num"; num.textContent = String(absN);
+      const bar = document.createElement("span"); bar.className = "bar";
+      const den = document.createElement("span"); den.className = "den"; den.textContent = String(absD);
+      fracEl.append(num, bar, den);
+      wrap.appendChild(fracEl);
+      el.appendChild(wrap);
+    }
+  }
+
+  // Compare relationships
+  function isParallel(a,b){
+    return a.n * b.d === b.n * a.d;
+  }
+  function isPerpendicular(a,b){
+    return (a.n * b.n) === - (a.d * b.d);
+  }
+
+  // Random rational slope
+  function randomSlope({allowZero=true}={}){
+    let n = 0;
+    if(allowZero){
+      do { n = randInt(-9,9); } while(n === 0 && Math.random()<0.5);
+    }else{
+      do { n = randInt(-9,9); } while(n === 0);
+    }
+    let d;
+    do { d = randInt(1,9); } while(d === 0);
+    return simplify(n,d);
+  }
+
+  // Build a pair with a chosen relationship
+  function makePair(target){
+    let A;
+    if (target === 'perpendicular'){
+      A = randomSlope({allowZero:false});
+      let B = simplify(-A.d, A.n);
+      if(Math.random() < 0.35){
+        const k = randInt(2,4);
+        B = simplify(B.n * k, B.d * k);
+      }
+      return {A, B, target};
+    }
+    if (target === 'parallel'){
+      A = randomSlope({allowZero:true});
+      let k = randInt(1,4);
+      let B = simplify(A.n * k, A.d * k);
+      return {A, B, target};
+    }
+    // neither
+    A = randomSlope({allowZero:true});
+    let tries = 0;
+    while(true){
+      let B = randomSlope({allowZero:true});
+      const par = isParallel(A,B);
+      const perp = isPerpendicular(A,B);
+      if(!par && !perp){
+        return {A, B, target};
+      }
+      if(++tries > 200){
+        B = simplify(A.n + 1, A.d + 2);
+        if(!isParallel(A,B) && !isPerpendicular(A,B)) return {A,B,target};
+      }
+    }
+  }
+
+  // Evaluate relationship
+  function relationshipOf(A,B){
+    if(isParallel(A,B)) return 'parallel';
+    if(isPerpendicular(A,B)) return 'perpendicular';
+    return 'neither';
+  }
+
+  // -------- App state & wiring
+  const slopeAEl = document.getElementById('slopeA');
+  const slopeBEl = document.getElementById('slopeB');
+  const feedbackEl = document.getElementById('feedback');
+  const metaEl = document.getElementById('meta');
+  const nextBtn = document.getElementById('nextBtn');
+  const radios = Array.from(document.querySelectorAll('input[name="rel"]'));
+
+  let current = null;
+  let locked = false;
+
+  function renderProblem(){
+    feedbackEl.textContent = "";
+    metaEl.textContent = "";
+    radios.forEach(r => { r.checked = false; r.disabled = false; });
+    locked = false;
+
+    const bucket = Math.random();
+    const target = bucket < 0.34 ? 'parallel' : bucket < 0.67 ? 'perpendicular' : 'neither';
+    current = makePair(target);
+
+    renderSlope(slopeAEl, current.A);
+    renderSlope(slopeBEl, current.B);
+  }
+
+  function getChoice(){
+    const checked = radios.find(r => r.checked);
+    return checked ? checked.value : null;
+  }
+
+  function lockInputs(){ 
+    radios.forEach(r => r.disabled = true); 
+    locked = true; 
+  }
+
+  function onSubmit(){
+    if(locked) return;
+    const choice = getChoice();
+    if(!choice) return;
+    
+    const truth = relationshipOf(current.A, current.B);
+    const ok = (choice === truth);
+    lockInputs();
+    feedbackEl.className = "feedback " + (ok ? "ok" : "err");
+    feedbackEl.textContent = ok ? "Correct ✓" : "Incorrect ✗";
+
+    const A = current.A, B = current.B;
+    let msg = "";
+    if(truth === 'parallel'){
+      msg = ok ? "The slopes are equal." : "The correct answer is Parallel. The slopes are equal.";
+    }else if(truth === 'perpendicular'){
+      msg = ok ? "The slopes are negative reciprocals (their product is -1)." : "The correct answer is Perpendicular. The slopes are negative reciprocals (their product is -1).";
+    }else{
+      msg = ok ? "The slopes are not equal and not negative reciprocals." : "The correct answer is Neither. The slopes are not equal and not negative reciprocals.";
+    }
+    metaEl.textContent = msg;
+  }
+
+  // Auto-submit when radio is selected
+  radios.forEach(r => r.addEventListener('change', onSubmit));
+  nextBtn.addEventListener('click', renderProblem);
+
+  // Keyboard shortcuts: 1/2/3 select and auto-submit, N next
+  window.addEventListener('keydown', (e)=>{
+    if(e.key === '1'){ radios[0].checked = true; onSubmit(); }
+    if(e.key === '2'){ radios[1].checked = true; onSubmit(); }
+    if(e.key === '3'){ radios[2].checked = true; onSubmit(); }
+    if(e.key.toLowerCase() === 'n') renderProblem();
+  });
+
+  // Init
+  renderProblem();
+})();
+</script>
+</body>
+</html>

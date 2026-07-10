@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Proportions • STAAR/TSI Skills (with Chips)</title>
+<style>
+  :root{
+    --bg:#eef3f9; --panel:#ffffff; --ink:#0d2136; --muted:#5b6b82;
+    --acc:#2f7de1; --ok:#15986a; --bad:#cc2b52; --line:#d9e3ef; --gold:#c18f2b;
+    --shadow:0 8px 30px rgba(13,33,54,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.25 ui-sans-serif,system-ui,Segoe UI,Roboto,Helvetica,Arial}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px 16px 32px}
+  .topbar{position:sticky;top:0;z-index:40;padding:10px 12px;background:linear-gradient(180deg,rgba(238,243,249,.98),rgba(238,243,249,.9) 60%,transparent);backdrop-filter:saturate(1.1) blur(6px);border-bottom:1px solid var(--line)}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  .label{color:var(--muted);font-weight:700;margin-right:6px}
+  select{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:8px 12px;box-shadow:var(--shadow)}
+  .chip, .chipChoice{padding:8px 12px;border-radius:999px;background:#f0f6ff;color:#3a4d66;border:1px solid var(--line);cursor:pointer;user-select:none}
+  .chipChoice.active{background:#2f7de1;color:#fff;border-color:#2f7de1}
+  .grid{display:grid;grid-template-columns:1.15fr .85fr;gap:16px;margin-top:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .pad{padding:16px}
+  .problem{font-size:28px;font-weight:800}
+  .problem .promptLabel{font-size:14px;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+  .problem .fracCenter{text-align:center}
+  .muted{color:var(--muted)}
+  .hr{height:1px;background:var(--line);margin:14px 0}
+  .answrap{display:flex;flex-direction:column;gap:10px}
+  .ansrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .ans input{width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:#f8fbff;color:#0d2136;font-size:20px;box-shadow:var(--shadow)}
+  .btn{background:var(--acc);color:#fff;border:none;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;box-shadow:var(--shadow)}
+  .btn.secondary{background:#e6eef9;color:#123055;border:1px solid var(--line)}
+  .result-tag{display:none;border-radius:10px;padding:6px 10px;font-weight:800}
+  .result-tag.ok{display:inline-block;background:#e5f8f1;color:#0a6b4f;border:1px solid #bce9d8}
+  .result-tag.err{display:inline-block;background:#ffe9ee;color:#9c1133;border:1px solid #ffd0da}
+  
+.kpd{display:grid;grid-template-columns:1.2fr .8fr;gap:8px;margin-top:10px}
+.kpd .kpdNums{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpd .kpdNums .wide{grid-column:1 / span 3}
+.kpd .kpdOps{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.kpd button{padding:12px 0;border-radius:12px;border:1px solid var(--line);
+  background:#f7fbff;color:#102a45;cursor:pointer;box-shadow:var(--shadow);font-weight:700}
+
+  .score{display:flex;gap:12px;align-items:center;font-weight:800}
+  .score .ok{color:var(--ok)} .score .bad{color:var(--bad)} .score .streak{color:var(--gold)}
+  .steps li{margin:6px 0;cursor:pointer}
+  .mini{background:#f6faff;border:1px dashed var(--line);border-radius:14px;padding:12px}
+  .tag{display:inline-block;padding:4px 8px;background:#f0f6ff;border:1px solid var(--line);border-radius:8px;margin:2px;font-size:13px}
+  dialog{border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:18px;padding:0;max-width:860px;width:96%;box-shadow:var(--shadow)}
+  dialog::backdrop{background:rgba(8,21,38,.25)}
+  .modalHead{padding:14px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center}
+  .modalBody{padding:16px}
+  .closeX{background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:10px;padding:6px 10px;cursor:pointer}
+  .history{display:flex;flex-wrap:wrap}
+  .frac{display:inline-grid;grid-template-rows:auto auto;align-items:center;justify-items:center;line-height:1}
+  .frac .n{border-bottom:3px solid currentColor;padding:0 6px;margin-bottom:4px}
+  .frac .d{padding:0 6px;margin-top:4px}
+  .equals{display:inline-block;padding:0 10px}
+  .problem .frac{font-size:2.5em}
+  .steps .frac{font-size:1.6em}
+  svg{max-width:100%;height:auto;display:block}
+  .chipRow{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 2px}
+  .kpdToggle{margin-top:8px;text-align:center}
+  .kpdToggle button{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;color:var(--muted);cursor:pointer}
+  #geomSlot{text-align:center}
+  @media (max-width:880px){ .grid{grid-template-columns:1fr} .problem{font-size:24px} .problem .frac{font-size:2.2em} }
+
+/* === Chromebook & Mobile Safety Overrides (Proportions App) === */
+
+/* Fit inside Google Sites iframes; allow vertical scroll on short screens */
+html, body { height:auto; min-height:100dvh; }
+body { overflow:auto; }
+.wrap { width:min(1200px, 100%); }   /* safer than vw inside embeds */
+
+/* Keep the two columns side-by-side by default, but stack when space is tight */
+@media (max-width: 900px){
+  .grid { grid-template-columns: 1fr; }  /* phones / narrow tablets */
+}
+@media (max-height: 820px){
+  .grid { grid-template-columns: 1fr; }  /* Chromebooks in split view / short windows */
+  .card.pad { margin: 8px 0; }
+  /* Keep Submit/New reachable while the steps/solution scroll */
+  .ansrow{
+    position: sticky; top: 64px; z-index: 5;
+    background: var(--panel);
+    padding: 8px 0;
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+/* Tame big typography so it won’t push buttons off-screen */
+.problem{ font-size: clamp(20px, 3.8vw, 28px); }
+.problem .frac{ font-size: clamp(1.6em, 6.5vw, 2.5em); }
+.steps li{ font-size: clamp(14px, 2.8vw, 16px); }
+.ans input{ font-size: clamp(18px, 4.2vw, 20px); }
+
+/* On-screen keypad: stays usable on phones, expands on wider screens */
+.kpd{ grid-template-columns: 1fr; }
+.kpd .kpdNums{ grid-template-columns: repeat(3, 1fr); }
+.kpd .kpdOps{ grid-template-columns: repeat(3, 1fr); }
+.kpd button{ min-height: 44px; }
+@media (min-width: 480px){
+  .kpd{ grid-template-columns: 1.2fr .8fr; }
+  .kpd .kpdOps{ grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Modals: never overflow the viewport; scroll inside instead */
+dialog{ max-width: min(860px, 96vw); }
+.modalBody{ max-height: 92dvh; overflow: auto; }
+
+
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="row">
+      <span class="label">Skill</span>
+      <select id="skillSel">
+        <option value="prop">Proportion Solve (Two Fractions)</option>
+        <option value="similar">Similar Figures & Scale Drawings</option>
+        <option value="unit">Unit Rates & Conversions</option>
+        <option value="kop">Constant of Proportionality (k=y/x)</option>
+        <option value="pct">Percents & Financial Literacy</option>
+      </select>
+      <span class="label" style="margin-left:8px">Difficulty</span>
+      <select id="diffSel">
+        <option value="easy">Easy</option>
+        <option value="med">Medium</option>
+        <option value="hard">Hard</option>
+        <option value="beast">Beast</option>
+      </select>
+      <button class="chip" id="summaryBtn">Summary</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="grid">
+      <div class="card pad">
+        <div id="problemText" class="problem">—</div>
+        <div id="promptHint" class="muted" style="margin-top:6px"></div>
+        <div id="chipRow" class="chipRow" style="display:none"></div>
+        <div id="geomSlot" style="margin-top:12px"></div>
+
+        <div class="hr"></div>
+        <div class="answrap">
+          <div id="answerBox" class="ans"></div>
+          <div class="ansrow">
+            <button id="btnSubmit" class="btn">Submit</button>
+            <button id="btnNext" class="btn secondary">New</button>
+            <span id="resultTag" class="result-tag"></span>
+          </div>
+          <div id="keypad" class="kpd"></div>
+          <div class="kpdToggle"><button id="kpdToggleBtn">Hide Keyboard</button></div>
+        </div>
+      </div>
+
+      <div class="card pad">
+        <div class="score">
+          <span>Score:</span>
+          <span id="scOk" class="ok">0 ✓</span>
+          <span id="scBad" class="bad">0 ✗</span>
+          <span id="scStreak" class="streak">Streak 0</span>
+        </div>
+        <div class="hr"></div>
+        <h3>Steps</h3>
+        <div id="stepsPlaceholder" class="muted">Steps will appear after you submit an answer.</div>
+        <ol id="stepsList" class="steps" style="display:none"></ol>
+        <div class="hr"></div>
+        <h3>Solution</h3>
+        <div id="solution" class="mini">—</div>
+        <div class="hr"></div>
+        <h3>History</h3>
+        <div id="history" class="history"></div>
+      </div>
+    </div>
+  </div>
+
+  <dialog id="stepsModal">
+    <div class="modalHead">
+      <strong>Worked Steps</strong>
+      <button id="closeSteps" class="closeX">Close</button>
+    </div>
+    <div id="stepsModalBody" class="modalBody"></div>
+  </dialog>
+
+  <dialog id="summaryModal">
+    <div class="modalHead">
+      <strong>Session Summary</strong>
+      <button id="closeSummary" class="closeX">Close</button>
+    </div>
+    <div class="modalBody">
+      <div id="sumLine" class="muted" style="margin-bottom:12px"></div>
+      <div id="sumStats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px"></div>
+      <div style="display:grid;grid-template-columns:1.2fr .8fr;gap:16px">
+        <div>
+          <div style="font-weight:800;margin-bottom:6px">Recent</div>
+          <div id="sumRecent" class="history"></div>
+        </div>
+        <div>
+          <div style="font-weight:800;margin-bottom:6px">By Skill</div>
+          <div id="sumBySkill"></div>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+<script>
+const rnd=(a,b)=>Math.floor(Math.random()*(b-a+1))+a;
+const choice=a=>a[rnd(0,a.length-1)];
+const fmt=v=>Number.isInteger(v)? String(v) : (Math.round(v*1000)/1000).toString();
+const stripHTML=s=>s.replace(/<[^>]+>/g,'');
+const fracHTML=(n,d)=>`<span class="frac"><span class="n">${n}</span><span class="d">${d}</span></span>`;
+const propHTML=(a,b,c,d)=>`${fracHTML(a,b)} <span class="equals">=</span> ${fracHTML(c,d)}`;
+
+function parseNumberish(s){
+  s=String(s).trim(); if(!s) return {ok:false};
+  if(s.endsWith('%')){const k=parseNumberish(s.slice(0,-1));return k.ok?{ok:true,value:k.value/100}:{ok:false};}
+  if(s.includes('/')){const [a,b,...r]=s.split('/');if(r.length) return {ok:false};
+    const A=Number(a),B=Number(b); if(!Number.isFinite(A)||!Number.isFinite(B)||B===0) return {ok:false};
+    return {ok:true,value:A/B};}
+  const v=Number(s); if(!Number.isFinite(v)) return {ok:false}; return {ok:true,value:v};
+}
+const approxEq=(x,y,eps=1e-9)=>Math.abs(x-y)<=eps;
+const rounded=(v,p)=>{const m=10**p;return Math.round(v*m)/m};
+function checkPrecision(user, exact, rule){
+  if(!rule) return approxEq(user, exact, Math.max(1e-9, Math.abs(exact)*0.005));
+  if(rule.type==='integer') return Number.isInteger(user) && approxEq(user, exact, 1e-9);
+  if(rule.type==='places')  return rounded(user, rule.places) === rounded(exact, rule.places);
+  if(rule.type==='eps')     return approxEq(user, exact, rule.eps);
+  return approxEq(user, exact, 1e-9);
+}
+
+const state={
+  skill:'prop',
+  diff:'easy',
+  unitMode:'unit',
+  pctMode:'basic',
+  current:null, ok:0, bad:0, streak:0, best:0, history:[], bySkill:{}
+};
+const skillSel=document.getElementById('skillSel'), diffSel=document.getElementById('diffSel');
+
+function buildKeypad(allowDecimal=true){
+  const k=document.getElementById('keypad');
+  k.innerHTML='';
+
+  const nums=document.createElement('div'); nums.className='kpdNums';
+  const ops =document.createElement('div'); ops.className='kpdOps';
+  k.appendChild(nums); k.appendChild(ops);
+
+  const numberRows=[['7','8','9'],['4','5','6'],['1','2','3']];
+  numberRows.flat().forEach(tok=>nums.appendChild(makeKey(tok)));
+  const zero=makeKey('0'); zero.classList.add('wide'); nums.appendChild(zero);
+
+  const opTokens=['/','Back',':','Clear','-','(',')','.', '%'];
+  opTokens.forEach(tok=>{
+    if(!allowDecimal && (tok==='.'||tok==='%')) return;
+    ops.appendChild(makeKey(tok));
+  });
+
+  function makeKey(tok){
+    const b=document.createElement('button'); b.textContent=tok;
+    b.addEventListener('click',()=>{
+      const inp=document.querySelector('.ans input'); if(!inp) return; inp.focus();
+      if(tok==='Clear'){inp.value='';return}
+      if(tok==='Back'){inp.value=inp.value.slice(0,-1);return}
+      if(tok===':' && !inp.dataset.allowColon) return;
+      inp.value = inp.value + tok;
+    });
+    return b;
+  }
+}
+
+const WB = {
+  pct: {
+    findPart:(p,w)=>`${p}% of ${w} is what?`,
+    findWhole:(p,part)=>`${p}% of a number is ${part}. What is the number?`,
+    findPct:(part,whole)=>`${part} is what percent of ${whole}?`,
+    sale:(price,disc,tax)=>`An item costs $${price}. Discount ${disc}% then add ${tax}% tax. What is the final price?`,
+    tip:(bill,tip)=>`Restaurant bill $${bill}. Add a ${tip}% tip. What is the total?`,
+    increase:(base,r)=>`A population of ${base} increases by ${r}%. What is the new population?`,
+    decrease:(base,r)=>`A jacket costs $${base}. It's decreased by ${r}%. What is the sale price?`,
+    commission:(sales,rate)=>`Commission is ${rate}% of sales. If sales are $${sales}, what is the commission?`,
+    interest:(p,r,t)=>`Simple interest: principal $${p} at ${r}% for ${t} years. How much interest?`,
+    rebate:(price,rebate,tax)=>`A laptop costs $${price} with a $${rebate} rebate and ${tax}% tax on the discounted price. What is the final cost?`,
+    multiMix:(p1,p2,total)=>`A drink is ${p1}% juice. After adding water, it becomes ${p2}% juice. If the final amount is ${total} mL, how much juice is there now?`
+  }
+};
+
+function genProportion(diff){
+  const pos=choice(['a','b','c','d']);
+  let a,b,c,d, ans;
+  if(diff==='easy'){
+    if(pos==='a'){ c=rnd(2,12); d=rnd(2,12); const t=rnd(2,9); b=d*t; a='x'; ans=t*c; }
+    else if(pos==='b'){ c=rnd(2,12); d=rnd(2,12); const t=rnd(2,9); a=c*t; b='x'; ans=t*d; }
+    else if(pos==='c'){ b=rnd(2,12); d=rnd(2,12); const t=rnd(2,9); a=b*t; c='x'; ans=t*d; }
+    else { a=rnd(2,12); c=rnd(2,12); const t=rnd(2,9); b=a*t; d='x'; ans=t*c; }
+  }else{
+    a=rnd(2,15); b=rnd(2,15); c=rnd(2,15); d=rnd(2,15);
+    if(pos==='a') a='x'; if(pos==='b') b='x'; if(pos==='c') c='x'; if(pos==='d') d='x';
+    const A=(a==='x'?null:a),B=(b==='x'?null:b),C=(c==='x'?null:c),D=(d==='x'?null:d);
+    if(pos==='a') ans=(B*C)/D; if(pos==='b') ans=(A*D)/C; if(pos==='c') ans=(A*D)/B; if(pos==='d') ans=(B*C)/A;
+  }
+  const precision=(diff==='easy')?{type:'integer'}:null;
+  const eqHTML=propHTML(a==='x'?'x':a,b==='x'?'x':b,c==='x'?'x':c,d==='x'?'x':d);
+  const prompt=`<span class="promptLabel">Solve the proportion:</span><div class="fracCenter">${eqHTML}</div>`;
+  const A=(a==='x')?'x':a, B=(b==='x')?'x':b, C=(c==='x')?'x':c, D=(d==='x')?'x':d;
+  const steps=[
+    `Set up the proportion ${eqHTML}`,
+    `Cross multiply: ${A}·${D} = ${B}·${C}`,
+    `Divide to isolate x: ${
+      (a==='x')?`x = (${B}·${C})/${D} = ${fmt((b*c)/d)}`:
+      (b==='x')?`x = (${A}·${D})/${C} = ${fmt((a*d)/c)}`:
+      (c==='x')?`x = (${A}·${D})/${B} = ${fmt((a*d)/b)}`:
+                 `x = (${B}·${C})/${A} = ${fmt((b*c)/a)}`
+    }`
+  ];
+  return {
+    prompt,
+    hint: precision? 'Enter an integer.' : 'Enter a number or fraction.',
+    answerShape:{fields:[{id:'x',label:'x'}]},
+    precision,
+    check:(inp)=>{const p=parseNumberish(inp.x); return p.ok && checkPrecision(p.value, ans, precision);},
+    canonical:()=>ans,
+    steps,
+    render:(el)=>{ el.textContent='Use cross-products to isolate the unknown.'; },
+    keypadInteger: !!precision
+  };
+}
+
+function drawSimilarShapes(container, spec){
+  const html = `
+<svg viewBox="0 0 900 620" style="width:100%;height:auto;max-width:900px;margin:0 auto;display:block">
+  ${spec.shape === 'rect' ? `
+    <rect x="60" y="${280 - 150}" width="250" height="300" rx="10" fill="#e8f2ff" stroke="#98b9e6" stroke-width="3"/>
+    <text x="185" y="${280 - 170}" text-anchor="middle" font-size="32" font-weight="bold" fill="#0d2136">A</text>
+    <text x="50" y="${280}" text-anchor="end" font-size="26" font-weight="bold" fill="#0d2136">h=${spec.hA}</text>
+    <text x="185" y="${280 + 175}" text-anchor="middle" font-size="26" font-weight="bold" fill="#0d2136">w=${spec.wA}</text>
+    
+    <rect x="540" y="${280 - 225}" width="325" height="450" rx="10" fill="#eafff5" stroke="#9fe2c1" stroke-width="3"/>
+    <text x="702" y="${280 - 245}" text-anchor="middle" font-size="32" font-weight="bold" fill="#0d2136">B</text>
+    <text x="530" y="${280}" text-anchor="end" font-size="26" font-weight="bold" fill="#0d2136">h=${spec.missing==='height' ? '?' : spec.hA*spec.k}</text>
+    <text x="702" y="${280 + 260}" text-anchor="middle" font-size="26" font-weight="bold" fill="#0d2136">w=${spec.missing==='width' ? '?' : spec.wA*spec.k}</text>
+  ` : `
+    <path d="M 80 ${280+150} L 330 ${280+150} L 80 ${280-150} Z" fill="#e8f2ff" stroke="#98b9e6" stroke-width="3" stroke-linejoin="round"/>
+    <text x="205" y="${280-170}" text-anchor="middle" font-size="32" font-weight="bold" fill="#0d2136">A</text>
+    <text x="70" y="${280}" text-anchor="end" font-size="26" font-weight="bold" fill="#0d2136">h=${spec.hA}</text>
+    <text x="205" y="${280+190}" text-anchor="middle" font-size="26" font-weight="bold" fill="#0d2136">base=${spec.wA}</text>
+    
+    <path d="M 540 ${280+225} L 865 ${280+225} L 540 ${280-225} Z" fill="#eafff5" stroke="#9fe2c1" stroke-width="3" stroke-linejoin="round"/>
+    <text x="702" y="${280-245}" text-anchor="middle" font-size="32" font-weight="bold" fill="#0d2136">B</text>
+    <text x="530" y="${280}" text-anchor="end" font-size="26" font-weight="bold" fill="#0d2136">h=${spec.missing==='height' ? '?' : spec.hA*spec.k}</text>
+    <text x="702" y="${280+265}" text-anchor="middle" font-size="26" font-weight="bold" fill="#0d2136">base=${spec.missing==='width' ? '?' : spec.wA*spec.k}</text>
+  `}
+</svg>`;
+  container.innerHTML = html;
+}
+
+function genSimilar(diff){
+  const shape = Math.random()<0.5 ? 'rect' : 'tri';
+  const wA = choice([4,5,6,8,10,12]);
+  const hA = choice([3,4,5,6,9]);
+  const k   = (diff==='easy') ? choice([2,3,4]) : rnd(2,6);
+  const missing = Math.random()<0.5 ? 'width' : 'height';
+
+  const givenB = (missing==='width') ? hA*k : wA*k;
+  const answer = (missing==='width') ? wA*k : hA*k;
+
+  const nounW = (shape==='rect')?'width':'base';
+  const prompt = `Two ${shape==='rect'?'rectangles':'right triangles'} A and B are similar. A: ${nounW} ${wA}, height ${hA}. B has ${(missing==='width'? 'height':' '+nounW)} ${givenB}. Find B's ${(missing==='width')?nounW:'height'}.`;
+
+  const steps=[
+    `Corresponding sides scale by the same factor.`,
+    `k = ${givenB} ÷ ${(missing==='width')?hA:wA} = ${fmt(k)}.`,
+    `B's ${(missing==='width')?nounW:'height'} = ${(missing==='width')?wA:hA} × ${fmt(k)} = ${fmt(answer)}.`
+  ];
+  const precision = (diff==='easy')?{type:'integer'}:null;
+
+  return {
+    prompt,
+    hint: precision? 'Enter an integer (same units).' : 'Enter the length (same units).',
+    answerShape:{fields:[{id:'x',label:(missing==='width')?(nounW.charAt(0).toUpperCase()+nounW.slice(1))+' B':'Height B'}]},
+    precision,
+    check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,answer,precision);},
+    canonical:()=>answer,
+    steps,
+    render:(el)=>{ 
+      document.getElementById('solution').innerHTML=`<span class="tag">Similarity</span> <span class="tag">${shape==='rect'?'Rectangles':'Triangles'}</span>`;
+      drawSimilarShapes(document.getElementById('geomSlot'),{shape,wA,hA,k,missing});
+    },
+    afterReveal:(correct)=>{
+      const slot=document.getElementById('geomSlot');
+      const note=document.createElement('div'); note.style.marginTop='8px'; note.style.color='#123055';
+      note.innerHTML=`Correct ${(missing==='width')?nounW:'height'} of B: <b>${fmt(correct)}</b>`;
+      slot.appendChild(note);
+    },
+    keypadInteger: !!precision
+  };
+}
+
+function renderUnitChips(){
+  const row=document.getElementById('chipRow');
+  row.innerHTML='';
+  const chips=[{id:'unit',label:'Unit rate'},{id:'convert',label:'Conversions'}];
+  chips.forEach(c=>{
+    const b=document.createElement('span');
+    b.className='chipChoice'+(state.unitMode===c.id?' active':'');
+    b.textContent=c.label;
+    b.addEventListener('click',()=>{ state.unitMode=c.id; newProblem(); });
+    row.appendChild(b);
+  });
+  row.style.display='flex';
+}
+
+function genUnit(diff){
+  renderUnitChips();
+
+  if(state.unitMode==='convert'){
+    const types=[{from:'in',to:'cm',k:2.54,places:1},{from:'lb',to:'kg',k:0.453592,places:2},{from:'oz',to:'cups',k:1/8,places:2},{from:'mph',to:'m/s',k:0.44704,places:2}];
+    const t=choice(types);
+    const direction=Math.random()<0.5?'fto':'tfo';
+    let given,ans,precision;
+    if(diff==='easy'){
+      const nice=[2,3,4,5,6,8,10,12,16,20]; given=choice(nice);
+      ans = direction==='fto'? given*t.k : given/t.k;
+      precision=(t.places?{type:'places',places:t.places}:{type:'integer'});
+    }else{
+      given=rnd(3,60); ans = direction==='fto'? given*t.k : given/t.k; precision={type:'places',places:t.places||1};
+    }
+    const from=direction==='fto'?t.from:t.to, to=direction==='fto'?t.to:t.from;
+    const prompt=`Convert ${given} ${from} to ${to}.`;
+    const factor = direction==='fto'? t.k : 1/t.k;
+    const steps=[`Use conversion factor: 1 ${from} = ${fmt(factor)} ${to}.`,`Multiply: ${given} × ${fmt(factor)} = ${fmt(ans)} ${to}.`];
+    return {prompt,hint: precision.type==='places'?`Round to the nearest ${precision.places===2?'hundredth':'tenth'}.`:'Enter an integer.',
+            answerShape:{fields:[{id:'x',label:to}]},precision,
+            check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,ans,precision);},canonical:()=>ans,steps,
+            render:(el)=>{document.getElementById('solution').innerHTML=`<span class="tag">Conversion</span>`; document.getElementById('geomSlot').innerHTML='';},
+            keypadInteger:false};
+  }
+
+  const sets=[
+    {what:'miles',per:'hours',unit:'mph'},
+    {what:'pages',per:'minutes',unit:'pages/min'},
+    {what:'dollars',per:'pounds',unit:'$/lb'},
+    {what:'meters',per:'seconds',unit:'m/s'},
+    {what:'items',per:'dozen',unit:'$/item (from $/dozen)'}
+  ];
+  const s=choice(sets);
+  let a,b; 
+  if(s.unit==='$/item (from $/dozen)'){
+    if(diff==='easy'){ a=choice([6,12,24]); b=12; } else { a=rnd(9,36); b=12; }
+  }else{
+    if(diff==='easy'){ b=choice([1,2,4,5]); a=b*rnd(10,60);} else { b=rnd(2,12); a=rnd(30,240);}
+  }
+  let k;
+  if(s.unit==='$/item (from $/dozen)'){ k = a/b; } else { k=a/b; }
+  const precision=(diff==='easy')?{type:'integer'}:{type:'places',places:1};
+  const prompt=(s.unit==='$/item (from $/dozen)')
+    ? `A bundle costs $${a} per dozen. What is the unit price per item?`
+    : `A rate is ${a} ${s.what} per ${b} ${s.per}. Find the unit rate in ${s.unit}.`;
+  const steps=(s.unit==='$/item (from $/dozen)')
+    ? [`Unit price = ($/dozen) ÷ 12 = ${a} ÷ 12 = ${fmt(k)} $/item.`]
+    : [`Form the ratio: ${a}/${b} ${s.what}/${s.per}.`,`Divide to get per-1: ${fmt(k)} ${s.unit}.`];
+
+  return {prompt,hint: precision.type==='integer'?'Enter an integer.':'Round to the nearest tenth.',
+          answerShape:{fields:[{id:'x',label:s.unit.includes('item')?'$/item':s.unit}]},precision,
+          check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,k,precision);},canonical:()=>k,steps,
+          render:(el)=>{document.getElementById('solution').innerHTML=`<span class="tag">Unit rate</span>`; document.getElementById('geomSlot').innerHTML='';},
+          keypadInteger: precision.type==='integer'};
+}
+
+function genKOP(diff){
+  const form=choice(['table','points','sentence','wordProblem']);
+  
+  if(form==='wordProblem'){
+    const contexts=[
+      {name:'baskets',unit1:'baskets',unit2:'hour',fracs:[{n:4,d:2},{n:6,d:3},{n:8,d:2}]},
+      {name:'distance',unit1:'centimeters',unit2:'seconds',fracs:[{n:264,d:11},{n:180,d:9},{n:240,d:10}]},
+      {name:'pages',unit1:'pages',unit2:'minutes',fracs:[{n:12,d:3},{n:20,d:5},{n:16,d:4}]},
+      {name:'earnings',unit1:'dollars',unit2:'hours',fracs:[{n:45,d:3},{n:60,d:4},{n:75,d:5}]}
+    ];
+    const ctx=choice(contexts);
+    const frac=choice(ctx.fracs);
+    const askFor=choice(['value','time']);
+    
+    if(askFor==='value'){
+      const newTime=rnd(3,10);
+      const k=frac.n/frac.d;
+      const ans=k*newTime;
+      const precision=(diff==='easy')?{type:'integer'}:{type:'places',places:1};
+      const prompt=`The number of ${ctx.unit1} varies directly with time in ${ctx.unit2}s. If there are ${frac.n} ${ctx.unit1} in ${frac.d} ${ctx.unit2}${frac.d>1?'s':''}, how many ${ctx.unit1} in ${newTime} ${ctx.unit2}s?`;
+      const steps=[`Find k: ${frac.n}/${frac.d} = ${fmt(k)} ${ctx.unit1} per ${ctx.unit2}.`,`Multiply: ${fmt(k)} × ${newTime} = ${fmt(ans)} ${ctx.unit1}.`];
+      return {prompt,hint:precision.type==='integer'?'Enter an integer.':'Round to the nearest tenth.',
+              answerShape:{fields:[{id:'x',label:ctx.unit1}]},precision,
+              check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,ans,precision);},
+              canonical:()=>ans,steps,
+              render:(el)=>{el.innerHTML=`<span class="tag">Direct Variation</span>`; document.getElementById('geomSlot').innerHTML='';},
+              keypadInteger:precision.type==='integer'};
+    }else{
+      const newValue=frac.n*rnd(1,3);
+      const k=frac.n/frac.d;
+      const ans=newValue/k;
+      const precision=(diff==='easy')?{type:'integer'}:{type:'places',places:1};
+      const prompt=`The distance in ${ctx.unit1} varies directly with time in ${ctx.unit2}s. If the distance is ${frac.n} ${ctx.unit1} in ${frac.d} ${ctx.unit2}${frac.d>1?'s':''}, what is the time when the distance is ${newValue} ${ctx.unit1}?`;
+      const steps=[`Find k: ${frac.n}/${frac.d} = ${fmt(k)} ${ctx.unit1} per ${ctx.unit2}.`,`Solve: ${newValue} ÷ ${fmt(k)} = ${fmt(ans)} ${ctx.unit2}s.`];
+      return {prompt,hint:precision.type==='integer'?'Enter an integer.':'Round to the nearest tenth.',
+              answerShape:{fields:[{id:'x',label:ctx.unit2+'s'}]},precision,
+              check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,ans,precision);},
+              canonical:()=>ans,steps,
+              render:(el)=>{el.innerHTML=`<span class="tag">Direct Variation</span>`; document.getElementById('geomSlot').innerHTML='';},
+              keypadInteger:precision.type==='integer'};
+    }
+  }
+  
+  const k=choice([0.5,0.75,1,1.25,1.5,2,3,4,8]);
+  if(form==='table'){
+    const xs=[1,2,3,4].map(v=>v*choice([1,2,5]));
+    const ys=xs.map(x=>x*k); const i=rnd(0,3); const blankY=Math.random()<0.5;
+    const ans = blankY? ys[i] : xs[i];
+    const prompt=`Complete the proportional table (y=kx). Fill the missing ${blankY?'y':'x'}.`;
+    const steps=[`k = y/x = ${k}.`,`Use y=kx or x=y/k to fill the blank.`];
+    const tableHTML = `<table style="margin:12px auto;border-collapse:collapse;font-size:18px"><thead><tr><th style="padding:8px 16px;border-bottom:2px solid #bcd0e8">x</th><th style="padding:8px 16px;border-bottom:2px solid #bcd0e8">y</th></tr></thead><tbody>${xs.map((x,idx)=>`<tr><td style="padding:8px 16px;text-align:center">${!blankY&&idx===i?'<b>?</b>':x}</td><td style="padding:8px 16px;text-align:center">${blankY&&idx===i?'<b>?</b>':ys[idx]}</td></tr>`).join('')}</tbody></table>`;
+    return {prompt,hint:'Enter the missing value.',answerShape:{fields:[{id:'x',label:blankY?'y':'x'}]},
+      precision:(diff==='easy')?{type:'integer'}:null,
+      check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,ans,(diff==='easy')?{type:'integer'}:null);},
+      canonical:()=>ans,steps,
+      render:(el)=>{document.getElementById('geomSlot').innerHTML=tableHTML; el.innerHTML=`<span class="tag">k = y/x</span>`;},
+      keypadInteger:(diff==='easy')};
+  }
+  if(form==='points'){
+    const x=rnd(2,12), y=x*k; const ask=choice(['k','y']);
+    if(ask==='k'){
+      const prompt=`Given (x,y)=(${x}, ${y}). Find k such that y=kx.`;
+      const steps=[`k = y/x = ${y}/${x} = ${fmt(y/x)}.`];
+      return {prompt,hint:(diff==='easy')?'Enter an integer.':'Enter a number.',answerShape:{fields:[{id:'x',label:'k'}]},precision:(diff==='easy')?{type:'integer'}:null,
+        check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,k,(diff==='easy')?{type:'integer'}:null);},canonical:()=>k,steps,render:(el)=>{el.innerHTML=`<span class="tag">k from a point</span>`; document.getElementById('geomSlot').innerHTML='';},keypadInteger:(diff==='easy')};
+    }else{
+      const prompt=`For y=kx with k=${k}, find y when x=${x}.`;
+      const ans=y; const steps=[`Compute y=kx = ${k}·${x} = ${fmt(ans)}.`];
+      return {prompt,hint:(diff==='easy')?'Enter an integer.':'Enter a number.',answerShape:{fields:[{id:'x',label:'y'}]},precision:(diff==='easy')?{type:'integer'}:null,
+        check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,ans,(diff==='easy')?{type:'integer'}:null);},canonical:()=>ans,steps,render:(el)=>{el.innerHTML=`<span class="tag">Use y=kx</span>`; document.getElementById('geomSlot').innerHTML='';},keypadInteger:(diff==='easy')};
+    }
+  }
+  const x=rnd(2,12), y=x*k;
+  const prompt=`"y varies directly with x." When x=${x}, y=${y}. Find k.`;
+  const steps=[`k = y/x = ${y}/${x} = ${fmt(k)}.`];
+  return {prompt,hint:(diff==='easy')?'Enter an integer.':'Enter a number.',answerShape:{fields:[{id:'x',label:'k'}]},precision:(diff==='easy')?{type:'integer'}:null,
+    check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,k,(diff==='easy')?{type:'integer'}:null);},canonical:()=>k,steps,render:(el)=>{el.innerHTML=`<span class="tag">Direct variation</span>`; document.getElementById('geomSlot').innerHTML='';},keypadInteger:(diff==='easy')};
+}
+
+function renderPercentChips(){
+  const row=document.getElementById('chipRow');
+  row.innerHTML='';
+  const chips=[
+    {id:'basic',label:'Basic %'},
+    {id:'financial',label:'Financial'},
+    {id:'applications',label:'Applications'}
+  ];
+  chips.forEach(c=>{
+    const b=document.createElement('span');
+    b.className='chipChoice'+(state.pctMode===c.id?' active':'');
+    b.textContent=c.label;
+    b.addEventListener('click',()=>{ state.pctMode=c.id; newProblem(); });
+    row.appendChild(b);
+  });
+  row.style.display='flex';
+}
+
+function genPercent(diff){
+  renderPercentChips();
+  
+  let types;
+  if(state.pctMode==='basic'){
+    types=['findPart','findWhole','findPct'];
+  }else if(state.pctMode==='financial'){
+    types=['sale','tip','increase','decrease','commission','interest','interestRate','rebate'];
+  }else{
+    types=['multiMix','commission','interest','interestRate'];
+  }
+  
+  const type=choice(types);
+  let prompt,ans,precision,steps;
+  if(type==='findPart'){
+    const p=choice([5,8,10,12,15,20,25,30,35,40,50]); const w=rnd(40,240);
+    ans=w*p/100; precision=(diff==='easy')?{type:'integer'}:{type:'places',places:1};
+    prompt=WB.pct.findPart(p,w); steps=[`part = (p/100)·whole = (${p}/100)·${w}`,`Compute = ${fmt(ans)}`];
+  }else if(type==='findWhole'){
+    const p=rnd(10,80), part=rnd(10,120);
+    ans=part/(p/100); precision={type:'integer'}; prompt=WB.pct.findWhole(p,part);
+    steps=[`whole = part ÷ (p/100) = ${part} ÷ ${p}/100 = ${fmt(ans)}`];
+  }else if(type==='findPct'){
+    const whole=rnd(60,240), part=rnd(10,whole-5);
+    ans=part/whole; precision={type:'places',places:1}; prompt=WB.pct.findPct(part,whole);
+    steps=[`p% = (part/whole)·100 = (${part}/${whole})·100 → ${fmt(100*ans)}%`];
+  }else if(type==='sale'){
+    const price=rnd(40,240), disc=rnd(5,40), tax=rnd(5,10);
+    const after=price*(1-disc/100); ans=after*(1+tax/100); precision={type:'places',places:2};
+    prompt=WB.pct.sale(price,disc,tax); steps=[`Discount: ${price}·(1−${disc}%) = ${fmt(after)}`,`Tax: ×(1+${tax}%) = ${fmt(ans)}`];
+  }else if(type==='tip'){
+    const bill=rnd(20,120), tip=rnd(10,25); ans=bill*(1+tip/100); precision={type:'places',places:2};
+    prompt=WB.pct.tip(bill,tip); steps=[`Total = bill·(1+tip%) = ${bill}·(1+${tip}%) = ${fmt(ans)}`];
+  }else if(type==='increase'){
+    const base=rnd(200,2000), r=rnd(5,40); ans=base*(1+r/100); precision={type:'integer'};
+    prompt=WB.pct.increase(base,r); steps=[`New = base·(1+${r}%) = ${fmt(ans)}`];
+  }else if(type==='decrease'){
+    const base=rnd(40,240), r=rnd(5,40); ans=base*(1-r/100); precision={type:'places',places:2};
+    prompt=WB.pct.decrease(base,r); steps=[`Sale = base·(1−${r}%) = ${fmt(ans)}`];
+  }else if(type==='commission'){
+    const sales=rnd(500,5000), rate=rnd(2,15); ans=sales*rate/100; precision={type:'places',places:2};
+    prompt=WB.pct.commission(sales,rate); steps=[`Commission = sales·rate = ${sales}·${rate}% = ${fmt(ans)}`];
+  }else if(type==='interest'){
+    const P=rnd(500,2000), r=rnd(2,12), t=rnd(1,5); ans=P*r*t/100; precision={type:'places',places:2};
+    prompt=WB.pct.interest(P,r,t); steps=[`I = P·r·t = ${P}·${r}%·${t} = ${fmt(ans)}`];
+  }else if(type==='interestRate'){
+    const P=choice([1000,2000,3000,4000,5000]);
+    const t=rnd(2,6);
+    const r=choice([2.5,3,3.5,4,4.5,5,5.5,6,7,7.5]);
+    const totalInterest=P*r*t/100;
+    const finalBalance=P+totalInterest;
+    ans=r; precision={type:'places',places:1};
+    prompt=`Mr. Flores opened an account with a deposit of $${P}. The account earned annual simple interest. He made no additional deposits or withdrawals. After ${t} years, the balance was $${finalBalance}. What is the annual interest rate?`;
+    steps=[`Interest earned = $${finalBalance} − $${P} = $${fmt(totalInterest)}.`,`Use I = P·r·t: ${fmt(totalInterest)} = ${P}·r·${t}.`,`Solve for r: r = ${fmt(totalInterest)}/(${P}·${t}) = ${fmt(ans/100)}.`,`Convert to %: ${fmt(ans)}%`];
+  }else if(type==='rebate'){
+    const price=rnd(300,1500), rebate=choice([25,50,75,100,150]), tax=rnd(5,9);
+    const after=price-rebate; ans=after*(1+tax/100); precision={type:'places',places:2};
+    prompt=WB.pct.rebate(price,rebate,tax); steps=[`After rebate: ${price} − ${rebate} = ${fmt(after)}`,`Then tax: ×(1+${tax}%) = ${fmt(ans)}`];
+  }else{
+    const p1=choice([10,20,30,40]), p2=choice([5,8,12,15]), total=rnd(200,1000);
+    ans=total*(p2/100); precision={type:'places',places:1};
+    prompt=WB.pct.multiMix(p1,p2,total); steps=[`Final juice = ${p2}% of ${total} = ${fmt(ans)} mL.`];
+  }
+  return {prompt,hint: precision.type==='places'?(precision.places===2?'Round to the nearest cent.':'Round to the nearest tenth.'):'Enter an integer.',
+          answerShape:{fields:[{id:'x',label:'Answer'}]},precision,
+          check:(inp)=>{const p=parseNumberish(inp.x);return p.ok&&checkPrecision(p.value,ans,precision)},canonical:()=>ans,steps,
+          render:(el)=>{document.getElementById('geomSlot').innerHTML=''; el.innerHTML=`<span class="tag">Percent</span> <span class="tag">Applications</span>`;},
+          keypadInteger:false};
+}
+
+function buildProblem(){
+  const {skill,diff}=state;
+  document.getElementById('geomSlot').innerHTML='';
+  document.getElementById('chipRow').style.display='none';
+  if(skill==='prop') return genProportion(diff);
+  if(skill==='similar') return genSimilar(diff);
+  if(skill==='unit') return genUnit(diff);
+  if(skill==='kop') return genKOP(diff);
+  if(skill==='pct') return genPercent(diff);
+  return genProportion(diff);
+}
+
+function renderProblem(p){
+  document.getElementById('problemText').innerHTML=p.prompt;
+  document.getElementById('promptHint').textContent=p.hint||'';
+  const box=document.getElementById('answerBox'); box.innerHTML='';
+  p.answerShape.fields.forEach((f,i)=>{ const inp=document.createElement('input'); inp.placeholder=f.label||'Answer'; inp.id='inp_'+f.id; box.appendChild(inp); if(i===0) setTimeout(()=>inp.focus(),0); });
+  const ul=document.getElementById('stepsList'); ul.innerHTML=''; ul.style.display='none';
+  document.getElementById('stepsPlaceholder').style.display='';
+  document.getElementById('solution').innerHTML='—';
+  document.getElementById('resultTag').style.display='none';
+  buildKeypad(!(p.precision && p.precision.type==='integer'));
+  box.querySelectorAll('input').forEach(inp=>inp.dataset.allowColon = (state.skill==='prop')?'1':'' );
+  if(p.render) p.render(document.getElementById('solution'));
+  state.current=p;
+}
+function revealSteps(p){
+  const ul=document.getElementById('stepsList'); ul.innerHTML='';
+  (p.steps||[]).forEach(s=>{ const li=document.createElement('li'); li.innerHTML=s; li.addEventListener('click',()=>openStepsModal(p.steps)); ul.appendChild(li); });
+  document.getElementById('stepsPlaceholder').style.display='none'; ul.style.display='';
+}
+function collectInputs(p){ const m={}; p.answerShape.fields.forEach(f=>m[f.id]=document.getElementById('inp_'+f.id).value); return m; }
+
+function mark(ok,message,canonical){
+  const t=document.getElementById('resultTag'); t.className='result-tag '+(ok?'ok':'err'); t.textContent=ok?'Correct ✓':'Incorrect ✗'; t.style.display='inline-block';
+  if(ok){ state.ok++; state.streak++; state.best=Math.max(state.best,state.streak);} else { state.bad++; state.streak=0; }
+  document.getElementById('scOk').textContent=state.ok+' ✓';
+  document.getElementById('scBad').textContent=state.bad+' ✗';
+  document.getElementById('scStreak').textContent='Streak '+state.streak;
+  const h=document.getElementById('history'); const chip=document.createElement('span'); chip.className='tag'; chip.textContent=(ok?'✓ ':'✗ ')+message; h.prepend(chip);
+  state.bySkill[state.skill]=state.bySkill[state.skill]||{ok:0,total:0}; state.bySkill[state.skill].total++; if(ok) state.bySkill[state.skill].ok++;
+  state.history.unshift({ok,prompt:message,skill:state.skill}); if(state.history.length>12) state.history.pop();
+  if(!ok){ const el=document.getElementById('solution'); const val=(typeof canonical==='function'?canonical():canonical); el.insertAdjacentHTML('beforeend', `<div style="margin-top:8px;color:#1f3c5e">Correct answer: <b>${fmt(val)}</b></div>`); }
+  if(ok && state.skill==='similar' && state.current.afterReveal){ state.current.afterReveal(canonical()); }
+}
+function newProblem(){ renderProblem(buildProblem()); }
+function openStepsModal(steps){
+  const d=document.getElementById('stepsModal'); const body=document.getElementById('stepsModalBody');
+  body.innerHTML=steps.map((s,i)=>`<div style="margin:8px 0"><b>Step ${i+1}</b><div class="muted">${s}</div></div>`).join('');
+  d.showModal();
+}
+document.getElementById('closeSteps').addEventListener('click',()=>document.getElementById('stepsModal').close());
+
+const sumModal=document.getElementById('summaryModal');
+document.getElementById('closeSummary').addEventListener('click',()=>sumModal.close());
+document.getElementById('summaryBtn').addEventListener('click',()=>{
+  document.getElementById('sumLine').textContent=`Skill: ${skillSel.options[skillSel.selectedIndex].text}, Difficulty: ${state.diff}.`;
+  const stats=document.getElementById('sumStats'); const mk=(t,v)=>`<div class="card pad" style="text-align:center"><div class="muted" style="font-weight:700">${t}</div><div style="font-size:22px;font-weight:900;margin-top:2px">${v}</div></div>`;
+  stats.innerHTML=mk('Correct',state.ok)+mk('Incorrect',state.bad)+mk('Best Streak',state.best);
+  const recent=document.getElementById('sumRecent'); recent.innerHTML=''; state.history.slice(0,8).forEach(h=>{ const c=document.createElement('span'); c.className='tag'; c.style.borderColor=h.ok?'#b7ead6':'#ffd0da'; c.style.background=h.ok?'#e9fbf4':'#fff1f4'; const msg=stripHTML(h.prompt); c.textContent=(h.ok?'✓ ':'✗ ')+(msg.length>42?msg.slice(0,42)+'…':msg); recent.appendChild(c); });
+  const by=document.getElementById('sumBySkill'); by.innerHTML=''; Object.entries(state.bySkill).forEach(([k,v])=>{const pct=v.total?Math.round(100*v.ok/v.total):0; const row=document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.margin='4px 0'; row.innerHTML=`<span class="muted" style="font-weight:700">${k}</span><span>${v.ok}/${v.total} (${pct}%)</span>`; by.appendChild(row);});
+  sumModal.showModal();
+});
+
+document.getElementById('btnSubmit').addEventListener('click',()=>{
+  const p=state.current, m=collectInputs(p), ok=p.check(m);
+  const msg=stripHTML(p.prompt).slice(0,64);
+  mark(ok,msg,p.canonical);
+  revealSteps(p);
+});
+document.getElementById('btnNext').addEventListener('click',newProblem);
+skillSel.addEventListener('change',()=>{ state.skill=skillSel.value; newProblem(); });
+diffSel.addEventListener('change',()=>{ state.diff=diffSel.value; newProblem(); });
+
+document.getElementById('kpdToggleBtn').addEventListener('click',()=>{
+  const kpd=document.getElementById('keypad');
+  const btn=document.getElementById('kpdToggleBtn');
+  if(kpd.style.display==='none'){
+    kpd.style.display='grid';
+    btn.textContent='Hide Keyboard';
+  }else{
+    kpd.style.display='none';
+    btn.textContent='Show Keyboard';
+  }
+});
+
+function init(){ skillSel.value=state.skill; diffSel.value=state.diff; buildKeypad(); newProblem(); }
+init();
+</script>
+</body>
+</html>

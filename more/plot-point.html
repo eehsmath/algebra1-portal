@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Plot the Point</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg: #fff;
+      --fg: #000;
+      --muted: #888;
+      --axis: #000;
+      --grid: #000;
+      --btn-bg: #000;
+      --btn-fg: #fff;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #111;
+        --fg: #eee;
+        --muted: #aaa;
+        --axis: #eee;
+        --grid: #888;
+        --btn-bg: #eee;
+        --btn-fg: #111;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    }
+
+    #game-container {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      padding: 8px;
+    }
+
+    #info-container { text-align: left; min-width: 260px; }
+    #title { font-size: 24px; font-weight: 700; margin-bottom: 10px; }
+    #ordered-pair { font-size: 60px; font-weight: 800; margin-bottom: 16px; }
+    #score, #best, #timer { font-size: 18px; margin: 6px 0; }
+
+    .row { margin: 10px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    label { font-size: 16px; }
+
+    button, select {
+      font-size: 16px;
+      padding: 6px 14px;
+      background: var(--btn-bg);
+      color: var(--btn-fg);
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    select { background: transparent; color: var(--fg); border: 1px solid var(--muted); }
+
+    /* Toggle switch */
+    .switch { position: relative; display: inline-block; width: 54px; height: 30px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; inset: 0;
+      background: #777; border-radius: 999px; transition: .3s;
+    }
+    .slider:before {
+      content: ""; position: absolute; left: 3px; bottom: 3px;
+      width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: .3s;
+    }
+    input:checked + .slider { background: #2196F3; }
+    input:checked + .slider:before { transform: translateX(24px); }
+
+    /* Grid area */
+    #grid-container { position: relative; }
+    #grid {
+      position: relative;
+      background: var(--bg);
+      border: 1px solid var(--axis);
+      /* size set via JS */
+    }
+    .grid-line { position: absolute; background: var(--grid); }
+    .axis {
+      position: absolute;
+      background: transparent;
+      color: var(--axis);
+      font-size: 48px; font-weight: 800; text-align: center; line-height: 80px;
+    }
+    .axis-label {
+      position: absolute;
+      background: rgba(0,0,0,.08);
+      color: var(--fg);
+      font-size: 12px;
+      padding: 2px 4px;
+      border-radius: 4px;
+      transition: opacity .3s ease;
+    }
+
+    /* Target */
+    #target {
+      position: absolute;
+      width: 70px; height: 70px;
+      background: red;
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      transition: opacity 0s ease;
+      pointer-events: auto; /* stays clickable even when hidden */
+    }
+    /* Silent “haptic” feedback */
+    @keyframes pop { 0%{transform:translate(-50%,-50%) scale(1)} 40%{transform:translate(-50%,-50%) scale(1.15)} 100%{transform:translate(-50%,-50%) scale(1)} }
+    .hit { animation: pop 180ms ease-out; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="info-container">
+      <div id="title">Plot the Point</div>
+      <div id="ordered-pair">(0, 0)</div>
+      <div id="score">Score: 0</div>
+      <div id="best">Best: 0</div>
+      <div id="timer">Time: 60</div>
+
+      <div class="row">
+        <label for="grid-numbers-toggle">Grid Numbers</label>
+        <label class="switch">
+          <input type="checkbox" id="grid-numbers-toggle" checked />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row">
+        <label for="quad">Quadrant:</label>
+        <select id="quad" aria-label="Quadrant mode">
+          <option value="all" selected>All</option>
+          <option value="I">I</option>
+          <option value="II">II</option>
+          <option value="III">III</option>
+          <option value="IV">IV</option>
+          <option value="axes">On Axes</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <button id="pause-button" type="button">Pause</button>
+        <button id="reset-button" type="button">Reset</button>
+      </div>
+    </div>
+
+    <div id="grid-container">
+      <div id="grid"></div>
+      <div id="target" aria-label="target"></div>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const grid = document.getElementById('grid');
+    const target = document.getElementById('target');
+    const orderedPairDisplay = document.getElementById('ordered-pair');
+    const scoreDisplay = document.getElementById('score');
+    const bestDisplay = document.getElementById('best');
+    const timerDisplay = document.getElementById('timer');
+    const resetButton = document.getElementById('reset-button');
+    const pauseButton = document.getElementById('pause-button');
+    const gridNumbersToggle = document.getElementById('grid-numbers-toggle');
+    const quad = document.getElementById('quad');
+
+    // Game State
+    let score = 0;
+    let best = +localStorage.getItem('bestPlotScore') || 0;
+    let timeLeft = 60;
+    let timerId = null;
+    let paused = false;
+    let cooling = false; // prevents double-click spam during reveal
+    let streak = 0; // for difficulty shrink
+
+    // Resize handling
+    let rId;
+    let lastSize = 0;
+
+    function resizeGridCore() {
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      const desired = Math.max(240, Math.min(windowWidth - 300, windowHeight - 100));
+      if (desired === lastSize) return; // avoid rebuild if unchanged
+      lastSize = desired;
+
+      grid.style.width = `${desired}px`;
+      grid.style.height = `${desired}px`;
+
+      // Clear previous grid
+      while (grid.firstChild) grid.firstChild.remove();
+
+      // Minor constants
+      const step = desired / 8;
+
+      // Draw minor grid lines (avoid axes at i=0)
+      for (let i = -4; i <= 4; i++) {
+        if (i !== 0) {
+          const h = document.createElement('div');
+          h.className = 'grid-line';
+          h.style.top = `${(i + 4) * step}px`;
+          h.style.left = `0px`;
+          h.style.width = `100%`;
+          h.style.height = `2px`;
+          grid.appendChild(h);
+
+          const v = document.createElement('div');
+          v.className = 'grid-line';
+          v.style.left = `${(i + 4) * step}px`;
+          v.style.top = `0px`;
+          v.style.width = `2px`;
+          v.style.height = `100%`;
+          grid.appendChild(v);
+        }
+      }
+
+      // Axes (thicker)
+      const xAxis = document.createElement('div');
+      xAxis.className = 'grid-line';
+      xAxis.style.top = `${desired / 2}px`;
+      xAxis.style.left = `0px`;
+      xAxis.style.width = `100%`;
+      xAxis.style.height = `6px`;
+      grid.appendChild(xAxis);
+
+      const yAxis = document.createElement('div');
+      yAxis.className = 'grid-line';
+      yAxis.style.left = `${desired / 2}px`;
+      yAxis.style.top = `0px`;
+      yAxis.style.width = `6px`;
+      yAxis.style.height = `100%`;
+      grid.appendChild(yAxis);
+
+      // Axis numbers
+      for (let i = -4; i <= 4; i++) {
+        const xl = document.createElement('div');
+        xl.className = 'axis-label';
+        xl.textContent = i;
+        xl.style.left = `${(i + 4) * step - 6}px`;
+        xl.style.top = `${desired / 2 + 10}px`;
+        grid.appendChild(xl);
+
+        const yl = document.createElement('div');
+        yl.className = 'axis-label';
+        yl.textContent = i;
+        yl.style.left = `${desired / 2 - 20}px`;
+        yl.style.top = `${(4 - i) * step - 12}px`;
+        grid.appendChild(yl);
+      }
+
+      // Big axis letters
+      const xAxisLabel = document.createElement('div');
+      xAxisLabel.className = 'axis';
+      xAxisLabel.textContent = 'X';
+      xAxisLabel.style.left = `${desired + 15}px`;
+      xAxisLabel.style.top = `${desired / 2 - 40}px`;
+      xAxisLabel.style.width = '80px';
+      xAxisLabel.style.height = '80px';
+      grid.appendChild(xAxisLabel);
+
+      const yAxisLabel = document.createElement('div');
+      yAxisLabel.className = 'axis';
+      yAxisLabel.textContent = 'Y';
+      yAxisLabel.style.left = `${desired / 2 + 10}px`;
+      yAxisLabel.style.top = `-40px`;
+      yAxisLabel.style.width = '80px';
+      yAxisLabel.style.height = '80px';
+      grid.appendChild(yAxisLabel);
+
+      updateGridNumbersVisibility();
+    }
+
+    function rafResize() {
+      cancelAnimationFrame(rId);
+      rId = requestAnimationFrame(resizeGridCore);
+    }
+
+    function updateGridNumbersVisibility() {
+      document.querySelectorAll('.axis-label').forEach(label => {
+        label.style.opacity = gridNumbersToggle.checked ? '1' : '0';
+      });
+    }
+
+    // Target size + difficulty
+    function setTargetSize(px) {
+      target.style.width = px + 'px';
+      target.style.height = px + 'px';
+    }
+
+    // Coordinate pickers
+    function pickCoordAvoidAxes() {
+      // Keep off the fat axes for visibility
+      const vals = [-4,-3,-2,-1,1,2,3,4];
+      const x = vals[Math.floor(Math.random() * vals.length)];
+      const y = vals[Math.floor(Math.random() * vals.length)];
+      return { x, y };
+    }
+
+    function pickCoordOnAxes() {
+      // Choose a point on the x-axis or y-axis (including the origin)
+      const n = () => Math.floor(Math.random() * 9) - 4; // -4..4
+      if (Math.random() < 0.5) return { x: n(), y: 0 };
+      return { x: 0, y: n() };
+    }
+
+    function pickCoordByQuadrant() {
+      const q = quad.value;
+      const n = () => Math.floor(Math.random() * 4) + 1; // 1..4
+      if (q === 'axes') return pickCoordOnAxes();
+      if (q === 'I')  return { x: n(),  y: n()  };
+      if (q === 'II') return { x: -n(), y: n()  };
+      if (q === 'III')return { x: -n(), y: -n() };
+      if (q === 'IV') return { x: n(),  y: -n() };
+      return pickCoordAvoidAxes(); // "all"
+    }
+
+    // Place target for current ordered pair
+    function generateTarget() {
+      const gridSize = grid.clientWidth;
+      const step = gridSize / 8;
+
+      const { x, y } = pickCoordByQuadrant();
+
+      // CSS center transform requires us to place at exact pixel center
+      const xPos = (x + 4) * step;
+      const yPos = (4 - y) * step;
+
+      target.style.opacity = '0';
+      target.style.left = `${xPos}px`;
+      target.style.top  = `${yPos}px`;
+
+      orderedPairDisplay.textContent = `(${x}, ${y})`;
+    }
+
+    // Click to reveal (listener on the target itself)
+    function checkGuess() {
+      if (paused || cooling) return;
+      cooling = true;
+      streak++;
+
+      // Difficulty ramp: shrink after streaks
+      if (streak === 5)  setTargetSize(56);
+      if (streak === 10) setTargetSize(44);
+
+      // Silent “haptic” pop
+      target.classList.remove('hit'); void target.offsetWidth; // restart animation
+      target.classList.add('hit');
+
+      target.style.opacity = '1';
+      scoreDisplay.textContent = `Score: ${++score}`;
+
+      setTimeout(() => {
+        generateTarget();
+        cooling = false;
+      }, 1000); // 1s reveal
+    }
+
+    // Timer
+    const _updateTimerCore = () => {
+      if (paused) return;
+      timeLeft--;
+      timerDisplay.textContent = `Time: ${timeLeft}`;
+      if (timeLeft === 0) {
+        clearInterval(timerId);
+        target.removeEventListener('click', checkGuess);
+        if (score > best) {
+          best = score;
+          localStorage.setItem('bestPlotScore', String(best));
+        }
+        alert(`Game Over! Your score is ${score}\nBest: ${best}`);
+      }
+    };
+
+    // Controls
+    function resetGame() {
+      score = 0;
+      streak = 0;
+      timeLeft = 60;
+      paused = false;
+      setTargetSize(70);
+      scoreDisplay.textContent = 'Score: 0';
+      bestDisplay.textContent = `Best: ${best}`;
+      timerDisplay.textContent = 'Time: 60';
+      pauseButton.textContent = 'Pause';
+
+      clearInterval(timerId);
+      target.style.opacity = '0';
+      if (!hasClickHandler) {
+        target.addEventListener('click', checkGuess);
+        hasClickHandler = true;
+      }
+      generateTarget();
+      timerId = setInterval(_updateTimerCore, 1000);
+    }
+
+    pauseButton.addEventListener('click', () => {
+      paused = !paused;
+      pauseButton.textContent = paused ? 'Resume' : 'Pause';
+    });
+
+    gridNumbersToggle.addEventListener('change', updateGridNumbersVisibility);
+    quad.addEventListener('change', () => { /* regenerate at same time for instant effect */ generateTarget(); });
+    resetButton.addEventListener('click', resetGame);
+
+    // One-time target listener setup guard
+    let hasClickHandler = false;
+
+    // Init
+    bestDisplay.textContent = `Best: ${best}`;
+    rafResize(); // draw grid initially
+    window.addEventListener('resize', rafResize, { passive: true });
+    // Run once grid has laid out to get correct clientWidth
+    window.requestAnimationFrame(() => {
+      rafResize();
+      resetGame();
+    });
+  </script>
+</body>
+</html>

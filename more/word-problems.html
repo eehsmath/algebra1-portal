@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>MathText · v2.0</title>
+<style>
+:root{--bg:#eef2f7;--panel:#fff;--ink:#0b1220;--muted:#596073;--border:#cdd6e5;--accent:#0ea5e9;--ok:#16a34a;--err:#dc2626;--chip:#f1f5f9}
+html,body{margin:0;min-height: 100dvh;font:19px/1.55 system-ui,-apple-system,Segoe UI,Roboto;background:var(--bg)}
+*{box-sizing:border-box}
+header{position:sticky;top:0;background:#fff;border-bottom:1px solid var(--border);z-index:5}
+.bar{max-width:1200px;margin:0 auto;display:flex;gap:8px;align-items:center;padding:12px 16px}
+.title{font-weight:800;margin-right:auto}
+.btn{background:#e2e8f0;border:1px solid var(--border);border-radius:12px;padding:10px 14px;font-weight:700;cursor:pointer}
+.btn.primary{background:linear-gradient(180deg,#38bdf8,#0ea5e9);color:#fff;border-color:#0ea5e9}
+.stat{display:inline-flex;gap:6px;align-items:center;background:#f8fafc;border:1px solid var(--border);border-radius:12px;padding:6px 10px;color:var(--muted)}
+.stat b{color:var(--ink)}
+.panel{max-width:1200px;margin:12px auto;display:grid;grid-template-columns:1fr;gap:16px}
+.card{background:#fff;border:1px solid var(--border);border-radius:14px;padding:20px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{background:var(--chip);border:1px solid var(--border);border-radius:999px;padding:10px 14px;cursor:pointer;font-weight:650}
+.chip.active{outline:3px solid var(--accent)}
+.mono,input[type=text]{font:700 1.15rem/1.25 ui-monospace,Menlo,Consolas}
+#answer{width:100%;padding:14px 16px;border-radius:12px;border:2px solid var(--border);background:#fff;font-size:1.2rem;transition:border-color 0.2s}
+#answer:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(14,165,233,0.1)}
+.kbd{display:grid;grid-template-columns:repeat(10,1fr);gap:8px;margin-top:8px}
+.key{background:#111827;color:#fff;border:1px solid #0b0f19;padding:12px;border-radius:10px;cursor:pointer;font-size:0.95rem;text-align:center}
+.result{display:none;margin:8px 0;padding:8px 12px;border:1px solid var(--border);border-radius:999px;font-weight:700}
+.result.ok{color:var(--ok);border-color:var(--ok)}
+.result.err{color:var(--err);border-color:var(--err)}
+.small{color:var(--muted);font-size:1.05rem}
+.frac{display:inline-grid;grid-template-rows:auto auto;text-align:center}
+.frac .top{border-bottom:2px solid currentColor;padding:0 2px}
+.frac .bot{padding:0 2px}
+.math sup{font-size:.8em}
+#miniGraph{width:100%;height:190px;border:1px solid var(--border);border-radius:12px;background:#fff;margin-top:10px}
+.modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(0,0,0,.3);z-index:100}
+.modal.open{display:grid}
+.modal .card{width:min(92vw,900px);max-height:85vh;overflow:auto}
+.table{width:100%;border-collapse:collapse}
+.table th,.table td{border:1px solid var(--border);padding:6px 8px}
+.table th{background:#f3f6fb}
+.toggle-btn{background:#e2e8f0;border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.9rem;font-weight:600;cursor:pointer;color:var(--muted)}
+.toggle-btn:hover{background:#cbd5e1}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+
+
+/* keep the method graph inside the modal on phones */
+#methodGraph {
+  width: 100%;     /* let it shrink with the modal */
+  height: auto;    /* maintain aspect without forcing a tall box */
+  max-width: 900px;
+}
+
+/* replace your html,body rule with this (or override at the end) */
+html, body {
+  margin: 0;
+  min-height: 100dvh;   /* handles mobile browser chrome correctly */
+}
+
+body {
+  overflow: auto;       /* ensures scroll on short screens */
+}
+
+
+
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="title">MathText</div>
+    <button id="btnNew" class="btn primary">New</button>
+    <button id="btnReveal" class="btn">Reveal</button>
+    <button id="btnSummary" class="btn">Summary</button>
+    <button id="btnExport" class="btn">Export</button>
+    <span class="stat"><b id="statCorrect">0</b>/<span id="statAttempts">0</span></span>
+    <span class="stat">🔥 <b id="statStreak">0</b></span>
+  </div>
+</header>
+
+<div class="panel">
+  <section class="card">
+    <div class="row" style="justify-content:space-between">
+      <div class="row" role="tablist">
+        <button class="chip active" data-skill="linear">Linear</button>
+        <button class="chip" data-skill="systems">Systems</button>
+        <button class="chip" data-skill="quadratic">Quadratic</button>
+        <button class="chip" data-skill="inequality">Inequality</button>
+        <button class="chip" data-skill="function">Function</button>
+      </div>
+      <div class="row">
+        <label class="small" for="selAns">Answer Type</label>
+        <select id="selAns" class="btn"><option value="int">Integer</option><option value="non">Non-Integer</option></select>
+      </div>
+    </div>
+    <h3 class="small" style="letter-spacing:.08em;text-transform:uppercase;margin-top:16px">Problem</h3>
+    <div id="problem" class="math" style="font-size:1.35rem"></div>
+    
+    <div style="margin-top:16px">
+      <div class="section-header">
+        <h3 class="small" style="letter-spacing:.08em;text-transform:uppercase;margin:0">Steps</h3>
+        <div class="row" style="gap:12px">
+          <label class="small"><input type="checkbox" id="chkAuto" checked/> Auto-reveal</label>
+          <button id="btnToggleSteps" class="toggle-btn">Hide</button>
+        </div>
+      </div>
+      <div id="stepsContainer">
+        <div id="steps" class="small math"></div>
+        <canvas id="miniGraph" hidden></canvas>
+      </div>
+    </div>
+  </section>
+  
+  <aside class="card">
+    <h3 class="small" style="letter-spacing:.08em;text-transform:uppercase">Your Work</h3>
+    <div class="row">
+      <input id="answer" type="text" placeholder="Type your answer… (e.g., 7/2, y=2x+3, (4, -1), x≥5)" />
+      <button id="btnCheck" class="btn" style="background:#10b981;border-color:#059669;color:#fff">Check</button>
+    </div>
+    <div id="choices" class="row" style="margin-top:8px;flex-wrap:wrap"></div>
+    <div id="result" class="result"></div>
+    
+    <div style="margin-top:12px">
+      <div class="section-header">
+        <h3 class="small" style="letter-spacing:.08em;text-transform:uppercase;margin:0">On-Screen Keyboard</h3>
+        <button id="btnToggleKbd" class="toggle-btn">Hide</button>
+      </div>
+      <div id="kbdContainer">
+        <div id="kbd" class="kbd" aria-label="On-screen keyboard" role="group"></div>
+        <div class="small" style="margin-top:8px">Tips: numbers group together; try forms like <code>y=mx+b</code>, <code>(a, b)</code>, <code>x≥5</code>, or use the choices when shown.</div>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div id="dlgSummary" class="modal" role="dialog" aria-modal="true">
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h3>Session Summary</h3><button id="btnSumClose" class="btn">Close</button></div>
+    <div id="sumStats" class="small"></div>
+    <table class="table" id="sumTable"></table>
+  </div>
+</div>
+
+<div id="dlgMethod" class="modal" role="dialog" aria-modal="true">
+  <div class="card">
+    <div class="row" style="justify-content:space-between"><h3>Solve the System</h3><button id="btnMethodClose" class="btn">Close</button></div>
+    <div id="methodBody" class="small math"></div>
+    <canvas id="methodGraph" width="800" height="320" style="margin-top:12px;border:1px solid var(--border);border-radius:12px;display:none"></canvas>
+  </div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>Array.from(document.querySelectorAll(s));
+const rndInt=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+function show(el, on){ if(!el) return; el.hidden=!on; el.style.display=on?'':'none'; }
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){[a,b]=[b,a%b]}return a||1}
+function toFrac(x){ if(Number.isInteger(x)) return [x,1]; const s=String(x), p=s.split('.'); const d=10**((p[1]||'').length); const n=Math.round(Number(x)*d); const g=gcd(n,d); return [n/g,d/g] }
+function fracHTML(x){ const [n,d]=toFrac(x); if(d===1) return String(n); return `<span class="frac"><span class="top">${n}</span><span class="bot">${d}</span></span>` }
+function parseNumberish(t){ t=String(t).trim(); const f=/^[-+]?\d+(?:\/\d+)?$/; if(f.test(t)){ if(t.includes('/')){const [a,b]=t.split('/').map(Number);return a/b} return Number(t)} const n=Number(t); return Number.isFinite(n)?n:NaN }
+function formatEq(m,b){ const mt=(m===1?'':m===-1?'-':m); const bt=b===0?'':(b>0?`+${b}`:`${b}`); return `y=${mt}x${bt}` }
+function nonUnitCoeff(min,max){ let v=0; while(v===0||Math.abs(v)===1) v=rndInt(min,max); return v }
+function prettyMath(html){ html=html.replace(/\^(\d+)/g,'<sup>$1</sup>'); html=html.replace(/`(-?\d+)\/(\d+)`/g,(_,a,b)=>`<span class="frac"><span class="top">${a}</span><span class="bot">${b}</span></span>`); return html }
+
+const KEYS=['7','8','9','/','(',')',',','x','y','←','4','5','6','*','-','+','=','≤','≥','^2','1','2','3','>','<','.',' ','[',']','Enter','0','±',' :','|',';','{','}','√','^','Clr'];
+function buildKbd(){ const box=$('#kbd'); box.innerHTML=KEYS.map(k=>`<button class="key" data-k="${k}">${k}</button>`).join(''); $$('#kbd .key').forEach(btn=>btn.addEventListener('click',()=>insertToken($('#answer'),btn.dataset.k)))}
+function insertToken(el,token){ const s=el.selectionStart,e=el.selectionEnd,v=el.value; if(token==='←'){ el.value=v.slice(0,Math.max(0,s-1))+v.slice(e); el.focus(); const p=Math.max(0,s-1); el.setSelectionRange(p,p); return } if(token==='^2'){ el.setRangeText('^2',s,e,'end'); el.focus(); return } if(token==='±'){ if(v[s-1]==='-'){ el.setRangeText('',s-1,s,'end'); } else { el.setRangeText('-',s,e,'end'); } el.focus(); return } if(token==='Clr'){ el.value=''; el.focus(); return } if(token==='Enter'){ $('#btnCheck').click(); return } el.setRangeText(token,s,e,'end'); el.focus() }
+
+const state={skill:'linear',intMode:true,current:null,log:[],correct:0,attempts:0,streak:0};
+function updateStats(ok){ state.attempts++; if(ok){ state.correct++; state.streak++; } else { state.streak=0 } $('#statAttempts').textContent=state.attempts; $('#statCorrect').textContent=state.correct; $('#statStreak').textContent=state.streak }
+
+function drawMiniGraph(p){ const cv=$('#miniGraph'); if(!p){ show(cv,false); return } const {a,b,c,label,mark}=p; show(cv,true); const ctx=cv.getContext('2d'); const W=cv.width=cv.clientWidth, H=cv.height=cv.clientHeight; ctx.clearRect(0,0,W,H);
+  const tmax=Math.max(10,Math.abs(b/(a||-1))*1.2); const yMin=-10, yMax=Math.max(20,(c||0)+(b*b)/(4*Math.abs(a))+10);
+  const x2px=t=> (t/tmax)*W*0.9+W*0.05; const y2px=y=> H*0.9 - ((y-yMin)/(yMax-yMin))*H*0.8;
+  ctx.strokeStyle='#cbd5e1'; ctx.beginPath(); ctx.moveTo(x2px(0),y2px(yMin)); ctx.lineTo(x2px(0),y2px(yMax)); ctx.moveTo(x2px(0),y2px(0)); ctx.lineTo(x2px(tmax),y2px(0)); ctx.stroke();
+  ctx.strokeStyle='#0ea5e9'; ctx.lineWidth=2; ctx.beginPath(); for(let i=0;i<=200;i++){ const t=i/200*tmax; const y=a*t*t+b*t+(c||0); const X=x2px(t),Y=y2px(y); if(i===0) ctx.moveTo(X,Y); else ctx.lineTo(X,Y) } ctx.stroke();
+  if(label==='zero' && Number.isFinite(mark)){ const X=x2px(mark),Y=y2px(0); ctx.fillStyle='#10b981'; ctx.beginPath(); ctx.arc(X,Y,5,0,Math.PI*2); ctx.fill(); ctx.font='12px system-ui'; ctx.fillText(`zero (${mark.toFixed(2)}, 0)`, X+8, Y-8); }
+  else { const tv=-b/(2*a), hv=a*tv*tv+b*tv+(c||0); ctx.fillStyle='#10b981'; ctx.beginPath(); ctx.arc(x2px(tv),y2px(hv),5,0,Math.PI*2); ctx.fill(); ctx.font='12px system-ui'; ctx.fillText(`vertex (${tv.toFixed(2)}, ${hv.toFixed(2)})`, x2px(tv)+8, y2px(hv)-8); }
+}
+
+const TEMPLATES={
+  linear:[
+    ({intMode})=>{ const m=Math.abs(nonUnitCoeff(2,9)), b=rndInt(1,25); return { prompt:`A plan charges a base fee of ${b} dollars plus ${m} dollars per hour. Write an equation for total cost y in terms of hours x (slope–intercept form).`, answer:formatEq(m,b), form:'equation', steps:[`Use: y=mx+b with m=${m}, b=${b}.`,`Write EQ: y = ${m}x + ${b}`] }},
+    ({intMode})=>{ const h=rndInt(2,6); const r=intMode?rndInt(20,80):rndInt(20,90); const miles=h*r; const rate=r; return { prompt:`A car travels ${miles} miles in ${h} hours at a constant speed. What is the unit rate in miles per hour?`, answer: rate, form:'number', steps:[`Unit rate = miles ÷ hours = ${miles} ÷ ${h} = ${rate} mph.`] }},
+    ({intMode})=>{ let m=nonUnitCoeff(-8,8); const b=rndInt(-12,12); const contexts=[{txt:'The temperature drops by', sign:-1},{txt:'A plant grows by', sign:1}]; const pick=contexts[rndInt(0,1)]; m = (pick.sign>0?Math.abs(m):-Math.abs(m)); const x=intMode? rndInt(0,8): rndInt(-3,10); const y=m*x+b; return { prompt:`${pick.txt} ${Math.abs(m)} units per day. Let ${formatEq(m,b)}. Find y when x=${x}.`, answer:y, form:'number', steps:[`Substitute: y=${m}(${x})${b>=0?`+${b}`:`${b}`} = ${y}.`] }},
+    ({intMode})=>{ const w=rndInt(2,12), k=rndInt(2,7), l=w+k, P=2*(l+w), askW=Math.random()<0.5; const steps=[`Let width=w, length=w+${k}. Perimeter: L + L + W + W = P`,`Substitute: (w+${k}) + (w+${k}) + w + w = ${P}`,`Combine Terms: 4w + ${2*k} = ${P}`,`Subtract (${2*k}): 4w = ${P-(2*k)}`,`Divide by (4): w = ${w}`,`Solve: width=${w}, length=${l}.`]; return { prompt:`A rectangle has a perimeter of ${P} units. The length is ${k} units more than the width. Find the ${askW?'width':'length'} of the rectangle.`, answer:askW?w:l, form:'number', steps }},
+    ({intMode})=>{ const v=intMode?rndInt(20,70):rndInt(25,75); const t=rndInt(2,6); const d=v*t; return { prompt:`A cyclist travels at a constant speed of ${v} miles per hour for ${t} hours. How many miles does the cyclist travel?`, answer:d, form:'number', steps:[`Use d=rt: d=${v}·${t}=${d}.`] }},
+  ],
+
+  systems:[
+    ({intMode})=>{ let a=rndInt(8,15), b=rndInt(3,7); if(a===b) a++; const more=rndInt(3,10), n=intMode? rndInt(30,70):rndInt(28,75); const x=Math.floor((n-more)/2), y=x+more; const total=a*x+b*y; const steps=[`Assign Variables: x=adults, y=students`,`Create EQs: x+y=${n}; ${a}x+${b}y=${total}`,`Choose Method: <button class="btn method" data-kind="elim">Elimination</button> <button class="btn method" data-kind="sub">Substitution</button> <button class="btn method" data-kind="graph">Graph</button>`,`Answer: x=${x}`]; return { prompt:`Adult tickets cost $${a} and student tickets cost $${b}. There were ${n} tickets sold in total, with ${more} more students than adults. Total revenue was $${total}. How many adult tickets were sold?`, answer:x, form:'integer', steps, methodData:{ a:1,b:1,c:n, d:a,e:b,f:total, x0:x,y0:y } }},
+    ({intMode})=>{ const p1=rndInt(2,6), p2=rndInt(3,9); const diff=rndInt(2,10); const x=intMode? rndInt(3,10): rndInt(2,12); const y=x+diff; const revenue=p1*x+p2*y; const steps=[`Assign Variables: x=item A, y=item B`,`Create EQs: y=x+${diff}; ${p1}x+${p2}y=${revenue}`,`Choose Method: <button class="btn method" data-kind="elim">Elimination</button> <button class="btn method" data-kind="sub">Substitution</button> <button class="btn method" data-kind="graph">Graph</button>`,`Answer: x=${x}`]; return { prompt:`A shop sells items A and B. Item A costs $${p1}, item B costs $${p2}. During a sale, ${diff} more B items than A items were sold. If the total revenue from A and B was $${revenue}, how many A items were sold?`, answer:x, form:'integer', steps, methodData:{ a:-1,b:1,c:diff, d:p1,e:p2,f:revenue, x0:x,y0:y } }},
+    ({intMode})=>{ const x=rndInt(2,8), y=rndInt(2,8); const a1=rndInt(2,5), b1=rndInt(2,5); const a2=rndInt(2,5), b2=rndInt(2,5); if(a1===a2 && b1===b2) return arguments.callee(arguments[0]); const c1=a1*x+b1*y; const c2=a2*x+b2*y; const contexts=[{item1:'small boxes',item2:'large boxes',verb:'weigh'},{item1:'red items',item2:'blue items',verb:'cost'},{item1:'type A widgets',item2:'type B widgets',verb:'total'}]; const ctx=contexts[rndInt(0,contexts.length-1)]; const steps=[`Assign Variables: x=${ctx.item1}, y=${ctx.item2}`,`Create EQs: ${a1}x+${b1}y=${c1}; ${a2}x+${b2}y=${c2}`,`Choose Method: <button class="btn method" data-kind="elim">Elimination</button> <button class="btn method" data-kind="sub">Substitution</button> <button class="btn method" data-kind="graph">Graph</button>`,`Answer: x=${x}`]; return { prompt:`You have ${ctx.item1} and ${ctx.item2}. ${a1} ${ctx.item1} and ${b1} ${ctx.item2} ${ctx.verb} ${c1} units. ${a2} ${ctx.item1} and ${b2} ${ctx.item2} ${ctx.verb} ${c2} units. How many ${ctx.item1} are there?`, answer:x, form:'integer', steps, methodData:{ a:a1,b:b1,c:c1, d:a2,e:b2,f:c2, x0:x,y0:y } }},
+  ],
+
+  quadratic:[
+    ({intMode})=>{ 
+      let a=-rndInt(2,4), tv, b; 
+      if(intMode){ 
+        tv=rndInt(1,8); 
+        b=-2*a*tv; 
+        while(Math.abs(b)<=1) b=-2*a*rndInt(1,8);
+      } else { 
+        b=rndInt(8,30); 
+        while(Math.abs(b)<=1) b=rndInt(8,30);
+        tv=-b/(2*a); 
+      } 
+      const c=rndInt(2,12); 
+      const aStr = Math.abs(a)===1 ? '-' : String(a);
+      const bStr = b<0 ? String(b) : `+${b}`;
+      let eq=`h(t)=${aStr}t^2${bStr}t+${c}`; 
+      return { 
+        prompt:`A projectile's height is modeled by ${eq}, where t is seconds. At what time does it reach maximum height?`, 
+        answer:tv, 
+        form:'number', 
+        tol:intMode?0:0.01, 
+        steps:[`The x-coordinate of the vertex is found with -b/(2a). Here, t_v = -(${b})/(2·(${a})) = ${Number(tv).toFixed(intMode?0:2)}.`], 
+        graph:{a,b,c,label:'vertex'} 
+      }
+    },
+
+    ({intMode})=>{
+      if (intMode) {
+        const T = rndInt(4, 18),
+              a = -rndInt(2, 4),
+              b = -a * T,
+              c = 0;
+        const aStr = Math.abs(a)===1 ? '-' : String(a);
+        const bStr = b<0 ? String(b) : `+${b}`;
+        const eq = `h(t)=${aStr}t^2${bStr}t`;
+        return {
+          prompt: `A ball is launched from ground level with height modeled by ${eq}. When does it hit the ground? (Give the positive time.)`,
+          answer: T,
+          form: 'number',
+          tol: 0,
+          steps: [
+            `Solve h(t)=0 → t(${a}t + ${b})=0 ⇒ t=0 or t=${T}. Keep the positive time ${T}.`
+          ],
+          graph: { a, b, c, label: 'zero', mark: T }
+        };
+      } else {
+        const a = -rndInt(2, 4);
+        let v0 = rndInt(8, 30);
+        while(Math.abs(v0)<=1) v0 = rndInt(8,30);
+        const h0 = rndInt(2, 12);
+        const D = v0 * v0 - 4 * a * h0;
+        const T = (-v0 - Math.sqrt(D)) / (2 * a);
+        const aStr = Math.abs(a)===1 ? '-' : String(a);
+        const v0Str = v0<0 ? String(v0) : `+${v0}`;
+        const eq = `h(t)=${aStr}t^2${v0Str}t+${h0}`;
+        return {
+          prompt: `A ball is launched with height modeled by ${eq}. When does it hit the ground? (Give the positive time.)`,
+          answer: T,
+          form: 'number',
+          tol: 0.01,
+          steps: [
+            `Solve h(t)=0 using quadratic formula and keep the positive root ≈ ${T.toFixed(2)}.`
+          ],
+          graph: { a, b: v0, c: h0, label: 'zero', mark: T }
+        };
+      }
+    },
+
+    ({intMode})=>{ 
+      const A=rndInt(2,4);
+      let B=intMode?2*A*rndInt(2,15):rndInt(20,60); 
+      while(Math.abs(B)<=1) B=intMode?2*A*rndInt(2,15):rndInt(20,60);
+      const tv=B/(2*A); 
+      return { 
+        prompt:`A store models revenue (in dollars) by R(x) = -${A}x^2 + ${B}x. For what x is revenue maximized?`, 
+        answer:tv, 
+        form:'number', 
+        tol:intMode?0:0.01, 
+        steps:[`R is a downward parabola. The x-coordinate of the vertex is -b/(2a). With a=-${A}, b=${B}, x=${tv.toFixed(intMode?0:2)}.`], 
+        graph:{a:-A,b:B,c:0,label:'vertex'} 
+      }
+    },
+  ],
+
+  inequality:[ ({intMode})=>{ const price=rndInt(4,12), budget=rndInt(30,120); return { prompt:`Each item costs $${price}. You have $${budget}. Write an inequality for the number of items x you can buy.`, answer:`${price}x≤${budget}`, form:'equation', steps:[`Total cost ${price}·x ≤ ${budget} ⇒ ${price}x≤${budget}.`] } } ],
+
+  function:[
+    ({intMode})=>{ const m=Math.abs(nonUnitCoeff(2,8)), b=rndInt(1,20); const eq=formatEq(m,b); const choices=[`${b} is the base fee`,`$${b} per mile`,`Total cost`,`Miles traveled`]; return { prompt:`A taxi charges ${eq}, where x is miles and y is dollars. What does ${b} represent?`, answer:choices[0], form:'mc', choices, steps:[`${b} is the starting cost when x=0 → base fee.`] }},
+    ({intMode})=>{ 
+      const m=Math.abs(nonUnitCoeff(2,8)), b=rndInt(5,25);
+      const x=intMode?rndInt(10,50):rndInt(10,60);
+      const y=m*x+b;
+      const contexts = [
+        {item:'widgets', unit:'widget', verb:'produce'},
+        {item:'pies', unit:'pie', verb:'bake'},
+        {item:'books', unit:'book', verb:'print'},
+        {item:'shirts', unit:'shirt', verb:'make'}
+      ];
+      const ctx = contexts[rndInt(0,contexts.length-1)];
+      return { 
+        prompt:`A factory's cost to ${ctx.verb} ${ctx.item} is modeled by C(x)=${m}x+${b}, where x is the number of ${ctx.item} and C is cost in dollars. What is the cost to ${ctx.verb} ${x} ${ctx.item}?`, 
+        answer:y, 
+        form:'number', 
+        steps:[`Substitute x=${x}: C(${x})=${m}(${x})+${b}=${y} dollars.`] 
+      }
+    },
+    ({intMode})=>{ 
+      const m=Math.abs(nonUnitCoeff(3,12)), b=rndInt(10,40);
+      const x=intMode?rndInt(2,10):rndInt(2,12);
+      const y=m*x+b;
+      const contexts = [
+        {service:'lawn care', unit:'hour', provider:'company'},
+        {service:'tutoring', unit:'session', provider:'tutor'},
+        {service:'cleaning', unit:'room', provider:'service'},
+        {service:'painting', unit:'hour', provider:'contractor'}
+      ];
+      const ctx = contexts[rndInt(0,contexts.length-1)];
+      return { 
+        prompt:`A ${ctx.service} ${ctx.provider} charges according to P(x)=${m}x+${b}, where x is the number of ${ctx.unit}s and P is the price in dollars. How much does it cost for ${x} ${ctx.unit}s?`, 
+        answer:y, 
+        form:'number', 
+        steps:[`Evaluate P(${x}): P(${x})=${m}(${x})+${b}=${y} dollars.`] 
+      }
+    },
+  ],
+};
+
+function availableTemplates(skill){ return TEMPLATES[skill]||TEMPLATES.linear }
+function pickTemplate(){ const L=availableTemplates(state.skill); return L[rndInt(0,L.length-1)] }
+
+function renderChoices(p){ const box=$('#choices'); box.innerHTML=''; if(p.form==='mc' && p.choices){ box.innerHTML=p.choices.map((c,i)=>`<button class="btn" data-i="${i}">${c}</button>`).join(''); $$('#choices .btn').forEach(b=>b.addEventListener('click',()=>{ $$('#choices .btn').forEach(x=>x.classList.remove('active')); b.classList.add('active'); $('#answer').value=b.textContent.trim(); })) } }
+
+function generate(){ const tmpl=pickTemplate(); const p=tmpl({intMode:state.intMode}); state.current=p; $('#problem').innerHTML=prettyMath(`<p>${p.prompt}</p>`); $('#steps').innerHTML=''; $('#answer').value=''; $('#result').style.display='none'; renderChoices(p); show($('#miniGraph'),false); }
+
+function normalizeEq(s){ return s.replace(/\s+/g,'').replace(/∞/g,'-') }
+function compare(user,truth,form,tol){ if(form==='mc'){ const ok=String(user).toLowerCase().trim()===String(truth).toLowerCase().trim(); return {ok,msg: ok?'Correct ✓':`Incorrect ✗ Expected ${truth}`} } if(form==='number'){ const u=parseNumberish(user); if(!Number.isFinite(u)) return {ok:false,msg:'Enter a number.'}; const ok=Math.abs(u-Number(truth))<=((tol||0.0000001)); return {ok,msg: ok?'Correct ✓':`Incorrect ✗ Expected ${Number(truth)}`} } if(form==='integer'){ const u=parseInt(user,10); const ok=Number.isInteger(u)&&u===Number(truth); return {ok,msg: ok?'Correct ✓':`Incorrect ✗ Expected ${truth}`} } if(form==='equation' || form==='inequality'){ const ok=normalizeEq(user)===normalizeEq(String(truth)); return {ok,msg: ok?'Correct ✓':`Try: ${truth}`} } return {ok:false,msg:'Unsupported form.'} }
+
+function renderSteps(p){ if(!p||!p.steps) return; $('#steps').innerHTML=prettyMath(p.steps.map((s,i)=>`<div style="border-left:4px solid #38bdf8;padding-left:12px;margin:10px 0"><b>Step ${i+1}.</b> ${s}</div>`).join('')); if(p.graph) drawMiniGraph(p.graph); $$('#steps .method').forEach(btn=>btn.addEventListener('click',()=>openMethod(btn.dataset.kind,p.methodData))); }
+
+function openSummary(){ const rows=[["Time","Skill","Form","OK","Answer","Expected"]].concat(state.log.map(r=>[new Date(r.t).toLocaleTimeString(),r.skill,r.form,r.ok?'✓':'✗',r.user,r.truth])); const html=rows.map((r,i)=>`<tr>${r.map((c,j)=>`<${i? 'td':'th'}>${c}</${i? 'td':'th'}>`).join('')}</tr>`).join(''); $('#sumTable').innerHTML=html; $('#sumStats').textContent=`Correct ${state.correct} / ${state.attempts} • Streak ${state.streak}`; $('#dlgSummary').classList.add('open') }
+function closeSummary(){ $('#dlgSummary').classList.remove('open') }
+function exportCSV(){ const rows=[["timestamp","skill","prompt","user","truth","form","ok"]].concat(state.log.map(r=>[new Date(r.t).toISOString(),r.skill,r.prompt.replace(/\n/g,' '),r.user,r.truth,r.form,r.ok])); const csv=rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n'); const blob=new Blob([csv],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='word_problem_session.csv'; a.click(); }
+
+function openMethod(kind,data){ 
+  if(!data) return; 
+  const body=$('#methodBody'); 
+  const cv=$('#methodGraph'); 
+  cv.style.display='none'; 
+  let html=''; 
+  
+  if(kind==='elim'){ 
+    const {a,b,c,d,e,f,x0,y0}=data; 
+    const k1=e, k2=b; 
+    const A=a*k1, B=b*k1, C=c*k1; 
+    const D=d*k2, E=e*k2, F=f*k2; 
+    const AA=A-D, CC=C-F;
+    html=`<p><b>Elimination:</b> Multiply first eq by ${k1} and second by ${k2} to align y.</p>
+          <p><b>Step 1.</b> Multiply equations:<br>${A}x+${B}y=${C}<br>${D}x+${E}y=${F}</p>
+          <p><b>Step 2.</b> Subtract to eliminate y:<br>${AA}x=${CC}</p>
+          <p><b>Step 3.</b> Divide both sides by ${AA}:<br>x = ${CC}/${AA} = ${x0}</p>
+          <p><b>Step 4.</b> Back-substitute x=${x0} into original equation to find y=${y0}</p>`; 
+  }
+  else if(kind==='sub'){ 
+    const {a,b,c,d,e,f,x0,y0}=data;
+    
+    if(b===1 && (a===-1 || a===1)){ 
+      const term = a===-1 ? `x + ${c}` : `${c} - x`;
+      const sub = a===-1 ? `${d}x + ${e}(x + ${c})` : `${d}x + ${e}(${c} - x)`;
+      const dist = a===-1 ? `${d}x + ${e}x + ${e*c}` : `${d}x + ${e*c} - ${e}x`;
+      const combined = a===-1 ? `${d+e}x + ${e*c}` : `${d-e}x + ${e*c}`;
+      html=`<p><b>Substitution:</b> The first equation is already solved for y: <b>y = ${term}</b></p>
+            <p><b>Step 1.</b> Substitute into second equation:<br>${sub} = ${f}</p>
+            <p><b>Step 2.</b> Distribute:<br>${dist} = ${f}</p>
+            <p><b>Step 3.</b> Combine like terms:<br>${combined} = ${f}</p>
+            <p><b>Step 4.</b> Solve: x = ${x0}</p>
+            <p><b>Step 5.</b> Back-substitute to get y = ${y0}</p>`; 
+    } else { 
+      const aStr = a===-1 ? '-' : (a===1 ? '' : String(a));
+      const xPart = aStr + 'x';
+      const yExpr = b===1 ? `${c} - (${xPart})` : `(${c} - (${xPart}))/${b}`;
+      const fullYExpr = b===1 ? `${c} - ${xPart}` : `(${c} - ${xPart})/${b}`;
+      
+      let subStep, distStep;
+      if(b===1) {
+        subStep = `${d}x + ${e}(${c} - ${xPart}) = ${f}`;
+        const prod1 = e * c;
+        const prod2 = -e * a;
+        distStep = `${d}x + ${prod1} ${prod2>=0?'+':''}${prod2}x = ${f}`;
+      } else {
+        subStep = `${d}x + ${e}((${c} - ${xPart})/${b}) = ${f}`;
+        distStep = `Multiply through by ${b} and simplify to solve for x`;
+      }
+      
+      html=`<p><b>Substitution:</b> Solve first equation for y:</p>
+            <p>${a}x + ${b}y = ${c}<br>
+            ${b}y = ${c} - ${xPart}<br>
+            <b>y = ${fullYExpr}</b></p>
+            <p><b>Step 1.</b> Substitute into second equation:<br>${subStep}</p>
+            <p><b>Step 2.</b> ${distStep}</p>
+            <p><b>Step 3.</b> Solve: x = ${x0}</p>
+            <p><b>Step 4.</b> Back-substitute to get y = ${y0}</p>`; 
+    } 
+  }
+  else if(kind==='graph'){ 
+    const {a,b,c,d,e,f,x0,y0}=data; 
+    html=`<p><b>Graphing:</b> Plot both lines and read the intersection <b>(${x0}, ${y0})</b>.</p>`; 
+    
+    body.innerHTML=prettyMath(html); 
+    cv.style.display='block';
+    
+    setTimeout(() => {
+      const ctx=cv.getContext('2d'); 
+      const W = Math.max(320, cv.clientWidth || 800);
+const H = Math.round(W * 0.4);  // ~16:6 aspect similar to 800x320
+cv.width = W;
+cv.height = H;
+
+      ctx.clearRect(0,0,W,H); 
+      
+      const centerX = x0;
+      const centerY = y0;
+      const scale = 20;
+      const rangeX = 15;
+      const rangeY = 10;
+      
+      const x2px = x => W/2 + (x - centerX) * scale;
+      const y2px = y => H/2 - (y - centerY) * scale;
+      
+      ctx.strokeStyle='#e5e7eb'; 
+      ctx.lineWidth=1;
+      
+      for(let i=-rangeY; i<=rangeY; i++){ 
+        const yVal = centerY + i;
+        ctx.beginPath(); 
+        ctx.moveTo(0, y2px(yVal)); 
+        ctx.lineTo(W, y2px(yVal)); 
+        ctx.stroke(); 
+      }
+      for(let i=-rangeX; i<=rangeX; i++){ 
+        const xVal = centerX + i;
+        ctx.beginPath(); 
+        ctx.moveTo(x2px(xVal), 0); 
+        ctx.lineTo(x2px(xVal), H); 
+        ctx.stroke(); 
+      }
+      
+      ctx.strokeStyle='#1e293b';
+      ctx.lineWidth=2;
+      if(Math.abs(centerY) <= rangeY) {
+        ctx.beginPath();
+        ctx.moveTo(0, y2px(0));
+        ctx.lineTo(W, y2px(0));
+        ctx.stroke();
+      }
+      if(Math.abs(centerX) <= rangeX) {
+        ctx.beginPath();
+        ctx.moveTo(x2px(0), 0);
+        ctx.lineTo(x2px(0), H);
+        ctx.stroke();
+      }
+      
+      const drawLine=(A,B,C,color)=>{ 
+        const fY = x => (C - A*x) / B; 
+        ctx.strokeStyle = color; 
+        ctx.lineWidth = 3; 
+        ctx.beginPath(); 
+        let started = false;
+        
+        for(let i = -rangeX; i <= rangeX; i += 0.2){ 
+          const xVal = centerX + i;
+          const yVal = fY(xVal);
+          
+          if(Math.abs(yVal - centerY) > rangeY + 5) continue;
+          
+          const X = x2px(xVal);
+          const Y = y2px(yVal); 
+          
+          if(!started) {
+            ctx.moveTo(X, Y);
+            started = true;
+          } else {
+            ctx.lineTo(X, Y);
+          }
+        } 
+        ctx.stroke();
+      }; 
+      
+      drawLine(a, b, c, '#0ea5e9'); 
+      drawLine(d, e, f, '#10b981'); 
+      
+      ctx.fillStyle='#ef4444'; 
+      ctx.beginPath(); 
+      ctx.arc(x2px(x0), y2px(y0), 10, 0, Math.PI*2); 
+      ctx.fill(); 
+      ctx.fillStyle='#fff'; 
+      ctx.beginPath(); 
+      ctx.arc(x2px(x0), y2px(y0), 4, 0, Math.PI*2); 
+      ctx.fill(); 
+      
+      ctx.fillStyle='#1f2937'; 
+      ctx.font='bold 16px system-ui'; 
+      ctx.fillText(`(${x0}, ${y0})`, x2px(x0)+15, y2px(y0)-10);
+    }, 50);
+    
+    $('#dlgMethod').classList.add('open');
+    return;
+  }
+  
+  body.innerHTML=prettyMath(html); 
+  $('#dlgMethod').classList.add('open');
+}
+
+buildKbd();
+
+$('#btnToggleSteps').addEventListener('click', () => {
+  const container = $('#stepsContainer');
+  const btn = $('#btnToggleSteps');
+  if(container.style.display === 'none') {
+    container.style.display = '';
+    btn.textContent = 'Hide';
+  } else {
+    container.style.display = 'none';
+    btn.textContent = 'Show';
+  }
+});
+
+$('#btnToggleKbd').addEventListener('click', () => {
+  const container = $('#kbdContainer');
+  const btn = $('#btnToggleKbd');
+  if(container.style.display === 'none') {
+    container.style.display = '';
+    btn.textContent = 'Hide';
+  } else {
+    container.style.display = 'none';
+    btn.textContent = 'Show';
+  }
+});
+
+$$(".chip").forEach(b=>b.addEventListener('click',()=>{ state.skill=b.dataset.skill; $$(".chip").forEach(x=>x.classList.toggle('active',x===b)); generate() }));
+$('#selAns').addEventListener('change',e=>{ state.intMode=(e.target.value==='int'); generate() });
+$('#btnNew').addEventListener('click',generate);
+$('#btnReveal').addEventListener('click',()=>renderSteps(state.current));
+$('#btnSummary').addEventListener('click',openSummary);
+$('#btnExport').addEventListener('click',exportCSV);
+$('#btnSumClose').addEventListener('click',closeSummary);
+$('#btnMethodClose').addEventListener('click',()=>$('#dlgMethod').classList.remove('open'));
+$('#btnCheck').addEventListener('click',()=>{ const p=state.current; if(!p){ generate(); return } const user=$('#answer').value.trim(); const cmp=compare(user,p.answer,p.form,p.tol||0); const res=$('#result'); res.style.display='inline-block'; res.className='result '+(cmp.ok?'ok':'err'); res.textContent=cmp.msg; updateStats(cmp.ok); state.log.push({t:Date.now(),skill:state.skill,prompt:p.prompt,user,truth:p.answer,form:p.form,ok:cmp.ok}); if($('#chkAuto').checked) renderSteps(p); });
+$('#answer').addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); $('#btnCheck').click() } });
+addEventListener('keydown',e=>{ if(e.target.tagName==='INPUT') return; if(e.key==='n'||e.key==='N') $('#btnNew').click(); if(e.key==='r'||e.key==='R') $('#btnReveal').click(); if(e.key==='s'||e.key==='S') openSummary(); });
+
+state.skill='linear'; state.intMode=true; generate();
+</script>
+</body>
+</html>
