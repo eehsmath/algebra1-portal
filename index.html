@@ -137,10 +137,9 @@
   .chip-ok{color:var(--ok); background:#eafff2; border:1px solid #bfeacc; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
   .chip-prog{color:#7a5a00; background:#fff9d6; border:1px solid #ffe38a; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
   .chip-none{color:var(--muted); background:#f2f5fc; border:1px solid var(--ui); border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
-  /* Three-view report:
-     - Summary : standard rows only (SE rows hidden)
-     - Roadmap : standard + SE rows, same columns as Summary
-     - Detail  : standard + SE rows, more columns (hints, level, attempts-to-mastery)
+  /* Two-view report:
+     - Summary : standard rows only (SE rows hidden by CSS)
+     - Detail  : standard + SE rows, plus extra columns (hints, level, attempts-to-mastery)
      View is driven by data-view on #reportModal; row visibility follows. */
   tr.std-row td{background:#f5f8ff}
   tr.std-row td:first-child{border-left:3px solid var(--blue)}
@@ -193,7 +192,7 @@
     #reportModal .modalCard{box-shadow:none !important; border:0 !important; margin:0 !important; width:100% !important}
     .noprint{display:none !important}
     /* Print reflects the on-screen view: Summary hides SE rows via the
-       [data-view="summary"] rule above; Roadmap/Detail show them. */
+       [data-view="summary"] rule above; Detail shows them. */
     /* Try to keep a standard and its SEs together on the page when possible. */
     tr.std-row, tr.se-row{page-break-inside:avoid; break-inside:avoid}
   }
@@ -275,7 +274,6 @@
     <div class="modalBody">
       <div class="viewSwitch noprint" role="tablist" aria-label="Report view">
         <button class="viewBtn is-active" data-view="summary" role="tab">Summary</button>
-        <button class="viewBtn" data-view="roadmap" role="tab">Roadmap</button>
         <button class="viewBtn" data-view="detail" role="tab">Detail</button>
       </div>
       <div class="viewCaption" id="viewCaption"></div>
@@ -455,9 +453,12 @@
 
   /* ---------- report ----------
      For each standard the student has touched, emit ONE standard row (the
+  /* ---------- report ----------
+     For each standard the student has touched, emit ONE standard row (the
      roll-up) followed by ONE row per SE in that standard. Which view is
-     showing is driven by data-view on #reportModal; row VISIBILITY is CSS,
-     column SHAPE is JS (Detail adds hints/level/attempts-to-mastery). */
+     showing is driven by data-view on #reportModal; SE row VISIBILITY is
+     CSS (Summary hides them), column SHAPE is JS (Detail adds hints/level/
+     attempts-to-mastery). */
   function statusChip(st){
     if (!st.attempts) return '<span class="chip-none">Not started</span>';
     if (st.mastered)  return '<span class="chip-ok">Polished ✓</span>';
@@ -474,8 +475,7 @@
 
   var VIEW_CAPTIONS = {
     summary: 'Per-standard roll-up. One row per TEKS standard the student has practiced.',
-    roadmap: 'Standard + Student Expectation (SE) breakdown. Shows where the student is in the sequence.',
-    detail:  'All available diagnostic data per SE: hints used, level, and attempts it took to reach mastery.'
+    detail:  'Full breakdown by Student Expectation (SE): hints used, level, and attempts to mastery.'
   };
 
   /* Build the <thead> row for the given view. */
@@ -487,7 +487,7 @@
         '<th>Recent 10</th><th>Hints</th><th>Level</th>'+
         '<th>Att. to Mastery</th><th>Last Active</th><th>Status</th></tr>';
     }
-    // summary + roadmap share the same columns
+    // summary
     return '<tr>'+
       '<th>Skill</th><th>Total Attempts</th><th>Total Correct</th>'+
       '<th>Overall</th><th>Recent 10</th><th>Last Active</th><th>Status</th></tr>';
@@ -576,7 +576,7 @@
     Portal.REGISTRY.forEach(function(r){
       var st = Portal.skill(r.id);
       // Standard-level row: gives you the roll-up alongside the SE rows so
-      // one CSV covers Summary/Roadmap/Detail-worth of info.
+      // one CSV covers Summary + Detail worth of info.
       lines.push([
         idText, nameText, 'standard', 'standard', r.id, r.name,
         st.attempts, st.attempts?st.correct:'',
