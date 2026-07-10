@@ -88,9 +88,11 @@
   .sel{height:56px; border:2px solid var(--ui); border-radius:12px; font-weight:900; font-size:20px;
     font-family:inherit; color:var(--ink); background:#fff; padding:0 8px}
   .sysRow{display:flex; align-items:center; gap:8px; margin:6px 0}
-  .radio{display:flex; gap:16px; flex-wrap:wrap; font-size:16px; margin-top:6px}
-  .radio label{display:flex; align-items:center; gap:6px; font-weight:800; cursor:pointer}
-  .radio input{accent-color:var(--blue); width:18px; height:18px}
+  .qBlock{background:#f6f9ff; border:1px solid #e7edff; border-radius:14px; padding:14px 16px; margin-top:16px}
+  .qBlock .qLabel{font-size:12px; font-weight:900; letter-spacing:.4px; color:var(--muted); text-transform:uppercase; margin-bottom:6px}
+  .qBlock .qText{font-size:18px; font-weight:900; margin-bottom:10px; color:var(--ink)}
+  .qBlock .mc{margin-top:0}
+  .qBlock .mc button{text-align:center; font-size:17px; padding:14px 10px}
 
   /* MC chips (A.2A) */
   .mc{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
@@ -132,14 +134,13 @@
     background:#fff; touch-action:none}
   .drSide{display:flex; flex-direction:column; gap:10px; min-width:0}
   .drCtl{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
-  .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
-  .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
+  .drSeg{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
+  .drSeg button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
     cursor:pointer; font-family:inherit; color:var(--ink)}
   .drSeg button.active{background:#f1f6ff; color:#133a9a}
-  .drTog button.active{background:#eafff7; color:#0c6d54}
-  .drMini{height:34px; border:1px solid var(--ui); border-radius:10px; background:#fff; font-weight:900;
-    padding:0 10px; cursor:pointer; font-family:inherit; font-size:13px; color:var(--ink)}
   .drField{position:relative}
+  .drVerbal{font-size:15px; font-weight:800; color:var(--muted); min-height:20px; margin:2px 2px 6px; line-height:1.3}
+  .drVerbal.ready{color:#133a9a}
   .drStatus{display:flex; align-items:center; gap:8px; margin:0 0 6px; min-height:24px; flex-wrap:wrap}
   .drChipSlot{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
   .drChip{padding:8px 13px; border-radius:999px; font-weight:900; font-size:14px; border:1px solid var(--ui);
@@ -162,7 +163,7 @@
   .drBandBtn:disabled{opacity:.35; cursor:default}
   .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
     border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
-  .drKbdGrid{display:grid; grid-template-columns:repeat(10,1fr); gap:7px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
   .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
     font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
   .drCoach{display:none; border:1px solid #ffd4d4; background:#fff7f7; color:#7b3232; padding:10px;
@@ -174,6 +175,11 @@
   .drCoach li.rng{color:#0c6d54; border-left:4px solid #36c2a0; padding-left:8px}
   .drAnsChip{display:inline-block; margin:2px 8px 2px 0; padding:8px 12px; border-radius:999px;
     background:#fff7cc; border:1px solid #ffe28a; color:#7a5a00; font-weight:900; font-size:14.5px}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
 </style>
 </head>
 <body>
@@ -208,7 +214,7 @@
         <button class="btn steps" id="stepsBtn">Show steps</button>
         <button class="btn next" id="nextBtn">New problem</button>
       </div>
-      <div class="fb" id="fb" aria-live="polite"></div>
+      <div class="fb" id="fbMsg" aria-live="polite"></div>
       <div class="note" id="hintBox"></div>
       <div class="stepsBox" id="stepsBox"></div>
       <div class="kbdnote">Fractions are welcome in any box — type 3/4 or −3/4. Enter = check · N = new problem.</div>
@@ -218,24 +224,22 @@
 
 <!-- CSV-driven coach messages for the A.2A Domain & Range Lab (ported from domain-range.html) -->
 <script id="coachMessages" type="text/csv">
-tip_id,priority,category,applies_to,mode,condition,message
-numbers_segment_training,1,numbers,both,training,segment_two_numbers,Numbers: Check the endpoint values.
-numbers_segment_testing,1,numbers,both,testing,segment_two_numbers,Numbers: Check the endpoint values.
-numbers_one_sided_training,1,numbers,both,training,ray_or_full_one_number,Number: Check the boundary point values. (the starting point of the function)
-numbers_one_sided_testing,1,numbers,both,testing,ray_or_full_one_number,Number: Check the boundary point values.
-direction_domain,2,direction,domain,both,inequality_direction_mismatch,Direction: Shade to the {{left_or_right}}. Use ≥/≤ for that direction. (Tap the band line to change)
-direction_range,2,direction,range,both,inequality_direction_mismatch,Direction: Shade {{up_or_down}}. Use ≥/≤ for that direction. (Tap the band line to change)
-endpoint_included,3,endpoints,both,both,endpoint_should_be_included,Endpoints: The endpoint at {{var}} = {{a}} is included — use ≤ or ≥.
-endpoint_excluded,3,endpoints,both,both,endpoint_should_be_excluded,Endpoints: The endpoint at {{var}} = {{a}} is not included — use < or >.
-form_one_sided,4,form,both,both,answer_is_one_sided,Form: This one is one-sided (ray). Use a single inequality like {{var}} ≥ a or {{var}} ≤ a.
-form_two_sided,4,form,both,both,answer_is_two_sided,"Form: This one is two-sided (segment). Use two bounds like a ≤ {{var}} ≤ b or [a, b]."
-form_all_reals_true,4,form,both,both,answer_is_all_reals,Form: Here it’s all real numbers (no endpoints to find).
-unbounded_domain,5,unbounded,domain,both,extends_left_or_right_infinite,Unbounded: The graph extends left/right without bound.
-unbounded_range,5,unbounded,range,both,extends_up_or_down_infinite,Unbounded: The graph extends up/down without bound.
-variable_mismatch_domain,6,variable,domain,both,used_y_instead_of_x,Variable: Use x for Domain.
-variable_mismatch_range,6,variable,range,both,used_x_instead_of_y,Variable: Use y for Range.
-order_bounds,6,order,both,both,bounds_reversed,Order: Put the smaller number first: a ≤ {{var}} ≤ b.
-unreadable,6,readability,both,both,parse_failed,"I can’t read that yet. Try x ≤ 3 or [1, 5]."
+tip_id,priority,category,applies_to,condition,message
+numbers_segment,1,numbers,both,segment_two_numbers,Numbers: Check the endpoint values.
+numbers_one_sided,1,numbers,both,ray_or_full_one_number,Number: Check the boundary point values. (the starting point of the function)
+direction_domain,2,direction,domain,inequality_direction_mismatch,Direction: Shade to the {{left_or_right}}. Use ≥/≤ for that direction. (Tap the band line to change)
+direction_range,2,direction,range,inequality_direction_mismatch,Direction: Shade {{up_or_down}}. Use ≥/≤ for that direction. (Tap the band line to change)
+endpoint_included,3,endpoints,both,endpoint_should_be_included,Endpoints: The endpoint at {{var}} = {{a}} is included — use ≤ or ≥.
+endpoint_excluded,3,endpoints,both,endpoint_should_be_excluded,Endpoints: The endpoint at {{var}} = {{a}} is not included — use < or >.
+form_one_sided,4,form,both,answer_is_one_sided,Form: This one is one-sided (ray). Use a single inequality like {{var}} ≥ a or {{var}} ≤ a.
+form_two_sided,4,form,both,answer_is_two_sided,"Form: This one is two-sided (segment). Use two bounds like a ≤ {{var}} ≤ b or [a, b]."
+form_all_reals_true,4,form,both,answer_is_all_reals,Form: Here it’s all real numbers (no endpoints to find).
+unbounded_domain,5,unbounded,domain,extends_left_or_right_infinite,Unbounded: The graph extends left/right without bound.
+unbounded_range,5,unbounded,range,extends_up_or_down_infinite,Unbounded: The graph extends up/down without bound.
+variable_mismatch_domain,6,variable,domain,used_y_instead_of_x,Variable: Use x for Domain.
+variable_mismatch_range,6,variable,range,used_x_instead_of_y,Variable: Use y for Range.
+order_bounds,6,order,both,bounds_reversed,Order: Put the smaller number first: a ≤ {{var}} ≤ b.
+unreadable,6,readability,both,parse_failed,"I can’t read that yet. Try x ≤ 3 or [1, 5]."
 </script>
 <script src="../portal.js"></script>
 <script>
@@ -393,32 +397,46 @@ function stdOf(m,b){ /* pretty standard form with integer coefficients */
 }
 
 /* --- A.2C: table or verbal → y = mx + b --- */
+var cRep='mix';    /* 'mix' | 'graph' | 'verbal' | 'table' */
+var cForm='mix';   /* 'mix' | 'std' | 'si' | 'ps' */
 function genC(){
-  var rep=rc(['table','verbal']);
-  if(rep==='table'){
+  var rep=(cRep==='mix') ? rc(['graph','table','verbal']) : cRep;
+  var form=(cForm==='mix') ? rc(['std','si','ps']) : cForm;
+  var p;
+  if(rep==='graph'){
+    var Lg={m:niceSlope(true), b:rint(ri(-5,5))};
+    p={se:'A.2C', rep:'graph', m:Lg.m, b:Lg.b};
+  } else if(rep==='table'){
     var L=makeLine(); var m=L.m, b=L.b;
     var x0=m.d*ri(-2,1), step=m.d*rc([1,1,2]);
     var xs=[],ys=[];
     for(var i=0;i<4;i++){ var x=x0+i*step; xs.push(x); ys.push(radd(rmul(m,rint(x)),b).n); }
-    return {se:'A.2C', rep:rep, m:m, b:b, xs:xs, ys:ys};
+    p={se:'A.2C', rep:'table', m:m, b:b, xs:xs, ys:ys};
+  } else {
+    var t=ri(1,3), m2, b2, text;
+    if(t===1){ b2=rc([20,25,30,40,50]); m2=ri(3,9);
+      text='A gym charges a one-time $'+b2+' joining fee plus $'+m2+' for each visit. Write an equation for the total cost y of x visits.'; }
+    else if(t===2){ b2=rc([40,50,60,75]); m2=rc([25,30,35,45]);
+      text='A plumber charges a $'+b2+' service fee plus $'+m2+' per hour. Write an equation for the total charge y for a job that takes x hours.'; }
+    else { b2=ri(4,12); m2=ri(2,5);
+      text='A plant is '+b2+' cm tall and grows '+m2+' cm each week. Write an equation for the height y of the plant after x weeks.'; }
+    p={se:'A.2C', rep:'verbal', m:rint(m2), b:rint(b2), text:text};
   }
-  var t=ri(1,3), m2, b2, text;
-  if(t===1){ b2=rc([20,25,30,40,50]); m2=ri(3,9);
-    text='A gym charges a one-time $'+b2+' joining fee plus $'+m2+' for each visit. Write an equation for the total cost y of x visits.'; }
-  else if(t===2){ b2=rc([40,50,60,75]); m2=rc([25,30,35,45]);
-    text='A plumber charges a $'+b2+' service fee plus $'+m2+' per hour. Write an equation for the total charge y for a job that takes x hours.'; }
-  else { b2=ri(4,12); m2=ri(2,5);
-    text='A plant is '+b2+' cm tall and grows '+m2+' cm each week. Write an equation for the height y of the plant after x weeks.'; }
-  return {se:'A.2C', rep:rep, m:rint(m2), b:rint(b2), text:text};
+  p.form=form;
+  return p;
 }
 function stepsC(p){
+  var intro;
   if(p.rep==='verbal')
-    return '<span class="st">1. The starting amount (before any x) is the y-intercept: b = '+ratHTML(p.b)+'.</span>'+
-           '<span class="st">2. The per-unit amount is the rate of change: m = '+ratHTML(p.m)+'.</span>'+
-           '<span class="st final">3. '+siHTML(p.m,p.b)+'</span>';
-  return '<span class="st">1. Rate of change from the table: m = \u0394y/\u0394x = ('+fmtInt(p.ys[1])+' \u2212 '+fmtInt(p.ys[0])+')/('+fmtInt(p.xs[1])+' \u2212 '+fmtInt(p.xs[0])+') = '+ratHTML(p.m)+'</span>'+
-         '<span class="st">2. Use a row to find b: '+fmtInt(p.ys[0])+' = '+ratHTML(p.m)+'('+fmtInt(p.xs[0])+') + b → b = '+ratHTML(p.b)+'</span>'+
-         '<span class="st final">3. '+siHTML(p.m,p.b)+'</span>';
+    intro='<span class="st">1. The starting amount (before any x) is the y-intercept: b = '+ratHTML(p.b)+'.</span>'+
+          '<span class="st">2. The per-unit amount is the rate of change: m = '+ratHTML(p.m)+'.</span>';
+  else if(p.rep==='graph')
+    intro='<span class="st">1. Read the y-intercept straight off the graph \u2014 where the line crosses the y-axis: b = '+ratHTML(p.b)+'.</span>'+
+          '<span class="st">2. Pick two clear points on the line and find slope: m = rise \u00f7 run = '+ratHTML(p.m)+'.</span>';
+  else
+    intro='<span class="st">1. Rate of change from the table: m = \u0394y/\u0394x = ('+fmtInt(p.ys[1])+' \u2212 '+fmtInt(p.ys[0])+')/('+fmtInt(p.xs[1])+' \u2212 '+fmtInt(p.xs[0])+') = '+ratHTML(p.m)+'</span>'+
+          '<span class="st">2. Use a row to find b: '+fmtInt(p.ys[0])+' = '+ratHTML(p.m)+'('+fmtInt(p.xs[0])+') + b → b = '+ratHTML(p.b)+'</span>';
+  return intro+'<span class="st final">3. Same line, three outfits \u2192 '+siHTML(p.m,p.b)+' \u2003|\u2003 y \u2212 '+fmtInt(p.b.n)+' = '+ratHTML(p.m)+'(x \u2212 0)\u2003|\u2003 '+stdOf(p.m,p.b)+'</span>';
 }
 
 /* --- A.2D: direct variation ---
@@ -475,11 +493,14 @@ function efFormSeg(id){
       '<button type="button" data-v="std">Standard</button>'+
     '</div></div>';
 }
+function formLabel(form){
+  return {si:'slope-intercept form (y = mx + b)', ps:'point-slope form (y '+MIN+' y\u2081 = m(x '+MIN+' x\u2081))', std:'standard form (Ax + By = C)'}[form];
+}
 function efAnswerHTML(p,pre){
-  if(p.form==='si') return '<div class="answer"><span>y =</span>'+inBox(pre+'m')+'<span>x +</span>'+inBox(pre+'b')+'</div>';
+  if(p.form==='si') return '<div class="answer"><span>y =</span>'+inBox(pre+'m')+'<span>x +</span>'+inBox(pre+'b')+'</div>'+sharedKbdHTML();
   if(p.form==='ps') return '<div class="answer"><span>y '+MIN+'</span>'+inBox(pre+'y1')+'<span>=</span>'+inBox(pre+'m')+'<span>( x '+MIN+'</span>'+inBox(pre+'x1')+'<span>)</span></div>'+
-    '<div class="lbl" style="font-size:13px;color:var(--muted);font-weight:800;margin-top:4px">Entries may be negative \u2014 y '+MIN+' ('+MIN+'4) is fine.</div>';
-  return '<div class="answer">'+inBox(pre+'A')+'<span>x +</span>'+inBox(pre+'B')+'<span>y =</span>'+inBox(pre+'C')+'</div>';
+    '<div class="lbl" style="font-size:13px;color:var(--muted);font-weight:800;margin-top:4px">Entries may be negative \u2014 just type the minus sign, e.g. '+MIN+'4.</div>'+sharedKbdHTML();
+  return '<div class="answer">'+inBox(pre+'A')+'<span>x +</span>'+inBox(pre+'B')+'<span>y =</span>'+inBox(pre+'C')+'</div>'+sharedKbdHTML();
 }
 function efRead(p,pre){
   function g(id){ return parseRat(document.getElementById(id).value); }
@@ -524,14 +545,35 @@ function stepsG(p){
 }
 
 /* --- A.2H: write a linear inequality ---
-   Two forms via the selector (mixed default):
-     std → a·x + b·y (op) c    (existing verbal problems)
-     si  → y (op) m·x + b       (slope-intercept scenarios) --- */
+   Representation (primary selector): graph, table, or verbal.
+   Answer form (secondary selector, random by default): std → Ax + By (op) C, si → y (op) mx + b. --- */
+var hRep='mix';    /* 'mix' | 'graph' | 'table' | 'verbal' */
 var hMode='mix';   /* 'mix' | 'std' | 'si' */
 var HOPS={le:'\u2264', ge:'\u2265', lt:'<', gt:'>'};
+function flipOp(op){ return {le:'ge', ge:'le', lt:'gt', gt:'lt'}[op]; }
+function genLineIneq(){
+  return {m:niceSlope(true), b:rint(ri(-5,5)), op:rc(['le','ge','lt','gt'])};
+}
 function genH(){
-  var form=(hMode==='mix')? rc(['std','si']) : hMode;
-  return form==='si' ? genH_si() : genH_std();
+  var rep=(hRep==='mix') ? rc(['graph','table','verbal']) : hRep;
+  var form=(hMode==='mix') ? rc(['std','si']) : hMode;
+  if(rep==='graph'){
+    var Lg=genLineIneq();
+    return {se:'A.2H', rep:'graph', form:form, m:Lg.m, b:Lg.b, op:Lg.op, opSym:HOPS[Lg.op]};
+  }
+  if(rep==='table'){
+    var Lt=genLineIneq(), m=Lt.m, b=Lt.b;
+    var x0=m.d*ri(-2,1), step=m.d*rc([1,1,2]);
+    var xs=[], ys=[];
+    for(var i=0;i<3;i++){ var x=x0+i*step; xs.push(x); ys.push(radd(rmul(m,rint(x)),b).n); }
+    var above=(Lt.op==='ge'||Lt.op==='gt');
+    var testPt=[xs[1], ys[1]+(above?ri(2,5):-ri(2,5))];
+    return {se:'A.2H', rep:'table', form:form, m:m, b:b, op:Lt.op, opSym:HOPS[Lt.op], xs:xs, ys:ys, testPt:testPt};
+  }
+  var vform=(hMode==='mix') ? rc(['std','si']) : hMode;
+  var vp=(vform==='si') ? genH_si() : genH_std();
+  vp.rep='verbal';
+  return vp;
 }
 function genH_std(){
   var t=ri(1,3), a,b,c,op,text;
@@ -566,6 +608,62 @@ function checkH(p, ans){
 function checkH_si(p, ans){
   return ans.op===p.op && req(ans.m, rint(p.m)) && req(ans.b, rint(p.b));
 }
+/* graph/table variants: p.m and p.b are already rationals (from genLineIneq), and any
+   positive-or-negative scale is valid for standard form, flipping the operator when negative */
+function checkH_siLine(p, ans){
+  return ans.op===p.op && req(ans.m, p.m) && req(ans.b, p.b);
+}
+function checkH_fromLine(p, ans){
+  var A0=rneg(p.m), C0=p.b;                          /* canonical: -m\u00b7x + y (op) b */
+  if(rzero(ans.B)) return false;
+  var k=ans.B;                                        /* since the canonical y-coefficient is 1 */
+  if(!req(ans.A, rmul(k,A0))) return false;
+  if(!req(ans.C, rmul(k,C0))) return false;
+  var expectedOp = (k.n>0) ? p.op : flipOp(p.op);
+  return ans.op===expectedOp;
+}
+function siIneqHTML(m,b,opSym){
+  var out='y '+opSym+' ';
+  if(req(m,rint(1))) out+='x';
+  else if(req(m,rint(-1))) out+=MIN+'x';
+  else out+=ratHTML(m)+'x';
+  if(!rzero(b)) out += (b.n>0?' + ':' '+MIN+' ') + ratHTML(R(Math.abs(b.n),b.d));
+  return out;
+}
+function stdIneqOf(m,b,op){
+  /* canonical -m\u00b7x + 1\u00b7y (op) b, scaled by the positive m.d*b.d to clear denominators */
+  var A=-m.n*b.d, B=m.d*b.d, C=b.n*m.d, flipped=false;
+  if(A<0){ A=-A; B=-B; C=-C; flipped=true; }
+  var g=gcd(gcd(A,B),Math.abs(C)||1); A/=g; B/=g; C/=g;
+  var finalOp=flipped?flipOp(op):op;
+  return A+'x '+(B<0?MIN+' '+(-B):'+ '+B)+'y '+HOPS[finalOp]+' '+fmtInt(C);
+}
+function tableHTML_H(p){
+  var h='The table shows points on the boundary line. The boundary line is <b>'+((p.op==='le'||p.op==='ge')?'solid':'dashed')+'</b> ('+((p.op==='le'||p.op==='ge')?'points on it are solutions':'points on it are not solutions')+').'+
+    '<table class="ttab" style="margin-top:10px"><tr><th>x</th>';
+  p.xs.forEach(function(x){h+='<td>'+fmtInt(x)+'</td>';});
+  h+='</tr><tr><th>y</th>';
+  p.ys.forEach(function(y){h+='<td>'+fmtInt(y)+'</td>';});
+  h+='</tr></table><div style="margin-top:10px;font-weight:800">The point <span class="given">'+ptStr(p.testPt[0],p.testPt[1])+'</span> is a solution.</div>';
+  return h;
+}
+function graphSVG_H(p){
+  var Rg=6, S=24, ax=svgAxes(Rg,S), s=ax.svg;
+  var mv=p.m.n/p.m.d, bv=p.b.n/p.b.d;
+  var clip=clipLine(Rg,mv,bv);
+  var above=(p.op==='ge'||p.op==='gt'), solid=(p.op==='le'||p.op==='ge');
+  var x1=ax.X(clip[0]), y1=ax.Y(clip[1]), x2=ax.X(clip[2]), y2=ax.Y(clip[3]);
+  var top=0, bottom=ax.H, left=0, right=ax.W;
+  var poly=(above?[[x1,y1],[x2,y2],[right,top],[left,top]]:[[x1,y1],[x2,y2],[right,bottom],[left,bottom]]);
+  var pts=poly.map(function(pt){ return pt[0]+','+pt[1]; }).join(' ');
+  s+='<polygon points="'+pts+'" fill="#2f6cff" fill-opacity="0.14"/>';
+  s+='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="#2f6cff" stroke-width="3.5" stroke-linecap="round"'+(solid?'':' stroke-dasharray="9,7"')+'/>';
+  s+='</svg>';
+  return 'The boundary line and shaded region are graphed below. Write the inequality.<br>'+s;
+}
+function hFormLabel(form){
+  return form==='si' ? 'slope-intercept form (y \u25a1 mx + b)' : 'standard form (Ax + By \u25a1 C)';
+}
 function stepsH(p){
   return '<span class="st">1. Money/weight from x: '+p.a+'x. From y: '+p.b+'y. Total: '+p.a+'x + '+p.b+'y.</span>'+
     '<span class="st">2. Match the words to the symbol: \u201c'+({le:'at most / no more than',ge:'at least',lt:'less than',gt:'more than'}[p.op])+'\u201d → '+p.opSym+'</span>'+
@@ -576,18 +674,39 @@ function stepsH_si(p){
     '<span class="st">2. Match the words to the symbol: \u201c'+({le:'at most / within',ge:'at least',lt:'under / less than',gt:'more than'}[p.op])+'\u201d → '+p.opSym+'</span>'+
     '<span class="st final">3. y '+p.opSym+' '+p.m+'x + '+p.b+'</span>';
 }
+function stepsH_line_si(p){
+  return '<span class="st">1. Read the slope and y-intercept straight off the line: m = '+ratHTML(p.m)+', b = '+ratHTML(p.b)+'.</span>'+
+    '<span class="st">2. Solid line \u2192 \u2264 or \u2265. Dashed line \u2192 < or >. Shading above \u2192 \u2265 or >. Shading below \u2192 \u2264 or <.</span>'+
+    '<span class="st final">3. '+siIneqHTML(p.m,p.b,p.opSym)+'</span>';
+}
+function stepsH_line_std(p){
+  return '<span class="st">1. Read the slope and y-intercept straight off the line: '+siIneqHTML(p.m,p.b,p.opSym)+'.</span>'+
+    '<span class="st">2. Move the x-term over and clear fractions to reach Ax + By (symbol) C \u2014 watch the direction flip if you multiply by a negative.</span>'+
+    '<span class="st final">3. '+stdIneqOf(p.m,p.b,p.op)+'</span>';
+}
+function stepsH_table_si(p){
+  return '<span class="st">1. Use two rows of the table to find the slope: m = '+ratHTML(p.m)+'. Then find b the same way as an equation: b = '+ratHTML(p.b)+'.</span>'+
+    '<span class="st">2. Test the point '+ptStr(p.testPt[0],p.testPt[1])+' in y = '+ratHTML(p.m)+'x + '+ratHTML(p.b)+' to see which direction makes it a true statement.</span>'+
+    '<span class="st final">3. '+siIneqHTML(p.m,p.b,p.opSym)+'</span>';
+}
+function stepsH_table_std(p){
+  return '<span class="st">1. Use the table to find the boundary line: '+siIneqHTML(p.m,p.b,p.opSym)+'.</span>'+
+    '<span class="st">2. Test the point '+ptStr(p.testPt[0],p.testPt[1])+' to confirm the direction, then move the x-term over and clear fractions.</span>'+
+    '<span class="st final">3. '+stdIneqOf(p.m,p.b,p.op)+'</span>';
+}
 
 /* --- A.2I: write a system ---
-   Three representations via the selector (mixed default):
-     verbal → count/value word problem   (standard-form answer boxes)
-     table  → two linear relationships in a table  (slope-intercept boxes)
-     graph  → two lines drawn on a grid            (slope-intercept boxes) --- */
-var iMode='mix';   /* 'mix' | 'verbal' | 'table' | 'graph' */
+   Representation (primary selector): verbal, table, or graph.
+   Answer form (secondary selector, random by default): std → Ax + By = C, si → y = mx + b.
+   When Mixed, each system gets exactly one std equation and one si equation. --- */
+var iRep='mix';    /* 'mix' | 'verbal' | 'table' | 'graph' */
+var iForm='mix';   /* 'mix' | 'std' | 'si' */
 function genI(){
-  var kind=(iMode==='mix')? rc(['verbal','table','graph']) : iMode;
-  if(kind==='table') return genI_table();
-  if(kind==='graph') return genI_graph();
-  return genI_verbal();
+  var kind=(iRep==='mix')? rc(['verbal','table','graph']) : iRep;
+  var rowForms=(iForm==='mix') ? shuffle(['std','si']) : [iForm,iForm];
+  var p = kind==='table' ? genI_table() : kind==='graph' ? genI_graph() : genI_verbal();
+  p.rowForms=rowForms;
+  return p;
 }
 function genI_verbal(){
   var t=ri(1,3), x0,y0,r1,r2,text;
@@ -623,25 +742,21 @@ function genI_graph(){
   return {se:'A.2I', rep:'graph', L:L};
 }
 function tableHTML_I(p){
-  var h='The table shows two linear relationships. Write an equation for each.'+
-    '<table class="ttab" style="margin-top:10px"><tr><th>x</th>';
-  p.xs.forEach(function(x){h+='<td>'+fmtInt(x)+'</td>';});
-  h+='</tr><tr><th>y\u2081</th>';
-  p.y1s.forEach(function(y){h+='<td>'+fmtInt(y)+'</td>';});
-  h+='</tr><tr><th>y\u2082</th>';
-  p.y2s.forEach(function(y){h+='<td>'+fmtInt(y)+'</td>';});
-  return h+'</tr></table>';
+  function oneTable(idx, ys){
+    var h='<div><div style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted);margin-bottom:4px">TABLE '+idx+'</div>'+
+      '<table class="ttab"><tr><th>x</th>';
+    p.xs.forEach(function(x){h+='<td>'+fmtInt(x)+'</td>';});
+    h+='</tr><tr><th>y</th>';
+    ys.forEach(function(y){h+='<td>'+fmtInt(y)+'</td>';});
+    return h+'</tr></table></div>';
+  }
+  return 'The tables show two linear relationships. Write an equation for each.'+
+    '<div style="display:flex;gap:22px;flex-wrap:wrap;margin-top:10px">'+oneTable(1,p.y1s)+oneTable(2,p.y2s)+'</div>';
 }
-function graphSVG_I(p){
-  var L=p.L, Rg=6, S=24, W=2*Rg*S, H=2*Rg*S, i;
+function svgAxes(Rg,S){
+  var W=2*Rg*S, H=2*Rg*S, i;
   function X(x){ return (x+Rg)*S; }
   function Y(y){ return (Rg-y)*S; }
-  function clip(m,k){
-    var xL=-Rg, yL=m*xL+k, xR=Rg, yR=m*xR+k;
-    if(yL>Rg){ xL=(Rg-k)/m; yL=Rg; } else if(yL<-Rg){ xL=(-Rg-k)/m; yL=-Rg; }
-    if(yR>Rg){ xR=(Rg-k)/m; yR=Rg; } else if(yR<-Rg){ xR=(-Rg-k)/m; yR=-Rg; }
-    return [xL,yL,xR,yR];
-  }
   var s='<svg viewBox="0 0 '+W+' '+H+'" width="300" height="300" style="max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px" xmlns="http://www.w3.org/2000/svg">';
   for(i=-Rg;i<=Rg;i++){
     s+='<line x1="'+X(i)+'" y1="0" x2="'+X(i)+'" y2="'+H+'" stroke="#e9eefb" stroke-width="1"/>';
@@ -653,44 +768,64 @@ function graphSVG_I(p){
     s+='<text x="'+X(i)+'" y="'+(Y(0)+14)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="middle">'+i+'</text>';
     s+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+4)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="end">'+i+'</text>';
   }
-  var a=clip(L.m1,L.k1), b=clip(L.m2,L.k2);
-  s+='<line x1="'+X(a[0])+'" y1="'+Y(a[1])+'" x2="'+X(a[2])+'" y2="'+Y(a[3])+'" stroke="#2f6cff" stroke-width="3.5" stroke-linecap="round"/>';
-  s+='<line x1="'+X(b[0])+'" y1="'+Y(b[1])+'" x2="'+X(b[2])+'" y2="'+Y(b[3])+'" stroke="#e5484d" stroke-width="3.5" stroke-linecap="round"/>';
-  s+='<text x="'+(W-8)+'" y="16" font-size="12" font-weight="900" fill="#2f6cff" text-anchor="end">line 1</text>';
-  s+='<text x="'+(W-8)+'" y="32" font-size="12" font-weight="900" fill="#e5484d" text-anchor="end">line 2</text>';
+  return {svg:s, X:X, Y:Y, W:W, H:H};
+}
+function clipLine(Rg,m,k){
+  var xL=-Rg, yL=m*xL+k, xR=Rg, yR=m*xR+k;
+  if(yL>Rg){ xL=(Rg-k)/m; yL=Rg; } else if(yL<-Rg){ xL=(-Rg-k)/m; yL=-Rg; }
+  if(yR>Rg){ xR=(Rg-k)/m; yR=Rg; } else if(yR<-Rg){ xR=(-Rg-k)/m; yR=-Rg; }
+  return [xL,yL,xR,yR];
+}
+function graphSVG_I(p){
+  var L=p.L, Rg=6, S=24, ax=svgAxes(Rg,S), s=ax.svg;
+  var a=clipLine(Rg,L.m1,L.k1), b=clipLine(Rg,L.m2,L.k2);
+  s+='<line x1="'+ax.X(a[0])+'" y1="'+ax.Y(a[1])+'" x2="'+ax.X(a[2])+'" y2="'+ax.Y(a[3])+'" stroke="#2f6cff" stroke-width="3.5" stroke-linecap="round"/>';
+  s+='<line x1="'+ax.X(b[0])+'" y1="'+ax.Y(b[1])+'" x2="'+ax.X(b[2])+'" y2="'+ax.Y(b[3])+'" stroke="#e5484d" stroke-width="3.5" stroke-linecap="round"/>';
+  s+='<text x="'+(ax.W-8)+'" y="16" font-size="12" font-weight="900" fill="#2f6cff" text-anchor="end">line 1</text>';
+  s+='<text x="'+(ax.W-8)+'" y="32" font-size="12" font-weight="900" fill="#e5484d" text-anchor="end">line 2</text>';
   s+='</svg>';
   return 'Two lines are graphed below. Write an equation for each.<br>'+s;
 }
-function lineSI_I(m,k){ return siHTML(rint(m),rint(k)); }
-function rowMatches(exp, s){
-  /* s = {A,B,C} rationals; proportional to exp (any nonzero scale) */
-  var base = exp.a!==0 ? rdiv(s.A, rint(exp.a)) : rdiv(s.B, rint(exp.b));
-  if(rzero(base)) return false;
-  return req(s.A, rmul(base,rint(exp.a))) && req(s.B, rmul(base,rint(exp.b))) && req(s.C, rmul(base,rint(exp.c)));
+function graphSVG_C(p){
+  var Rg=6, S=24, ax=svgAxes(Rg,S), s=ax.svg;
+  var a=clipLine(Rg, p.m.n/p.m.d, p.b.n/p.b.d);
+  s+='<line x1="'+ax.X(a[0])+'" y1="'+ax.Y(a[1])+'" x2="'+ax.X(a[2])+'" y2="'+ax.Y(a[3])+'" stroke="#2f6cff" stroke-width="3.5" stroke-linecap="round"/>';
+  s+='</svg>';
+  return 'The line is graphed below. Write its equation.<br>'+s;
 }
-function checkI(p, rows){
-  var e0=p.rows[0], e1=p.rows[1];
-  return (rowMatches(e0,rows[0]) && rowMatches(e1,rows[1])) ||
-         (rowMatches(e1,rows[0]) && rowMatches(e0,rows[1]));
+function checkSI_I(m, b, ans){ return req(ans.m,m) && req(ans.b,b); }
+function checkSTD_I(m, b, ans){
+  if(rzero(ans.B)) return false;
+  return req(rdiv(rneg(ans.A),ans.B), m) && req(rdiv(ans.C,ans.B), b);
 }
-function checkI_lines(p, ans){
-  var L=p.L;
-  function eqL(a,m,k){ return req(a.m,rint(m)) && req(a.b,rint(k)); }
-  return (eqL(ans[0],L.m1,L.k1)&&eqL(ans[1],L.m2,L.k2)) ||
-         (eqL(ans[0],L.m2,L.k2)&&eqL(ans[1],L.m1,L.k1));
+function iTrueLines(p){
+  if(p.rep==='verbal'){
+    return p.rows.map(function(r){
+      return {m: rdiv(rneg(rint(r.a)),rint(r.b)), b: rdiv(rint(r.c),rint(r.b))};
+    });
+  }
+  return [{m:rint(p.L.m1), b:rint(p.L.k1)}, {m:rint(p.L.m2), b:rint(p.L.k2)}];
 }
-function stepsI(p){
-  var r=p.rows;
-  return '<span class="st">1. One equation counts <b>how many</b>: x + y = '+r[0].c+'</span>'+
-    '<span class="st">2. One equation counts the <b>value</b>: '+r[1].a+'x + '+r[1].b+'y = '+r[1].c+'</span>'+
-    '<span class="st final">3. System: x + y = '+r[0].c+' \u2003 and \u2003 '+r[1].a+'x + '+r[1].b+'y = '+r[1].c+'</span>';
+function checkI_pair(p, ans){
+  var lines=iTrueLines(p), rf=p.rowForms;
+  function matchOne(t,a,form){ return form==='si' ? checkSI_I(t.m,t.b,a) : checkSTD_I(t.m,t.b,a); }
+  return (matchOne(lines[0],ans[0],rf[0]) && matchOne(lines[1],ans[1],rf[1])) ||
+         (matchOne(lines[1],ans[0],rf[0]) && matchOne(lines[0],ans[1],rf[1]));
+}
+function fmtRow_I(t, form){ return form==='si' ? siHTML(t.m,t.b) : stdOf(t.m,t.b); }
+function stepsI_verbal(p){
+  var r=p.rows, L=iTrueLines(p), rf=p.rowForms;
+  return '<span class="st">1. Equation 1 counts <b>how many</b>: x + y = '+r[0].c+'</span>'+
+    '<span class="st">2. Equation 2 counts the <b>value</b>: '+r[1].a+'x + '+r[1].b+'y = '+r[1].c+'</span>'+
+    '<span class="st final">3. System: '+fmtRow_I(L[0],rf[0])+' \u2003 and \u2003 '+fmtRow_I(L[1],rf[1])+'</span>';
 }
 function stepsI_lines(p){
-  var L=p.L, src=(p.rep==='graph')?'graph':'table';
+  var L=p.L, src=(p.rep==='graph')?'graph':'tables', rf=p.rowForms;
+  var Lt=[{m:rint(L.m1),b:rint(L.k1)},{m:rint(L.m2),b:rint(L.k2)}];
   return '<span class="st">1. From the '+src+', find each line\u2019s slope (rise \u00f7 run) and y-intercept.</span>'+
-    '<span class="st">2. Line 1 → '+lineSI_I(L.m1,L.k1)+'</span>'+
-    '<span class="st">2. Line 2 → '+lineSI_I(L.m2,L.k2)+'</span>'+
-    '<span class="st final">3. System: '+lineSI_I(L.m1,L.k1)+' \u2003 and \u2003 '+lineSI_I(L.m2,L.k2)+'</span>';
+    '<span class="st">2. Line 1 → '+siHTML(Lt[0].m,Lt[0].b)+'</span>'+
+    '<span class="st">2. Line 2 → '+siHTML(Lt[1].m,Lt[1].b)+'</span>'+
+    '<span class="st final">3. System: '+fmtRow_I(Lt[0],rf[0])+' \u2003 and \u2003 '+fmtRow_I(Lt[1],rf[1])+'</span>';
 }
 /* ====================== ENDPURE ====================== */
 
@@ -705,10 +840,10 @@ function stepsI_lines(p){
      • Drag a handle to move it — it snaps to the grid.
      • Tap a handle to toggle included ● / excluded ○.
      • Ray bands: tap the band LINE to flip which way it shades.
-     • Training mode: the bands auto-write the notation into the boxes.
+     • The bands always auto-write the notation into the boxes as you use them.
    ====================================================================== */
 
-var LAB={ level:'mix', notation:'ineq', mode:'training' };
+var LAB={ level:'mix', notation:'ineq' };
 var CFG={ xmin:-10, xmax:10, ymin:-10, ymax:10, tick:1, grid:true };
 var EPS=1e-6, handleRadiusPx=8, hitRadiusPx=26, tapThreshold=6, lineHitPx=16;
 
@@ -864,8 +999,8 @@ function bandToInterval(b){
 function syncInputsFromBands(){
   var d=document.getElementById('drDom'), r=document.getElementById('drRng');
   if(!d||!r) return;
-  if(domainBand.visible) d.value=I.fmt(bandToInterval(domainBand),'x',LAB.notation);
-  if(rangeBand.visible)  r.value=I.fmt(bandToInterval(rangeBand ),'y',LAB.notation);
+  if(domainBand.visible){ d.value=I.fmt(bandToInterval(domainBand),'x',LAB.notation); d.dispatchEvent(new Event('input',{bubbles:true})); }
+  if(rangeBand.visible){  r.value=I.fmt(bandToInterval(rangeBand ),'y',LAB.notation); r.dispatchEvent(new Event('input',{bubbles:true})); }
 }
 
 /* ---------- canvas sizing + draw ---------- */
@@ -1088,7 +1223,7 @@ function labMove(e){
   if(activeDrag.which==='RHI') rangeBand.hi=clampN(roundT(wy(py)),CFG.ymin,CFG.ymax);
   if(activeDrag.which==='DS')  domainBand.value=clampN(roundT(wx(px)),CFG.xmin,CFG.xmax);
   if(activeDrag.which==='RS')  rangeBand.value=clampN(roundT(wy(py)),CFG.ymin,CFG.ymax);
-  if(LAB.mode==='training') syncInputsFromBands();
+  syncInputsFromBands();
   draw();
 }
 function labUp(e){
@@ -1104,21 +1239,32 @@ function labUp(e){
     if(activeDrag.which==='RS'){ if(isAlt) rangeBand.dir*=-1; else rangeBand.inc=!rangeBand.inc; }
     if(activeDrag.which==='DLINE') domainBand.dir*=-1;
     if(activeDrag.which==='RLINE') rangeBand.dir*=-1;
-    if(LAB.mode==='training') syncInputsFromBands();
+    syncInputsFromBands();
   }
   tool='idle'; draw();
 }
 
 /* ---------- math keyboard ---------- */
-var KEYS=['7','8','9','4','5','6','1','2','3','0','\u2264','<','\u2265','>','(',')','[',']',',','\u222a','\u2212\u221e','\u221e','\u211d','x','y','or','all real numbers','\u2212','.','\u2423'];
+var KEYS=['0','1','2','3','4','5','6','7','8','9','\u2264','<','\u2265','>','\u211d','x','y','\u2212','.','\u2423'];
 var kbdDocWired=false;
 function closeKeyboards(){
   document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
 }
-function placeKbd(pop,input){
-  var r=input.getBoundingClientRect(), margin=8;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
   var vw=document.documentElement.clientWidth, vh=window.innerHeight;
-  pop.style.width=Math.min(r.width,420)+'px';
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
   var left=r.left, top=r.bottom+margin;
   if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
   if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
@@ -1138,6 +1284,7 @@ function wireKbd(inputId){
       var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
       input.value=input.value.slice(0,s)+token+input.value.slice(e2);
       var pos=s+token.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
     });
     grid.appendChild(b);
   });
@@ -1147,16 +1294,52 @@ function wireKbd(inputId){
     closeKeyboards();
     if(show){ pop.style.display='block'; placeKbd(pop,input); }
   });
-  if(!kbdDocWired){
-    kbdDocWired=true;
-    document.addEventListener('click',function(e){
-      document.querySelectorAll('.drKbdPop').forEach(function(p){
-        if(p.style.display==='block'&&!p.contains(e.target)&&!e.target.closest('.drKbdBtn')) p.style.display='none';
-      });
+  ensureKbdDocWiring();
+}
+
+/* ---------- floating keyboard: one button, types into whichever input last had focus ----------
+   Reusable across any SE with several small inline number/fraction boxes (A.2B and friends).
+   Tap the button to show it; it types into the last-focused box in its scope; tap the
+   button again to hide it. ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  SHARED_KEYS.forEach(function(k){
+    var b=document.createElement('button'); b.type='button'; b.className='drKey'; b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
     });
-    document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
-    window.addEventListener('resize',closeKeyboards);
+    grid.appendChild(b);
+  });
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT') sharedActiveInput=e.target;
+    });
   }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
 }
 
 /* ---------- CSV coach ---------- */
@@ -1190,14 +1373,13 @@ var COACH=(function(){
   var data=parseCSV(el?el.textContent.trim():'');
   var rows=data.map(function(r){
     return { tip_id:r.tip_id, priority:parseInt(r.priority||'999',10),
-      applies_to:(r.applies_to||'both'), mode:(r.mode||'both'),
+      applies_to:(r.applies_to||'both'),
       condition:r.condition, message:r.message };
   });
-  function find(condition,applies,mode){
+  function find(condition,applies){
     var pool=rows.filter(function(r){
       return r.condition===condition &&
-        (r.applies_to==='both'||r.applies_to===applies) &&
-        (r.mode==='both'||r.mode===mode);
+        (r.applies_to==='both'||r.applies_to===applies);
     });
     pool.sort(function(a,b){ return a.priority-b.priority; });
     return pool;
@@ -1213,10 +1395,9 @@ function runCoach(side,A,U,list){
   var varChar=(side==='domain'?'x':'y');
   var isHalf=(A.lo===-Infinity||A.hi===Infinity);
   var isAll=(A.lo===-Infinity&&A.hi===Infinity);
-  var modeNow=(LAB.mode==='training'?'training':'testing');
   var tips=[];
   function pushBy(condition,tokens){
-    COACH.find(condition,side,modeNow).forEach(function(r){
+    COACH.find(condition,side).forEach(function(r){
       tips.push({ id:r.tip_id, prio:r.priority, msg:COACH.fill(r.message,tokens||{}) });
     });
   }
@@ -1295,6 +1476,25 @@ function normNum(s){
   return parseFloat(s);
 }
 
+/* ---------- plain-language translation of whatever the student typed ---------- */
+function verbalize(A,axis){
+  if(!A) return null;
+  var v=axis;
+  if(A.lo===-Infinity&&A.hi===Infinity) return v+' can be any real number.';
+  if(A.hi===Infinity) return v+' is '+(A.loInc?'at least ':'greater than ')+fmtInt(roundT(A.lo))+'.';
+  if(A.lo===-Infinity) return v+' is '+(A.hiInc?'at most ':'less than ')+fmtInt(roundT(A.hi))+'.';
+  var loPhrase=(A.loInc?'at least ':'greater than ')+fmtInt(roundT(A.lo));
+  var hiPhrase=(A.hiInc?'at most ':'less than ')+fmtInt(roundT(A.hi));
+  return v+' is '+loPhrase+' and '+hiPhrase+'.';
+}
+function updateVerbal(inputId,verbalId,axis){
+  var input=document.getElementById(inputId), out=document.getElementById(verbalId);
+  if(!input||!out) return;
+  var msg=verbalize(parseField(input.value.trim()),axis);
+  if(msg){ out.textContent=msg; out.classList.add('ready'); }
+  else{ out.textContent='Type or drag '+(axis==='x'?'\u2194\ufe0f':'\u2195\ufe0f')+' to see what it means'; out.classList.remove('ready'); }
+}
+
 /* ---------- lab UI glue ---------- */
 function setChip(slotId,text,kind){
   var slot=document.getElementById(slotId); if(!slot) return;
@@ -1318,6 +1518,12 @@ function kbdSVG(){
     '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
     '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
 }
+function sharedKbdHTML(){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid"></div></div>'+
+  '</div>';
+}
 function labAnswerHTML(){
   return ''+
   '<div class="drWrap">'+
@@ -1329,19 +1535,10 @@ function labAnswerHTML(){
           '<button type="button" data-v="ray">Ray</button><button type="button" data-v="full">Full</button>'+
           '<button type="button" data-v="zigzag">Zig-zag</button>'+
         '</div>'+
-        '<div class="drTog" id="drMode" role="tablist" aria-label="Mode">'+
-          '<button type="button" data-v="training">Training</button><button type="button" data-v="testing">Testing</button>'+
-        '</div>'+
-      '</div>'+
-      '<div class="drCtl">'+
-        '<div class="drSeg" id="drNotation" role="tablist" aria-label="Notation">'+
-          '<button type="button" data-v="ineq">Inequalities</button><button type="button" data-v="interval">Interval</button>'+
-        '</div>'+
-        '<button type="button" class="drMini" id="drGridBtn" title="Toggle grid">\u2b1c Grid</button>'+
-        '<button type="button" class="drMini" id="drClearBtn" title="Clear inputs and bands">Clear</button>'+
       '</div>'+
       '<div class="drField" aria-label="Domain input group">'+
         '<div class="drStatus"><div class="drChipSlot" id="drDChip" aria-live="polite"></div></div>'+
+        '<div class="drVerbal" id="drDomVerbal">Type or drag \u2194\ufe0f to see what it means</div>'+
         '<div class="drIO"><div class="drInWrap">'+
           '<button type="button" class="drKbdBtn" data-for="drDom" title="Math keyboard" aria-label="Open keyboard for Domain">'+kbdSVG()+'</button>'+
           '<input id="drDom" class="drBig" placeholder="Domain (x)" aria-label="Domain" autocomplete="off"/>'+
@@ -1352,6 +1549,7 @@ function labAnswerHTML(){
       '</div>'+
       '<div class="drField" aria-label="Range input group">'+
         '<div class="drStatus"><div class="drChipSlot" id="drRChip" aria-live="polite"></div></div>'+
+        '<div class="drVerbal" id="drRngVerbal">Type or drag \u2195\ufe0f to see what it means</div>'+
         '<div class="drIO"><div class="drInWrap">'+
           '<button type="button" class="drKbdBtn" data-for="drRng" title="Math keyboard" aria-label="Open keyboard for Range">'+kbdSVG()+'</button>'+
           '<input id="drRng" class="drBig" placeholder="Range (y)" aria-label="Range" autocomplete="off"/>'+
@@ -1370,8 +1568,6 @@ function labInit(){
   applyBandShape(); bandDefaults();
 
   wireLabSeg('drLevel', LAB.level, function(v){ LAB.level=v; newProblem(); });
-  wireLabSeg('drNotation', LAB.notation, function(v){ LAB.notation=v; syncInputsFromBands(); });
-  wireLabSeg('drMode', LAB.mode, function(v){ LAB.mode=v; if(v==='training') syncInputsFromBands(); });
 
   var db=document.getElementById('drDomBand'), rb=document.getElementById('drRngBand');
   db.disabled=(domainBand.mode==='none'); rb.disabled=(rangeBand.mode==='none');
@@ -1379,23 +1575,14 @@ function labInit(){
     if(domainBand.mode==='none') return;
     domainBand.visible=!domainBand.visible;
     db.classList.toggle('active',domainBand.visible);
-    if(domainBand.visible&&LAB.mode==='training') syncInputsFromBands();
+    if(domainBand.visible){ syncInputsFromBands(); logHintUse(); }
     draw();
   });
   rb.addEventListener('click',function(){
     if(rangeBand.mode==='none') return;
     rangeBand.visible=!rangeBand.visible;
     rb.classList.toggle('active',rangeBand.visible);
-    if(rangeBand.visible&&LAB.mode==='training') syncInputsFromBands();
-    draw();
-  });
-  document.getElementById('drGridBtn').addEventListener('click',function(){ CFG.grid=!CFG.grid; draw(); });
-  document.getElementById('drClearBtn').addEventListener('click',function(){
-    document.getElementById('drDom').value=''; document.getElementById('drRng').value='';
-    domainBand.visible=false; rangeBand.visible=false;
-    db.classList.remove('active'); rb.classList.remove('active');
-    setChip('drDChip',null); setChip('drRChip',null);
-    document.getElementById('drCoach').style.display='none';
+    if(rangeBand.visible){ syncInputsFromBands(); logHintUse(); }
     draw();
   });
 
@@ -1405,6 +1592,10 @@ function labInit(){
   canvas.addEventListener('pointercancel',labUp);
 
   wireKbd('drDom'); wireKbd('drRng');
+
+  document.getElementById('drDom').addEventListener('input',function(){ updateVerbal('drDom','drDomVerbal','x'); });
+  document.getElementById('drRng').addEventListener('input',function(){ updateVerbal('drRng','drRngVerbal','y'); });
+  updateVerbal('drDom','drDomVerbal','x'); updateVerbal('drRng','drRngVerbal','y');
 
   if(labRO) labRO.disconnect();
   labRO=new ResizeObserver(function(){ if(ensureCanvasSize()) draw(); });
@@ -1435,7 +1626,7 @@ var SES=[
   gen:function(){ curG=newLabGraph(); return {se:'A.2A', graph:curG}; },
   prompt:function(){
     return 'Find the <b>domain</b> and <b>range</b> of the graphed function.'+
-      '<br><span style="font-size:15px;color:var(--muted)">Type the notation \u2014 or open the \u2194\ufe0f / \u2195\ufe0f helper bands, drag the handles into place, and in Training mode they write it for you. Tap a handle to switch \u25cf included / \u25cb excluded.</span>';
+      '<br><span style="font-size:15px;color:var(--muted)">Open the \u2194\ufe0f / \u2195\ufe0f helper bands and drag the handles into place \u2014 tap a handle to switch \u25cf included / \u25cb excluded, or tap the band line to flip direction. Or just type the notation directly in the boxes.</span>';
   },
   answerHTML:labAnswerHTML,
   init:labInit,
@@ -1449,7 +1640,7 @@ var SES=[
   hints:function(){ return [
     'Domain = the x-values the graph covers (left \u2194 right). Range = the y-values it reaches (bottom \u2195 top).',
     'Tap \u2194\ufe0f or \u2195\ufe0f to open a helper band, then drag its handles to hug the ends of the graph.',
-    'Closed dot \u25cf \u2192 included \u2192 \u2264, \u2265 or [ ]. Open dot \u25cb \u2192 not included \u2192 <, > or ( ).',
+    'Closed dot \u25cf \u2192 included \u2192 use \u2264 or \u2265. Open dot \u25cb \u2192 not included \u2192 use < or >.',
     'An arrow means the graph runs forever on that side \u2014 that direction is unbounded (\u221e).' ]; },
   steps:function(){
     reveal=true; draw();
@@ -1474,15 +1665,19 @@ var SES=[
     var g = p.given==='ps'
       ? 'A line has slope <span class="given">m = '+ratHTML(p.m)+'</span> and passes through <span class="given">'+ptStr(p.x1,p.y1)+'</span>.'
       : 'A line passes through <span class="given">'+ptStr(p.x1,p.y1)+'</span> and <span class="given">'+ptStr(p.x2,p.y2)+'</span>.';
-    var f = {si:'slope-intercept form', ps:'point-slope form', std:'standard form (Ax + By = C)'}[p.form];
+    var f = formLabel(p.form);
     return pick+g+'<br><span style="font-size:15px;color:var(--muted)">Write the equation of the line in <b>'+f+'</b>.</span>';
   },
-  init:function(){ wireLabSeg('bFormSeg', bForm, function(v){ bForm=v; newProblem(); }); },
+  init:function(){
+    wireLabSeg('bFormSeg', bForm, function(v){ bForm=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
   answerHTML:function(p){
-    if(p.form==='si') return '<div class="answer"><span>y =</span>'+inBox('bm')+'<span>x +</span>'+inBox('bb')+'</div>';
+    var kb=sharedKbdHTML();
+    if(p.form==='si') return '<div class="answer"><span>y =</span>'+inBox('bm')+'<span>x +</span>'+inBox('bb')+'</div>'+kb;
     if(p.form==='ps') return '<div class="answer"><span>y '+MIN+'</span>'+inBox('by1')+'<span>=</span>'+inBox('bm')+'<span>( x '+MIN+'</span>'+inBox('bx1')+'<span>)</span></div>'+
-      '<div class="lbl" style="font-size:13px;color:var(--muted);font-weight:800">Entries may be negative — y '+MIN+' ('+MIN+'4) is fine.</div>';
-    return '<div class="answer">'+inBox('bA')+'<span>x +</span>'+inBox('bB')+'<span>y =</span>'+inBox('bC')+'</div>';
+      '<div class="lbl" style="font-size:13px;color:var(--muted);font-weight:800">Entries may be negative \u2014 just type the minus sign, e.g. '+MIN+'4.</div>'+kb;
+    return '<div class="answer">'+inBox('bA')+'<span>x +</span>'+inBox('bB')+'<span>y =</span>'+inBox('bC')+'</div>'+kb;
   },
   read:function(p){
     function g(id){ return parseRat(document.getElementById(id).value); }
@@ -1500,22 +1695,52 @@ var SES=[
     return h; },
   steps:stepsB },
 
-{ id:'A.2C', letter:'C', short:'Table · Words', title:'Write Equations from Tables & Descriptions',
+{ id:'A.2C', letter:'C', short:'Graph · Table · Words', title:'Write Equations from Graphs, Tables & Descriptions',
   blurb:'Write linear equations in two variables given a table of values, a graph, and a verbal description.',
   gen:genC,
   prompt:function(p){
-    if(p.rep==='verbal') return p.text;
+    var repPick='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
+      '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FROM</span>'+
+      '<div class="drSeg" id="cRepSeg" role="tablist" aria-label="Representation">'+
+        '<button type="button" data-v="mix">Mixed</button>'+
+        '<button type="button" data-v="graph">Graph</button>'+
+        '<button type="button" data-v="verbal">Words</button>'+
+        '<button type="button" data-v="table">Table</button>'+
+      '</div></div>';
+    var formPick='<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px;opacity:.75">'+
+      '<span style="font-size:10.5px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FORM</span>'+
+      '<div class="drSeg" id="cFormSeg" role="tablist" aria-label="Answer form" style="transform:scale(.9);transform-origin:left center">'+
+        '<button type="button" data-v="mix">Mixed</button>'+
+        '<button type="button" data-v="std">Standard</button>'+
+        '<button type="button" data-v="si">Slope-intercept</button>'+
+        '<button type="button" data-v="ps">Point-slope</button>'+
+      '</div></div>';
+    var tail='<br><span style="font-size:15px;color:var(--muted)">Write the equation in <b>'+formLabel(p.form)+'</b>.</span>';
+    if(p.rep==='verbal') return repPick+formPick+p.text+tail;
+    if(p.rep==='graph') return repPick+formPick+graphSVG_C(p)+tail;
     var h='The table shows a linear function.<table class="ttab"><tr><th>x</th>';
     p.xs.forEach(function(x){h+='<td>'+fmtInt(x)+'</td>';}); h+='</tr><tr><th>y</th>';
     p.ys.forEach(function(y){h+='<td>'+fmtInt(y)+'</td>';});
-    return h+'</tr></table><br><span style="font-size:15px;color:var(--muted)">Write the equation in slope-intercept form.</span>';
+    return repPick+formPick+h+'</tr></table>'+tail;
   },
-  answerHTML:function(){ return '<div class="answer"><span>y =</span>'+inBox('cm')+'<span>x +</span>'+inBox('cb')+'</div>'; },
-  read:function(){ var m=parseRat(cm.value), b=parseRat(cb.value); return (m&&b)?{m:m,b:b}:null; },
-  check:function(p,a){ return req(a.m,p.m)&&req(a.b,p.b); },
-  hints:function(p){ return p.rep==='verbal'
-    ? ['The one-time / starting amount is b. The \u201cper\u201d amount is m.','Total = (rate)(x) + start.']
-    : ['m = change in y \u00f7 change in x between any two columns.','Find b by plugging one (x, y) pair into y = mx + b — or spot the y when x = 0.']; },
+  init:function(){
+    wireLabSeg('cRepSeg', cRep, function(v){ cRep=v; newProblem(); });
+    wireLabSeg('cFormSeg', cForm, function(v){ cForm=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
+  answerHTML:function(p){ return efAnswerHTML(p,'c'); },
+  read:function(p){ return efRead(p,'c'); },
+  check:checkLineForm,
+  hints:function(p){
+    var h=[];
+    if(p.rep==='verbal') h.push('The one-time / starting amount is b. The \u201cper\u201d amount is m.');
+    else if(p.rep==='graph') h.push('Find two clear lattice points the line passes through, then compute m = rise \u00f7 run.');
+    else h.push('m = change in y \u00f7 change in x between any two columns.');
+    if(p.form==='si') h.push('Plug m and the y-intercept (or any point) into y = mx + b.');
+    else if(p.form==='ps') h.push('Point-slope: y \u2212 y\u2081 = m(x \u2212 x\u2081). Any point on the line works \u2014 drop it in directly, no solving needed.');
+    else h.push('Get y = mx + b first, then move the x-term over and clear fractions to reach Ax + By = C.');
+    return h;
+  },
   steps:stepsC },
 
 { id:'A.2D', letter:'D', short:'Direct Variation', title:'Direct Variation',
@@ -1537,12 +1762,15 @@ var SES=[
     else ask=(p.dir==='findY')?('Find y when x = '+p.x2+'.'):('Find x when y = '+fmtInt(p.y2.n)+'.');
     return pick+setup+'<br><span style="font-size:15px;color:var(--muted)">'+ask+'</span>';
   },
-  init:function(){ wireLabSeg('dTypeSeg', dMode, function(v){ dMode=v; newProblem(); }); },
+  init:function(){
+    wireLabSeg('dTypeSeg', dMode, function(v){ dMode=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
   answerHTML:function(p){
-    if(p.qtype==='eq') return '<div class="answer"><span>y =</span>'+inBox('dk')+'<span>x</span></div>';
-    if(p.qtype==='cv') return '<div class="answer"><span>k =</span>'+inBox('dk')+'</div>';
-    if(p.dir==='findY') return '<div class="answer"><span>y =</span>'+inBox('dv')+'</div>';
-    return '<div class="answer"><span>x =</span>'+inBox('dv')+'</div>';
+    if(p.qtype==='eq') return '<div class="answer"><span>y =</span>'+inBox('dk')+'<span>x</span></div>'+sharedKbdHTML();
+    if(p.qtype==='cv') return '<div class="answer"><span>k =</span>'+inBox('dk')+'</div>'+sharedKbdHTML();
+    if(p.dir==='findY') return '<div class="answer"><span>y =</span>'+inBox('dv')+'</div>'+sharedKbdHTML();
+    return '<div class="answer"><span>x =</span>'+inBox('dv')+'</div>'+sharedKbdHTML();
   },
   read:function(p){
     if(p.qtype==='eq'||p.qtype==='cv'){ var k=parseRat(document.getElementById('dk').value); return k?{k:k}:null; }
@@ -1565,10 +1793,13 @@ var SES=[
   gen:function(){ return genEF(false); },
   prompt:function(p){
     var g='Write the equation of the line that passes through <span class="given">'+ptStr(p.px,p.py)+'</span> and is <b>parallel</b> to <span class="given">'+siHTML(p.m0,p.b0)+'</span>.';
-    var f={si:'slope-intercept form', ps:'point-slope form', std:'standard form (Ax + By = C)'}[p.form];
+    var f=formLabel(p.form);
     return efFormSeg('eFormSeg')+g+'<br><span style="font-size:15px;color:var(--muted)">Answer in <b>'+f+'</b>.</span>';
   },
-  init:function(){ wireLabSeg('eFormSeg', eForm, function(v){ eForm=v; newProblem(); }); },
+  init:function(){
+    wireLabSeg('eFormSeg', eForm, function(v){ eForm=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
   answerHTML:function(p){ return efAnswerHTML(p,'e'); },
   read:function(p){ return efRead(p,'e'); },
   check:checkLineForm,
@@ -1580,10 +1811,13 @@ var SES=[
   gen:function(){ return genEF(true); },
   prompt:function(p){
     var g='Write the equation of the line that passes through <span class="given">'+ptStr(p.px,p.py)+'</span> and is <b>perpendicular</b> to <span class="given">'+siHTML(p.m0,p.b0)+'</span>.';
-    var f={si:'slope-intercept form', ps:'point-slope form', std:'standard form (Ax + By = C)'}[p.form];
+    var f=formLabel(p.form);
     return efFormSeg('fFormSeg')+g+'<br><span style="font-size:15px;color:var(--muted)">Answer in <b>'+f+'</b>.</span>';
   },
-  init:function(){ wireLabSeg('fFormSeg', fForm, function(v){ fForm=v; newProblem(); }); },
+  init:function(){
+    wireLabSeg('fFormSeg', fForm, function(v){ fForm=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
   answerHTML:function(p){ return efAnswerHTML(p,'f'); },
   read:function(p){ return efRead(p,'f'); },
   check:checkLineForm,
@@ -1595,17 +1829,31 @@ var SES=[
   gen:genG,
   prompt:function(p){ return 'Write the equation of the line through <span class="given">'+ptStr(p.a,p.b)+'</span> that is <b>'+modeText(p.mode)+'</b>.'; },
   answerHTML:function(){
-    return '<div class="answer"><select class="sel" id="gax"><option value="">?</option><option value="y">y =</option><option value="x">x =</option></select>'+inBox('gval')+'</div>'+
-      '<div class="radio"><span style="font-weight:900">The slope of this line is</span>'+
-      '<label><input type="radio" name="gslope" value="zero"> zero</label>'+
-      '<label><input type="radio" name="gslope" value="undefined"> undefined</label></div>';
+    return '<div class="answer"><select class="sel" id="gax"><option value="">?</option><option value="y">y =</option><option value="x">x =</option></select>'+inBox('gval')+'</div>'+sharedKbdHTML()+
+      '<div class="qBlock">'+
+        '<div class="qLabel">Second question</div>'+
+        '<div class="qText">What is the slope of this line?</div>'+
+        '<div class="mc" id="gSlopeChoices" role="radiogroup" aria-label="Slope of the line">'+
+          '<button type="button" data-v="zero">Zero</button>'+
+          '<button type="button" data-v="undefined">Undefined</button>'+
+        '</div>'+
+      '</div>';
+  },
+  init:function(){
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    var group=document.getElementById('gSlopeChoices');
+    group.addEventListener('click',function(e){
+      var b=e.target.closest('button'); if(!b) return;
+      Array.prototype.forEach.call(group.children,function(x){ x.classList.toggle('sel', x===b); });
+    });
   },
   read:function(){
     var ax=gax.value, v=parseRat(gval.value);
-    var r=document.querySelector('input[name="gslope"]:checked');
-    return (ax && v && r) ? {axis:ax, val:v, slope:r.value} : null;
+    var sel=document.querySelector('#gSlopeChoices button.sel');
+    return (ax && v && sel) ? {axis:ax, val:v, slope:sel.dataset.v} : null;
   },
   check:function(p,a){ return a.axis===p.axis && req(a.val,rint(p.val)) && a.slope===p.slope; },
+  emptyMsg:'Fill in the equation, and don\u2019t forget to pick Zero or Undefined below.',
   hints:function(){ return ['Parallel to the x-axis (or perpendicular to the y-axis) → horizontal → y = a number.',
     'Horizontal lines have slope zero. Vertical lines have undefined slope.',
     'Horizontal → use the point\u2019s y-value. Vertical → use the point\u2019s x-value.']; },
@@ -1615,20 +1863,35 @@ var SES=[
   blurb:'Write linear inequalities in two variables given a table of values, a graph, and a verbal description.',
   gen:genH,
   prompt:function(p){
-    var pick='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
-      '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FORM</span>'+
-      '<div class="drSeg" id="hFormSeg" role="tablist" aria-label="Inequality form">'+
+    var repPick='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
+      '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FROM</span>'+
+      '<div class="drSeg" id="hRepSeg" role="tablist" aria-label="Representation">'+
+        '<button type="button" data-v="mix">Mixed</button>'+
+        '<button type="button" data-v="graph">Graph</button>'+
+        '<button type="button" data-v="table">Table</button>'+
+        '<button type="button" data-v="verbal">Words</button>'+
+      '</div></div>';
+    var formPick='<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px;opacity:.75">'+
+      '<span style="font-size:10.5px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FORM</span>'+
+      '<div class="drSeg" id="hFormSeg" role="tablist" aria-label="Answer form" style="transform:scale(.9);transform-origin:left center">'+
         '<button type="button" data-v="mix">Mixed</button>'+
         '<button type="button" data-v="std">Standard</button>'+
         '<button type="button" data-v="si">Slope-intercept</button>'+
       '</div></div>';
-    return pick+p.text;
+    if(p.rep==='verbal') return repPick+formPick+p.text;
+    var body=(p.rep==='graph')?graphSVG_H(p):tableHTML_H(p);
+    return repPick+formPick+body+'<br><span style="font-size:15px;color:var(--muted)">Write the inequality in <b>'+hFormLabel(p.form)+'</b>.</span>';
   },
-  init:function(){ wireLabSeg('hFormSeg', hMode, function(v){ hMode=v; newProblem(); }); },
+  init:function(){
+    wireLabSeg('hRepSeg', hRep, function(v){ hRep=v; newProblem(); });
+    wireLabSeg('hFormSeg', hMode, function(v){ hMode=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
   answerHTML:function(p){
     var op='<select class="sel" id="hop"><option value="">?</option><option value="le">\u2264</option><option value="ge">\u2265</option><option value="lt">&lt;</option><option value="gt">&gt;</option></select>';
-    if(p.form==='si') return '<div class="answer"><span>y</span>'+op+inBox('hm')+'<span>x +</span>'+inBox('hb')+'</div>';
-    return '<div class="answer">'+inBox('hA')+'<span>x +</span>'+inBox('hB')+'<span>y</span>'+op+inBox('hC','wide')+'</div>';
+    var kb=sharedKbdHTML();
+    if(p.form==='si') return '<div class="answer"><span>y</span>'+op+inBox('hm')+'<span>x +</span>'+inBox('hb')+'</div>'+kb;
+    return '<div class="answer">'+inBox('hA')+'<span>x +</span>'+inBox('hB')+'<span>y</span>'+op+inBox('hC','wide')+'</div>'+kb;
   },
   read:function(p){
     var op=document.getElementById('hop').value;
@@ -1637,59 +1900,85 @@ var SES=[
     var A=parseRat(document.getElementById('hA').value), B=parseRat(document.getElementById('hB').value), C=parseRat(document.getElementById('hC').value);
     return (A&&B&&C&&op)?{A:A,B:B,C:C,op:op}:null;
   },
-  check:function(p,a){ return p.form==='si'?checkH_si(p,a):checkH(p,a); },
-  hints:function(p){
-    if(p.form==='si') return ['Isolate y \u2014 it should read y (symbol) mx + b.','The per-x rate is m; the starting value is b.',
-      '\u201cAt least / more than\u201d → \u2265 or >. \u201cAt most / no more than / under\u201d → \u2264 or <.'];
-    return ['Build the total first: (value of one x)\u00b7x + (value of one y)\u00b7y.',
-      '\u201cAt least\u201d → \u2265. \u201cAt most / no more than\u201d → \u2264. \u201cMore than\u201d → >. \u201cLess than\u201d → <.'];
+  check:function(p,a){
+    if(p.rep==='verbal') return p.form==='si'?checkH_si(p,a):checkH(p,a);
+    return p.form==='si'?checkH_siLine(p,a):checkH_fromLine(p,a);
   },
-  steps:function(p){ return p.form==='si'?stepsH_si(p):stepsH(p); } },
+  hints:function(p){
+    if(p.rep==='verbal'){
+      if(p.form==='si') return ['Isolate y \u2014 it should read y (symbol) mx + b.','The per-x rate is m; the starting value is b.',
+        '\u201cAt least / more than\u201d → \u2265 or >. \u201cAt most / no more than / under\u201d → \u2264 or <.'];
+      return ['Build the total first: (value of one x)\u00b7x + (value of one y)\u00b7y.',
+        '\u201cAt least\u201d → \u2265. \u201cAt most / no more than\u201d → \u2264. \u201cMore than\u201d → >. \u201cLess than\u201d → <.'];
+    }
+    if(p.rep==='graph') return ['A solid line means \u2264 or \u2265; a dashed line means < or >.',
+      'Shading above the line means \u2265 or >; shading below means \u2264 or <.',
+      'Read the slope and y-intercept straight off the line, just like writing its equation.'];
+    return ['Use the table to find the boundary line\u2019s equation, just like writing y = mx + b.',
+      'Plug the given point in \u2014 whichever direction makes it a true statement is your inequality symbol.',
+      'Solid boundary → \u2264 or \u2265. Dashed boundary → < or >.'];
+  },
+  steps:function(p){
+    if(p.rep==='verbal') return p.form==='si'?stepsH_si(p):stepsH(p);
+    if(p.rep==='graph') return p.form==='si'?stepsH_line_si(p):stepsH_line_std(p);
+    return p.form==='si'?stepsH_table_si(p):stepsH_table_std(p);
+  } },
 
 { id:'A.2I', letter:'I', short:'Systems', title:'Write Systems of Equations',
   blurb:'Write systems of two linear equations given a table of values, a graph, and a verbal description.',
   gen:genI,
   prompt:function(p){
-    var pick='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+    var repPick='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
       '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FROM</span>'+
-      '<div class="drSeg" id="iFormSeg" role="tablist" aria-label="Representation">'+
+      '<div class="drSeg" id="iRepSeg" role="tablist" aria-label="Representation">'+
         '<button type="button" data-v="mix">Mixed</button>'+
         '<button type="button" data-v="verbal">Words</button>'+
         '<button type="button" data-v="table">Table</button>'+
         '<button type="button" data-v="graph">Graph</button>'+
       '</div></div>';
+    var formPick='<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px;opacity:.75">'+
+      '<span style="font-size:10.5px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FORM</span>'+
+      '<div class="drSeg" id="iFormSeg" role="tablist" aria-label="Answer form" style="transform:scale(.9);transform-origin:left center">'+
+        '<button type="button" data-v="mix">Mixed</button>'+
+        '<button type="button" data-v="std">Standard</button>'+
+        '<button type="button" data-v="si">Slope-intercept</button>'+
+      '</div></div>';
     var body = p.rep==='table' ? tableHTML_I(p) : p.rep==='graph' ? graphSVG_I(p) : p.text;
-    return pick+body;
+    return repPick+formPick+body;
   },
-  init:function(){ wireLabSeg('iFormSeg', iMode, function(v){ iMode=v; newProblem(); }); },
+  init:function(){
+    wireLabSeg('iRepSeg', iRep, function(v){ iRep=v; newProblem(); });
+    wireLabSeg('iFormSeg', iForm, function(v){ iForm=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
   answerHTML:function(p){
-    if(p.rep==='table'||p.rep==='graph'){
-      function lrow(pre){ return '<div class="sysRow"><span>y =</span>'+inBox(pre+'m')+'<span>x +</span>'+inBox(pre+'b')+'</div>'; }
-      return '<div class="answer" style="display:block">'+lrow('i1')+lrow('i2')+'</div>';
-    }
-    function row(pre){ return '<div class="sysRow">'+inBox(pre+'A')+'<span>x +</span>'+inBox(pre+'B')+'<span>y =</span>'+inBox(pre+'C','wide')+'</div>'; }
-    return '<div class="answer" style="display:block">'+row('i1')+row('i2')+'</div>';
+    function lrow(pre){ return '<div class="sysRow"><span>y =</span>'+inBox(pre+'m')+'<span>x +</span>'+inBox(pre+'b')+'</div>'; }
+    function srow(pre){ return '<div class="sysRow">'+inBox(pre+'A')+'<span>x +</span>'+inBox(pre+'B')+'<span>y =</span>'+inBox(pre+'C','wide')+'</div>'; }
+    var row1=(p.rowForms[0]==='si')?lrow('i1'):srow('i1'), row2=(p.rowForms[1]==='si')?lrow('i2'):srow('i2');
+    var note=(p.rowForms[0]!==p.rowForms[1]) ? '<div class="lbl" style="font-size:13px;color:var(--muted);font-weight:800;margin-top:2px">One equation in standard form, one in slope-intercept \u2014 either equation can go in either box.</div>' : '';
+    return '<div class="answer" style="display:block">'+row1+row2+'</div>'+note+sharedKbdHTML();
   },
   read:function(p){
     function g(id){ return parseRat(document.getElementById(id).value); }
-    if(p.rep==='table'||p.rep==='graph'){
-      var a1={m:g('i1m'),b:g('i1b')}, a2={m:g('i2m'),b:g('i2b')};
-      if(!a1.m||!a1.b||!a2.m||!a2.b) return null;
-      return [a1,a2];
+    function readRow(pre, form){
+      if(form==='si'){ var m=g(pre+'m'), b=g(pre+'b'); return (m&&b)?{m:m,b:b}:null; }
+      var A=g(pre+'A'), B=g(pre+'B'), C=g(pre+'C'); return (A&&B&&C)?{A:A,B:B,C:C}:null;
     }
-    var r1={A:g('i1A'),B:g('i1B'),C:g('i1C')}, r2={A:g('i2A'),B:g('i2B'),C:g('i2C')};
-    var all=[r1.A,r1.B,r1.C,r2.A,r2.B,r2.C];
-    for(var i=0;i<all.length;i++) if(!all[i]) return null;
-    return [r1,r2];
+    var a1=readRow('i1',p.rowForms[0]), a2=readRow('i2',p.rowForms[1]);
+    return (a1&&a2)?[a1,a2]:null;
   },
-  check:function(p,ans){ return (p.rep==='table'||p.rep==='graph')?checkI_lines(p,ans):checkI(p,ans); },
+  check:function(p,ans){ return checkI_pair(p,ans); },
   hints:function(p){
-    if(p.rep==='table') return ['Each y-row is its own line. The change in y for each step in x is the slope.','The y-value when x = 0 is the y-intercept, b.'];
-    if(p.rep==='graph') return ['Read each line separately: slope = rise \u00f7 run, and note where it crosses the y-axis.','Write each line as y = mx + b.'];
-    return ['Equation 1 counts objects: x + y = (total number).',
+    var base;
+    if(p.rep==='table') base=['Each table is its own line. The change in y for each step in x is the slope.','The y-value when x = 0 is the y-intercept, b.'];
+    else if(p.rep==='graph') base=['Read each line separately: slope = rise \u00f7 run, and note where it crosses the y-axis.','Write each line as y = mx + b first, no matter which form you end up needing.'];
+    else base=['Equation 1 counts objects: x + y = (total number).',
       'Equation 2 counts value: (value of x)\u00b7x + (value of y)\u00b7y = (total value).'];
+    if(p.rowForms[0]!==p.rowForms[1]) base.push('One box wants standard form, the other slope-intercept \u2014 write each independently, in whichever form its box asks for.');
+    else if(p.rowForms[0]==='std') base.push('Need standard form? Start from y = mx + b, then move the x-term over: \u2212mx + y = b, and clear fractions.');
+    return base;
   },
-  steps:function(p){ return (p.rep==='table'||p.rep==='graph')?stepsI_lines(p):stepsI(p); } }
+  steps:function(p){ return (p.rep==='verbal') ? stepsI_verbal(p) : stepsI_lines(p); } }
 ];
 
 /* =============== app wiring =============== */
@@ -1722,7 +2011,7 @@ function newProblem(){
   $('#seTag').textContent='TEKS '+se.id;
   $('#prompt').innerHTML=se.prompt(current.p);
   $('#answerArea').innerHTML=se.answerHTML(current.p);
-  $('#fb').textContent=''; $('#fb').className='fb';
+  $('#fbMsg').textContent=''; $('#fbMsg').className='fb';
   $('#hintBox').className='note'; $('#hintBox').innerHTML='';
   $('#stepsBox').className='stepsBox'; $('#stepsBox').innerHTML='';
   $('#checkBtn').disabled=false;
@@ -1734,8 +2023,8 @@ function onCheck(){
   if(current.done) return;
   var se=current.se, ans=se.read(current.p);
   if(!ans){
-    $('#fb').className='fb bad';
-    $('#fb').textContent=se.emptyMsg||'Fill in every box — fractions like 3/4 are fine.';
+    $('#fbMsg').className='fb bad';
+    $('#fbMsg').textContent=se.emptyMsg||'Fill in every box — fractions like 3/4 are fine.';
     return;
   }
   var ok=se.check(current.p, ans);
@@ -1754,11 +2043,14 @@ function onCheck(){
     $('#sesScore').textContent=session.c+' / '+session.a;
     if(window.Portal && Portal.record) Portal.record(se.id, ok);
   }
-  $('#fb').className='fb '+(ok?'ok':'bad');
-  $('#fb').textContent= ok?'Correct \u2713'
+  $('#fbMsg').className='fb '+(ok?'ok':'bad');
+  $('#fbMsg').textContent= ok?'Correct \u2713'
     : (se.allowRecheck?'Not quite \u2717 — read the coach tips, adjust, and check again.'
                       :'Not quite \u2717 — open the steps to see the path.');
   renderRail();
+}
+function logHintUse(){
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
 }
 function onHint(){
   var hints=current.se.hints(current.p);
@@ -1766,12 +2058,12 @@ function onHint(){
   current.hintIdx++;
   var box=$('#hintBox'); box.classList.add('show');
   box.innerHTML += (box.innerHTML?'<br>':'')+'\u2022 '+h;
-  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+  logHintUse();
 }
 function onSteps(){
   var box=$('#stepsBox'); box.classList.add('show');
   box.innerHTML=current.se.steps(current.p);
-  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+  logHintUse();
 }
 $('#checkBtn').addEventListener('click', onCheck);
 $('#hintBtn').addEventListener('click', onHint);
