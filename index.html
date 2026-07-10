@@ -179,6 +179,11 @@
   .moreItem .nm{font-weight:900; font-size:15px}
   .moreItem .ds{color:var(--muted); font-weight:700; font-size:12.5px; margin-top:2px}
   .moreItem .go{flex:none; font-weight:900; color:var(--blue); font-size:13px}
+  .moreSectionHead{
+    font-size:12px; font-weight:900; letter-spacing:.8px; text-transform:uppercase;
+    color:var(--muted); padding:10px 2px 2px; border-top:1px dashed var(--ui); margin-top:4px;
+  }
+  .moreSectionHead:first-child{border-top:0; margin-top:0; padding-top:0}
 
   /* ---------- welcome / choose-mode modal ---------- */
   .chooseCard{width:min(520px,96vw)}
@@ -356,10 +361,19 @@
      modal. These do NOT call Portal.record()/hint() — they're independent
      pages, so nothing here syncs or shows up in the report.
      Drop each app's HTML file into the "more/" folder next to index.html,
-     then add one line below. `file` is the path relative to index.html. */
+     then add one line below. `file` is the path relative to index.html.
+     `group` is 'skill' or 'drill' — controls which section it lists under. */
   var LEGACY_APPS = [
-    { name: 'App name here',   desc: 'One line describing what it covers.', file: 'more/app1.html' },
-    { name: 'App name here 2', desc: 'One line describing what it covers.', file: 'more/app2.html' },
+    { name: 'Attributes Trainer',   desc: 'Attributes of Linear, Quadratic & Exponential Functions.', file: 'more/attributes.html' group: 'skill' },
+    { name: 'Slope Trainer', desc: 'Find Slope (m) & Y-Intercept (b)', file: 'more/slope.html' group: 'skill' },
+    { name: 'Domain & Range Lab', desc: 'Interactive Helper to learn Domain and Range.', file: 'more/domain-range.html' group: 'skill' },
+    { name: 'MathText', desc: 'Solve Various Word Problems w/Steps Explained', file: 'more/word-problems.html' group: 'skill' },
+    { name: 'Solver', desc: 'Solve Equations & Inequalities w/Steps Explained', file: 'more/equations-inequalities.html' group: 'skill' },
+    { name: 'Polynomial Tools', desc: 'Factoring/FOIL & Laws Of Exponents', file: 'more/polynomials.html' group: 'skill' },
+    { name: 'PlotThePoint', desc: 'Find Coordinates on the Graph', file: 'more/plot-point.html' group: 'drill' },
+    { name: 'Function or Not?', desc: 'Is the Graph, Table, or Points a Function', file: 'more/function-or-not.html' group: 'drill' },
+    { name: 'Parallel or Perpendicular', desc: 'Compare Two Slopes to Identify Parallel/Perpendicular/Neither', file: 'more/parallel-perpendicular.html' group: 'drill' },
+    { name: 'Standard to Slope-Intercept', desc: 'Find Slope (m) & Y-Intercept (b)', file: 'more/function-or-not.html' group: 'drill' },
     // Add the rest of your ~10 apps here, same shape.
   ];
 
@@ -698,6 +712,18 @@
   $('#csvBtn').addEventListener('click', downloadStudentCSV);
 
   /* ---------- more practice (legacy apps) ---------- */
+  var GROUP_LABELS = { skill: 'Skills', drill: 'Drills' };
+  var GROUP_ORDER = ['skill', 'drill'];
+
+  function itemHTML(app, i){
+    return '<li><a class="moreItem" href="'+esc(app.file)+'">'+
+      '<span class="glyph">'+(i+1)+'</span>'+
+      '<span class="info"><span class="nm">'+esc(app.name)+'</span>'+
+        '<span class="ds">'+esc(app.desc||'')+'</span></span>'+
+      '<span class="go">Open →</span>'+
+    '</a></li>';
+  }
+
   function renderMore(){
     var host = $('#moreList');
     if (!LEGACY_APPS.length){
@@ -705,14 +731,21 @@
         'No apps listed yet — add entries to LEGACY_APPS in index.html.</li>';
       return;
     }
-    host.innerHTML = LEGACY_APPS.map(function(app, i){
-      return '<li><a class="moreItem" href="'+esc(app.file)+'">'+
-        '<span class="glyph">'+(i+1)+'</span>'+
-        '<span class="info"><span class="nm">'+esc(app.name)+'</span>'+
-          '<span class="ds">'+esc(app.desc||'')+'</span></span>'+
-        '<span class="go">Open →</span>'+
-      '</a></li>';
-    }).join('');
+    var html = '';
+    var counter = 0;
+    GROUP_ORDER.forEach(function(key){
+      var apps = LEGACY_APPS.filter(function(a){ return a.group === key; });
+      if (!apps.length) return;
+      html += '<li class="moreSectionHead">'+esc(GROUP_LABELS[key] || key)+'</li>';
+      html += apps.map(function(app){ counter++; return itemHTML(app, counter - 1); }).join('');
+    });
+    // Anything with an unrecognized/missing group still shows, under "Other".
+    var other = LEGACY_APPS.filter(function(a){ return GROUP_ORDER.indexOf(a.group) === -1; });
+    if (other.length){
+      html += '<li class="moreSectionHead">Other</li>';
+      html += other.map(function(app){ counter++; return itemHTML(app, counter - 1); }).join('');
+    }
+    host.innerHTML = html;
   }
   $('#moreBtn').addEventListener('click', function(){
     renderMore();
