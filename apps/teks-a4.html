@@ -79,6 +79,14 @@
   table.ttab{border-collapse:collapse; margin-top:8px; font-size:clamp(15px,2.2vw,19px)}
   .ttab th,.ttab td{border:2px solid #d9e2ff; padding:6px 14px; text-align:center; font-weight:900; min-width:44px}
   .ttab th{background:#f1f6ff; color:#133a9a}
+  table.ttab.sm{font-size:12.5px; margin-top:0}
+  .ttab.sm th,.ttab.sm td{padding:3px 9px; min-width:0; border-width:1.5px}
+
+  /* graph + table side-by-side; wraps to stacked automatically when the row runs out of width */
+  .graphRow{display:flex; align-items:flex-start; gap:14px; flex-wrap:wrap; margin-top:8px}
+  .graphRow .grid{margin-top:0; flex:0 0 auto}
+  .tblCol{flex:0 0 auto; max-width:100%; overflow-x:auto}
+  .tblCol .lbl{margin:0 0 5px; font-size:11.5px; max-width:180px; line-height:1.3}
 
   /* coordinate grid */
   .grid{max-width:100%; height:auto; border:1px solid #e7edff; border-radius:12px; background:#fff;
@@ -262,8 +270,8 @@ function pearson(xs,ys){
   return den===0 ? 0 : num/den;
 }
 /* teaching thresholds (also shown in the steps):
-     strong |r| >= 0.8 · moderate 0.5 <= |r| < 0.8 · weak 0 < |r| < 0.5 · none r ~ 0 */
-function strengthOf(r){ var a=Math.abs(r); return a>=0.8?'strong':a>=0.5?'moderate':a>=0.15?'weak':'none'; }
+     strong |r| >= 0.7 · moderate 0.3 < |r| < 0.7 · weak 0.15 <= |r| <= 0.3 · none |r| < 0.15 */
+function strengthOf(r){ var a=Math.abs(r); return a>=0.7?'strong':a>0.3?'moderate':a>=0.15?'weak':'none'; }
 function directionOf(r){ return Math.abs(r)<0.15 ? 'none' : (r>0?'positive':'negative'); }
 
 /* First-quadrant scatter with scaled, labeled axes; optional best-fit line. */
@@ -297,6 +305,19 @@ function scatter(o){
   if(o.xlabel) s+='<text x="'+(padL+plotW)+'" y="'+(padT+plotH+30)+'" font-size="10.5" font-weight="900" fill="#5b6f96" text-anchor="end">'+o.xlabel+'</text>';
   if(o.ylabel) s+='<text x="'+(padL-2)+'" y="11" font-size="10.5" font-weight="900" fill="#5b6f96">'+o.ylabel+'</text>';
   return s+'</svg>';
+}
+
+/* Exact table of values behind a scatterplot's dots — the dots on the SVG are for
+   visual shape only and aren't precise enough to read off; this is what students should
+   actually type into Desmos (or anywhere else) to compute r themselves. Compact + wrapped
+   in .tblCol so it can sit beside the graph in a .graphRow flex container. */
+function dataTable(xs, ys, xlabel, ylabel){
+  var h='<div class="tblCol"><div class="lbl">Exact values \u2014 recreate in Desmos to find r:</div>'+
+    '<table class="ttab sm"><tr><th>'+xlabel+'</th><th>'+ylabel+'</th></tr>';
+  for(var i=0;i<xs.length;i++){
+    h+='<tr><td>'+xs[i]+'</td><td>'+ys[i]+'</td></tr>';
+  }
+  return h+'</table></div>';
 }
 
 /* build a cloud of points around y = m x + b inside [0,xmax] x [0,ymax] */
@@ -333,8 +354,8 @@ function genRandomScatter(){
 }
 /* generate data whose r sits safely INSIDE a requested strength band, with a chosen sign */
 function genBandScatter(sign, band){
-  var target = band==='strong'?[0.85,0.99] : band==='moderate'?[0.58,0.72] : [0.20,0.40];
-  var ampRange = band==='strong'?[1,3] : band==='moderate'?[4,8] : [9,16];
+  var target = band==='strong'?[0.78,0.95] : band==='moderate'?[0.42,0.60] : [0.16,0.28];
+  var ampRange = band==='strong'?[2,6] : band==='moderate'?[14,24] : [30,45];
   for(var tries=0; tries<600; tries++){
     var m0=sign*rc([2,3]);
     var b0=ri(10,20), amp=ri(ampRange[0],ampRange[1]);
@@ -354,7 +375,7 @@ function genA(){
   var mode = aMode==='mix' ? rc(['match','describe','interpret']) : aMode;
   var ctx=rc(A_CTX);
   if(mode==='interpret'){
-    var val=rc([0.95,0.88,0.82,0.62,0.55,0.48,0.30,0.24,0.35,0.05,-0.92,-0.85,-0.80,-0.60,-0.52,-0.28,-0.33,-0.06]);
+    var val=rc([0.95,0.88,0.82,0.62,0.55,0.48,0.30,0.24,0.22,0.05,-0.92,-0.85,-0.80,-0.60,-0.52,-0.28,-0.22,-0.06]);
     return {se:'A.4A', mode:'interpret', ctx:ctx, r:val,
       dir:directionOf(val), str:strengthOf(val)};
   }
@@ -391,10 +412,12 @@ function promptA(p){
   var g=scatter({xmax:p.data.xmax, ymax:p.data.ymax,
     points:p.data.xs.map(function(x,i){ return {x:x, y:p.data.ys[i]}; }),
     xlabel:p.ctx.xl, ylabel:p.ctx.yl, xstep:3, ystep:8});
+  var tbl=dataTable(p.data.xs, p.data.ys, p.ctx.xl, p.ctx.yl);
+  var gt='<div class="graphRow">'+g+tbl+'</div>';
   if(p.mode==='describe'){
-    return segh+'The scatterplot shows <b>'+p.ctx.x+'</b> vs. <b>'+p.ctx.y+'</b>. Describe the <b>direction</b> and <b>strength</b> of the linear association.<br>'+g;
+    return segh+'The scatterplot shows <b>'+p.ctx.x+'</b> vs. <b>'+p.ctx.y+'</b>. Describe the <b>direction</b> and <b>strength</b> of the linear association.<br>'+gt;
   }
-  return segh+'The scatterplot shows <b>'+p.ctx.x+'</b> vs. <b>'+p.ctx.y+'</b>. Which value of the correlation coefficient <b>r</b> best matches the data?<br>'+g;
+  return segh+'The scatterplot shows <b>'+p.ctx.x+'</b> vs. <b>'+p.ctx.y+'</b>. Which value of the correlation coefficient <b>r</b> best matches the data?<br>'+gt;
 }
 var aSel=null;
 function answerA(p){
@@ -445,17 +468,18 @@ function hintsA(p){
     'Then tightness: points hugging a straight line \u2192 |r| near 1; a shapeless blob \u2192 |r| near 0.'];
   if(p.mode==='interpret') return [
     'The sign of r is the direction: + rises, \u2212 falls.',
-    'The size of |r| is the strength: \u22650.8 strong, 0.5\u20130.8 moderate, below 0.5 weak.'];
+    'The size of |r| is the strength: \u22650.7 strong, 0.3\u20130.7 moderate, \u22640.3 weak.'];
   return [
     'Direction: do the points trend up (positive) or down (negative) as you read left to right?',
     'Strength: how close are the points to a single straight line? Tight = strong, scattered = weak.'];
 }
 function stepsA(p){
-  var thr='<span class="st">Strength scale: |r| \u2265 0.8 strong \u00b7 0.5 \u2264 |r| < 0.8 moderate \u00b7 |r| < 0.5 weak.</span>';
+  var thr='<span class="st">Strength scale: |r| \u2265 0.7 strong \u00b7 0.3 < |r| < 0.7 moderate \u00b7 |r| \u2264 0.3 weak.</span>';
   if(p.mode==='match'){
+    var mstr=strengthOf(p.r);
     return '<span class="st">1. The line trends '+(p.r>=0?'upward \u2192 positive':'downward \u2192 negative')+', so r is '+(p.r>=0?'positive':'negative')+'.</span>'+
-      '<span class="st">2. The points are '+(Math.abs(p.r)>=0.8?'tightly packed':Math.abs(p.r)>=0.5?'loosely grouped':'widely scattered')+' \u2192 |r| is '+(Math.abs(p.r)>=0.8?'near 1':Math.abs(p.r)>=0.5?'moderate':'small')+'.</span>'+
-      '<span class="st final">3. Best match: r \u2248 '+rStr(p.r)+' ('+directionOf(p.r)+', '+strengthOf(p.r)+').</span>'+thr;
+      '<span class="st">2. The points are '+(mstr==='strong'?'tightly packed':mstr==='moderate'?'loosely grouped':'widely scattered')+' \u2192 |r| is '+(mstr==='strong'?'near 1':mstr==='moderate'?'moderate':'small')+'.</span>'+
+      '<span class="st final">3. Best match: r \u2248 '+rStr(p.r)+' ('+directionOf(p.r)+', '+mstr+').</span>'+thr;
   }
   if(p.mode==='interpret'){
     return '<span class="st">1. r = '+rStr(p.r)+' is '+(p.r>=0?'positive':'negative')+' \u2192 '+(p.dir==='none'?'essentially no direction':p.dir)+' association.</span>'+
