@@ -102,8 +102,25 @@
   .in:focus-visible, .sel:focus-visible, button:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
   .sel{height:52px; border:2px solid var(--ui); border-radius:12px; font-weight:900; font-size:17px;
     font-family:inherit; color:var(--ink); background:#fff; padding:0 10px}
+  .sel:disabled{opacity:.45; background:#f2f4f9; cursor:not-allowed}
   .selRow{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:8px 0}
   .selRow .cap{font-size:13px; font-weight:900; color:var(--muted); min-width:74px}
+
+  /* |r| strength scale — shows the numeric boundaries behind strong/moderate/weak/none */
+  .rScale{margin:4px 0 14px}
+  .rScale .cap2{font-size:11.5px; font-weight:800; color:var(--muted); margin-bottom:4px}
+  .rScale .bar{display:flex; height:24px; border-radius:8px; overflow:hidden; border:1px solid var(--ui)}
+  .rScale .bar span{display:flex; align-items:center; justify-content:center; font-size:11px;
+    font-weight:900; color:#fff; white-space:nowrap; overflow:hidden}
+  .rScale .seg-none{background:#b7c0da}
+  .rScale .seg-weak{background:#93addf}
+  .rScale .seg-mod{background:#5c8bff}
+  .rScale .seg-strong{background:#2f6cff}
+  .rScale .ticks{position:relative; height:14px; margin-top:3px}
+  .rScale .ticks i{position:absolute; top:0; font-size:10px; color:var(--muted); font-weight:800;
+    font-style:normal; transform:translateX(-50%)}
+  .rScale .ticks i:first-child{transform:translateX(0)}
+  .rScale .ticks i:last-child{transform:translateX(-100%)}
 
   /* MC chips */
   .mc{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
@@ -120,6 +137,18 @@
   .drSeg button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
     cursor:pointer; font-family:inherit; color:var(--ink)}
   .drSeg button.active{background:#f1f6ff; color:#133a9a}
+
+  /* on-screen number/fraction keyboard (shared across any free-entry input box) */
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
 
   /* buttons + feedback */
   .btnRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center}
@@ -260,6 +289,88 @@ function selBox(id, opts){
   return h+'</select>';
 }
 
+/* ---------- floating keyboard: one button, types into whichever input last had focus ----------
+   Ported from the A.2/A.3 tweaking guide (parameterized version — sharedKbdHTML(extraKeys) — so
+   a future A.4 module can add module-specific keys without touching every other module's keyboard).
+   Reusable across any SE with one or more small inline number/fraction boxes. ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  var extra=(grid.dataset.extra||'').split(',').filter(Boolean);
+  SHARED_KEYS.concat(extra).forEach(function(k){
+    var b=document.createElement('button'); b.type='button';
+    b.className='drKey'+(k.length>1?' drKeyWide':''); b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT') sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function kbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function sharedKbdHTML(extraKeys){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid" data-extra="'+(extraKeys?extraKeys.join(','):'')+'"></div></div>'+
+  '</div>';
+}
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+var kbdDocWired=false;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
+}
+
 /* ====================== PURE: statistics + scatter drawing ====================== */
 
 function pearson(xs,ys){
@@ -273,6 +384,28 @@ function pearson(xs,ys){
      strong |r| >= 0.7 · moderate 0.3 < |r| < 0.7 · weak 0.15 <= |r| <= 0.3 · none |r| < 0.15 */
 function strengthOf(r){ var a=Math.abs(r); return a>=0.7?'strong':a>0.3?'moderate':a>=0.15?'weak':'none'; }
 function directionOf(r){ return Math.abs(r)<0.15 ? 'none' : (r>0?'positive':'negative'); }
+/* Visual |r| scale: makes the strong/moderate/weak/none boundaries explicit up front,
+   instead of leaving students to infer them. Segment widths are proportional to the
+   actual numeric ranges (0–.15 / .15–.3 / .3–.7 / .7–1), so "no correlation" visibly
+   maps to a specific, narrow slice near zero rather than looking arbitrary. */
+function rScaleHTML(){
+  return '<div class="rScale">'+
+    '<div class="cap2">|r| scale (strength only \u2014 direction is separate):</div>'+
+    '<div class="bar">'+
+      '<span class="seg-none" style="flex:15">none</span>'+
+      '<span class="seg-weak" style="flex:15">weak</span>'+
+      '<span class="seg-mod" style="flex:40">moderate</span>'+
+      '<span class="seg-strong" style="flex:30">strong</span>'+
+    '</div>'+
+    '<div class="ticks">'+
+      '<i style="left:0%">0</i>'+
+      '<i style="left:15%">.15</i>'+
+      '<i style="left:30%">.3</i>'+
+      '<i style="left:70%">.7</i>'+
+      '<i style="left:100%">1</i>'+
+    '</div>'+
+  '</div>';
+}
 
 /* First-quadrant scatter with scaled, labeled axes; optional best-fit line. */
 function scatter(o){
@@ -333,6 +466,26 @@ function cloud(m,b,xmax,ymax,amp,n){
   return pts;
 }
 
+/* Real least-squares line of best fit for a specific set of points — used (A.4C) whenever the
+   equation ISN'T handed to the student, so grading matches whatever a correct Desmos regression
+   on the exact shown data would produce, rather than the hidden "generating" line. */
+function linreg(xs,ys){
+  var n=xs.length, sx=0,sy=0,sxx=0,sxy=0,i;
+  for(i=0;i<n;i++){ sx+=xs[i]; sy+=ys[i]; sxx+=xs[i]*xs[i]; sxy+=xs[i]*ys[i]; }
+  var den=(n*sxx-sx*sx);
+  var m = den===0?0:(n*sxy-sx*sy)/den;
+  var b=(sy-m*sx)/n;
+  return {m:m, b:b};
+}
+/* how tightly the points hug their own fit line — used to size a fair grading tolerance
+   (a percentage of the answer itself is the wrong basis: it can be thrown off by a large
+   near-constant intercept, letting a flipped-sign slope error slip through undetected) */
+function residualStd(xs,ys,fit){
+  var n=xs.length, ss=0, i;
+  for(i=0;i<n;i++){ var e=ys[i]-(fit.m*xs[i]+fit.b); ss+=e*e; }
+  return Math.sqrt(ss/n);
+}
+
 /* ====================== A.4A · Correlation coefficient (r) ====================== */
 var aMode='mix';
 var A_CTX=[
@@ -354,17 +507,22 @@ function genRandomScatter(){
 }
 /* generate data whose r sits safely INSIDE a requested strength band, with a chosen sign */
 function genBandScatter(sign, band){
-  var target = band==='strong'?[0.78,0.95] : band==='moderate'?[0.42,0.60] : [0.16,0.28];
-  var ampRange = band==='strong'?[2,6] : band==='moderate'?[14,24] : [30,45];
+  var target = band==='strong'?[0.78,0.95] : band==='moderate'?[0.42,0.60] : band==='weak'?[0.16,0.28] : [0,0.12];
+  var ampRange = band==='strong'?[2,6] : band==='moderate'?[14,24] : band==='weak'?[30,45] : [10,18];
   for(var tries=0; tries<600; tries++){
-    var m0=sign*rc([2,3]);
+    var m0 = band==='none' ? 0 : sign*rc([2,3]);   /* 'none' uses a genuinely flat trend, not a swamped one */
     var b0=ri(10,20), amp=ri(ampRange[0],ampRange[1]);
     var xs=[], ys=[], used={}, i;
     for(i=0;i<8;i++){ var x=ri(2,14); while(used[x]) x=ri(2,14); used[x]=1; xs.push(x); }
     xs.sort(function(a,b){return a-b;});
     for(i=0;i<xs.length;i++){ var y=Math.round(m0*xs[i]+b0+ri(-amp,amp)); if(y<1)y=1; if(y>44)y=44; ys.push(y); }
     var r=pearson(xs,ys), a=Math.abs(r);
-    if(a>=target[0] && a<=target[1] && Math.sign(r)===sign) return {xs:xs, ys:ys, r:r, xmax:15, ymax:44};
+    var signOk = band==='none' ? true : Math.sign(r)===sign;   /* a flat trend has no real sign to match */
+    if(a>=target[0] && a<=target[1] && signOk) return {xs:xs, ys:ys, r:r, xmax:15, ymax:44};
+  }
+  if(band==='none'){
+    var nx=[2,4,6,8,10,12,14], ny=nx.map(function(){ return ri(5,40); });
+    return {xs:nx, ys:ny, r:pearson(nx,ny), xmax:15, ymax:44};
   }
   /* fallback: near-perfect line, guaranteed strong */
   var fx=[2,4,6,8,10,12,14], fy=fx.map(function(x){ return Math.max(1,Math.min(44, sign*2*x+15+ri(-1,1))); });
@@ -380,7 +538,7 @@ function genA(){
       dir:directionOf(val), str:strengthOf(val)};
   }
   if(mode==='describe'){
-    var sign=rc([1,-1]), band=rc(['strong','moderate','weak']);
+    var sign=rc([1,-1]), band=rc(['strong','moderate','weak','none']);
     var d=genBandScatter(sign, band);
     return {se:'A.4A', mode:'describe', ctx:ctx, data:d, r:d.r,
       dir:directionOf(d.r), str:strengthOf(d.r)};
@@ -407,7 +565,7 @@ function promptA(p){
   var segh=segWrap('MODE','aSeg',[['mix','Mixed'],['match','Match r'],['describe','Describe'],['interpret','Interpret r']]);
   if(p.mode==='interpret'){
     return segh+'A study of <b>'+p.ctx.x+'</b> and <b>'+p.ctx.y+'</b> gives a correlation coefficient of '+
-      '<span class="given">r = '+rStr(p.r)+'</span> Describe the <b>direction</b> and <b>strength</b> of the linear association.';
+      '<span class="given">r = '+rStr(p.r)+'</span> Describe the <b>strength</b> and <b>direction</b> of the linear association.';
   }
   var g=scatter({xmax:p.data.xmax, ymax:p.data.ymax,
     points:p.data.xs.map(function(x,i){ return {x:x, y:p.data.ys[i]}; }),
@@ -415,43 +573,61 @@ function promptA(p){
   var tbl=dataTable(p.data.xs, p.data.ys, p.ctx.xl, p.ctx.yl);
   var gt='<div class="graphRow">'+g+tbl+'</div>';
   if(p.mode==='describe'){
-    return segh+'The scatterplot shows <b>'+p.ctx.x+'</b> vs. <b>'+p.ctx.y+'</b>. Describe the <b>direction</b> and <b>strength</b> of the linear association.<br>'+gt;
+    return segh+'The scatterplot shows <b>'+p.ctx.x+'</b> vs. <b>'+p.ctx.y+'</b>. Describe the <b>strength</b> and <b>direction</b> of the linear association.<br>'+gt;
   }
   return segh+'The scatterplot shows <b>'+p.ctx.x+'</b> vs. <b>'+p.ctx.y+'</b>. Which value of the correlation coefficient <b>r</b> best matches the data?<br>'+gt;
 }
 var aSel=null;
 function answerA(p){
+  var scale=rScaleHTML();
   if(p.mode==='match'){
     var h='<div class="mc" id="aMC">';
     p.options.forEach(function(o,i){ h+='<button type="button" data-i="'+i+'">r = '+rStr(o)+'</button>'; });
-    return h+'</div>';
+    return scale+h+'</div>';
   }
-  return '<div class="selRow"><span class="cap">Direction</span>'+
-    selBox('aDir',[['positive','Positive'],['negative','Negative'],['none','No correlation']])+'</div>'+
+  return scale+
     '<div class="selRow"><span class="cap">Strength</span>'+
-    selBox('aStr',[['strong','Strong'],['moderate','Moderate'],['weak','Weak / none']])+'</div>';
+    selBox('aStr',[['strong','Strong'],['moderate','Moderate'],['weak','Weak'],['none','No correlation']])+'</div>'+
+    '<div class="selRow"><span class="cap">Direction</span>'+
+    selBox('aDir',[['positive','Positive'],['negative','Negative']])+'</div>';
 }
 function initA(p){
-  if(p.mode!=='match') return;
-  aSel=null;
-  var mc=document.getElementById('aMC'); if(!mc) return;
-  Array.prototype.forEach.call(mc.querySelectorAll('button'),function(btn){
-    btn.addEventListener('click',function(){
-      if(current.done) return;
-      Array.prototype.forEach.call(mc.querySelectorAll('button'),function(b){b.classList.remove('sel');});
-      btn.classList.add('sel'); aSel=parseInt(btn.getAttribute('data-i'),10);
+  if(p.mode==='match'){
+    aSel=null;
+    var mc=document.getElementById('aMC'); if(!mc) return;
+    Array.prototype.forEach.call(mc.querySelectorAll('button'),function(btn){
+      btn.addEventListener('click',function(){
+        if(current.done) return;
+        Array.prototype.forEach.call(mc.querySelectorAll('button'),function(b){b.classList.remove('sel');});
+        btn.classList.add('sel'); aSel=parseInt(btn.getAttribute('data-i'),10);
+      });
     });
-  });
+    return;
+  }
+  /* Strength gates Direction: once "No correlation" is picked there's no direction to give,
+     so grey the Direction dropdown out (and clear it) rather than leaving a moot question live. */
+  var strSel=document.getElementById('aStr'), dirSel=document.getElementById('aDir');
+  if(!strSel || !dirSel) return;
+  function syncDirGate(){
+    var isNone = strSel.value==='none';
+    dirSel.disabled = isNone;
+    if(isNone) dirSel.value='';
+  }
+  strSel.addEventListener('change', syncDirGate);
+  syncDirGate();
 }
 function readA(p){
   if(p.mode==='match') return aSel==null?null:{idx:aSel};
-  var d=document.getElementById('aDir').value, s=document.getElementById('aStr').value;
-  return (d&&s)?{dir:d, str:s}:null;
+  var s=document.getElementById('aStr').value;
+  if(!s) return null;
+  if(s==='none') return {dir:'none', str:'none'};
+  var d=document.getElementById('aDir').value;
+  return d ? {dir:d, str:s} : null;
 }
 function checkA(p,a){
   if(p.mode==='match') return a.idx===p.correctIdx;
-  var wantStr = p.str==='none' ? 'weak' : p.str;   /* "weak / none" option covers the none case */
-  return a.dir===p.dir && a.str===wantStr;
+  if(p.str==='none') return a.str==='none';   /* direction is moot once there's no correlation */
+  return a.dir===p.dir && a.str===p.str;
 }
 function revealA(p){
   if(p.mode!=='match') return;
@@ -464,45 +640,44 @@ function revealA(p){
 }
 function hintsA(p){
   if(p.mode==='match') return [
-    'Sign first: if the cloud rises left\u2192right, r is positive; if it falls, r is negative.',
+    'Sign first: if the cloud rises left\u2192right, r is positive; if it falls, r is negative \u2014 a flat, scattered cloud means r is near 0.',
     'Then tightness: points hugging a straight line \u2192 |r| near 1; a shapeless blob \u2192 |r| near 0.'];
   if(p.mode==='interpret') return [
-    'The sign of r is the direction: + rises, \u2212 falls.',
-    'The size of |r| is the strength: \u22650.7 strong, 0.3\u20130.7 moderate, \u22640.3 weak.'];
+    'The sign of r is the direction: + rises, \u2212 falls \u2014 and r very close to 0 has no real direction to give.',
+    'The size of |r| is the strength: \u22650.7 strong, 0.3\u20130.7 moderate, 0.15\u20130.3 weak, below 0.15 no correlation.'];
   return [
-    'Direction: do the points trend up (positive) or down (negative) as you read left to right?',
-    'Strength: how close are the points to a single straight line? Tight = strong, scattered = weak.'];
+    'Direction: do the points trend up (positive), down (negative), or show no clear up/down pattern at all (no correlation)?',
+    'Strength: how close are the points to a single straight line? Tight = strong; a shapeless cloud = no correlation.'];
 }
 function stepsA(p){
-  var thr='<span class="st">Strength scale: |r| \u2265 0.7 strong \u00b7 0.3 < |r| < 0.7 moderate \u00b7 |r| \u2264 0.3 weak.</span>';
+  var thr='<span class="st">Strength scale: |r| \u2265 0.7 strong \u00b7 0.3 < |r| < 0.7 moderate \u00b7 0.15 \u2264 |r| \u2264 0.3 weak \u00b7 |r| < 0.15 no correlation.</span>';
   if(p.mode==='match'){
     var mstr=strengthOf(p.r);
     return '<span class="st">1. The line trends '+(p.r>=0?'upward \u2192 positive':'downward \u2192 negative')+', so r is '+(p.r>=0?'positive':'negative')+'.</span>'+
-      '<span class="st">2. The points are '+(mstr==='strong'?'tightly packed':mstr==='moderate'?'loosely grouped':'widely scattered')+' \u2192 |r| is '+(mstr==='strong'?'near 1':mstr==='moderate'?'moderate':'small')+'.</span>'+
+      '<span class="st">2. The points are '+(mstr==='strong'?'tightly packed':mstr==='moderate'?'loosely grouped':mstr==='weak'?'widely scattered':'scattered with no visible pattern')+' \u2192 |r| is '+(mstr==='strong'?'near 1':mstr==='moderate'?'moderate':mstr==='weak'?'small':'near 0')+'.</span>'+
       '<span class="st final">3. Best match: r \u2248 '+rStr(p.r)+' ('+directionOf(p.r)+', '+mstr+').</span>'+thr;
   }
   if(p.mode==='interpret'){
     return '<span class="st">1. r = '+rStr(p.r)+' is '+(p.r>=0?'positive':'negative')+' \u2192 '+(p.dir==='none'?'essentially no direction':p.dir)+' association.</span>'+
-      '<span class="st final">2. |r| = '+Math.abs(p.r).toFixed(2)+' \u2192 '+p.str+' linear relationship.</span>'+thr;
+      '<span class="st final">2. |r| = '+Math.abs(p.r).toFixed(2)+' \u2192 '+(p.str==='none'?'no meaningful (near-zero) correlation':p.str+' linear relationship')+'.</span>'+thr;
   }
-  return '<span class="st">1. Reading left to right the points trend '+(p.dir==='positive'?'up \u2192 positive':'down \u2192 negative')+'.</span>'+
-    '<span class="st final">2. They cluster '+(p.str==='strong'?'tightly':p.str==='moderate'?'loosely':'very loosely')+' about a line \u2192 '+p.str+' association (r \u2248 '+rStr(p.r)+').</span>'+thr;
+  return '<span class="st">1. Reading left to right the points trend '+(p.dir==='positive'?'up \u2192 positive':p.dir==='negative'?'down \u2192 negative':'with no clear up/down pattern \u2192 no direction')+'.</span>'+
+    '<span class="st final">2. They cluster '+(p.str==='strong'?'tightly':p.str==='moderate'?'loosely':p.str==='weak'?'very loosely':'with no visible pattern')+' about a line \u2192 '+(p.str==='none'?'no meaningful correlation':p.str+' association')+' (r \u2248 '+rStr(p.r)+').</span>'+thr;
 }
 
 /* ====================== A.4B · Association vs. Causation ====================== */
-var bMode='mix';
 /* type:'cause' = a direct causal link · 'assoc' = correlated but NOT causal (a lurking variable explains it) */
 var B_BANK=[
   {t:'assoc', s:'Across a summer, cities with higher ice-cream sales also record more drownings.',
-    lurk:'Hot weather', lurks:['Hot weather','Eating ice cream','Swimming skill','Ice-cream brand'] },
+    lurk:'Hot weather' },
   {t:'assoc', s:'Among elementary students, those with larger shoe sizes tend to read at higher levels.',
-    lurk:'A child\u2019s age', lurks:['A child\u2019s age','Shoe brand','Foot shape','Book length'] },
+    lurk:'A child\u2019s age' },
   {t:'assoc', s:'Neighborhoods with more fire trucks at a blaze report more fire damage.',
-    lurk:'The size of the fire', lurks:['The size of the fire','The truck color','Number of firefighters\u2019 breaks','Water pressure'] },
+    lurk:'The size of the fire' },
   {t:'assoc', s:'Months with higher sunglasses sales also have higher sunburn rates.',
-    lurk:'Amount of sunshine', lurks:['Amount of sunshine','Sunglasses tint','Store discounts','Skin tone'] },
+    lurk:'Amount of sunshine' },
   {t:'assoc', s:'Students who sleep with the light on are more likely to need glasses later.',
-    lurk:'Inherited (parent) eyesight', lurks:['Inherited (parent) eyesight','Light bulb wattage','Bedtime stories','Room size'] },
+    lurk:'Inherited (parent) eyesight' },
   {t:'cause', s:'In a controlled trial, plants given more fertilizer grew measurably taller than identical plants given none.',
     why:'Everything else was held constant, so the fertilizer is the direct cause.' },
   {t:'cause', s:'Pressing the gas pedal farther makes the car accelerate faster.',
@@ -515,26 +690,14 @@ var B_BANK=[
     why:'More speed means more kinetic energy to dissipate \u2014 a physical cause and effect.' }
 ];
 function genB(){
-  var mode = bMode==='mix' ? rc(['classify','lurking']) : bMode;
-  if(mode==='lurking'){
-    var pool=B_BANK.filter(function(x){ return x.t==='assoc'; });
-    var it=rc(pool);
-    var opts=shuffle(it.lurks.slice());
-    return {se:'A.4B', mode:'lurking', item:it, options:opts, correctIdx:opts.indexOf(it.lurk)};
-  }
   var item=rc(B_BANK);
   var options=['This is most likely a causal relationship (one variable directly affects the other).',
                'This is association only \u2014 the variables are related, but one does not cause the other.'];
   var correctIdx = item.t==='cause' ? 0 : 1;
-  return {se:'A.4B', mode:'classify', item:item, options:options, correctIdx:correctIdx};
+  return {se:'A.4B', item:item, options:options, correctIdx:correctIdx};
 }
 function promptB(p){
-  var segh=segWrap('MODE','bSeg',[['mix','Mixed'],['classify','Cause or not?'],['lurking','Lurking variable']]);
-  if(p.mode==='lurking'){
-    return segh+'Read the situation \u2014 the two variables are correlated, but the link is <b>not</b> causal. '+
-      'Which <b>lurking variable</b> best explains why they rise together?<span class="scen">'+p.item.s+'</span>';
-  }
-  return segh+'Decide whether the situation shows <b>causation</b> or <b>association only</b>.<span class="scen">'+p.item.s+'</span>';
+  return 'Decide whether the situation shows <b>causation</b> or <b>association only</b>.<span class="scen">'+p.item.s+'</span>';
 }
 var bSel=null;
 function answerB(p){
@@ -564,19 +727,11 @@ function revealB(p){
   });
 }
 function hintsB(p){
-  if(p.mode==='lurking') return [
-    'A lurking variable is a hidden third factor that drives BOTH variables at once.',
-    'Ask: what season, age, or condition could push both numbers up together?'];
   return [
     'Correlation just means two things move together. Causation means one actually makes the other happen.',
     'If a hidden third factor could explain the link, it is association \u2014 not causation.'];
 }
 function stepsB(p){
-  if(p.mode==='lurking'){
-    return '<span class="st">1. Both variables rise together, yet neither one causes the other.</span>'+
-      '<span class="st">2. Look for a hidden factor that raises both at the same time.</span>'+
-      '<span class="st final">3. Lurking variable: <b>'+p.item.lurk+'</b>.</span>';
-  }
   if(p.item.t==='cause'){
     return '<span class="st">1. Ask whether one variable <b>directly</b> produces the change in the other.</span>'+
       '<span class="st final">2. '+p.item.why+' \u2192 <b>Causation</b>.</span>';
@@ -587,6 +742,9 @@ function stepsB(p){
 
 /* ====================== A.4C · Line of best fit · predictions ====================== */
 var cMode='mix';
+/* How often the line of best fit is simply handed to the student vs. left for them to find
+   from the data (the "hunt") — mostly data-only, per teacher preference. */
+var EQ_GIVEN_PROB=0.25;
 var C_CTX=[
   {xShort:'hours studied', yShort:'exam score', xUnit:'hour of study', yUnit:'points',
    m:7, b:52, xmax:8, ymax:112, xstep:1, ystep:20, xl:'study (hr)', yl:'score'},
@@ -605,58 +763,91 @@ function genC(){
   var mode = cMode==='mix' ? rc(['predict','solve','slope','intercept']) : cMode;
   var ctx=rc(C_CTX);
   var pts=cloud(ctx.m, ctx.b, ctx.xmax, ctx.ymax, Math.max(2,Math.round(Math.abs(ctx.m)*0.7)), 7);
+  var eqGiven = Math.random() < EQ_GIVEN_PROB;
+  var xs=pts.map(function(pt){return pt.x;}), ys=pts.map(function(pt){return pt.y;});
+  var fit=linreg(xs,ys);
+  /* tolerance for the "find it yourself" case, sized from how noisy THESE points actually are —
+     not a flat percent of the answer, which a large near-constant intercept can distort */
+  var tolY = Math.max(2, 1.5*residualStd(xs,ys,fit));
+  var useM = eqGiven ? ctx.m : fit.m, useB = eqGiven ? ctx.b : fit.b;
   if(mode==='predict'){
     var x0=ri(1, ctx.xmax-1);
-    return {se:'A.4C', mode:'predict', ctx:ctx, pts:pts, x0:x0, ans:ctx.m*x0+ctx.b};
+    return {se:'A.4C', mode:'predict', ctx:ctx, pts:pts, eqGiven:eqGiven, fit:fit, tolY:tolY, x0:x0, ans:useM*x0+useB};
   }
   if(mode==='solve'){
-    var xr=ri(1, ctx.xmax-1), y0=ctx.m*xr+ctx.b;   /* choose y so x comes out whole */
-    return {se:'A.4C', mode:'solve', ctx:ctx, pts:pts, y0:y0, ans:xr};
+    var xr=ri(1, ctx.xmax-1);
+    var y0=Math.round(useM*xr+useB);        /* clean, displayed target y-value */
+    var ans=(y0-useB)/useM;                 /* exact x consistent with the displayed y0 */
+    return {se:'A.4C', mode:'solve', ctx:ctx, pts:pts, eqGiven:eqGiven, fit:fit, tolY:tolY, y0:y0, ans:ans};
   }
   if(mode==='slope'){
-    var dir = ctx.m>0?'increase':'decrease';
-    var correct='For each additional '+ctx.xUnit+', the '+ctx.yShort+' tends to '+dir+' by about '+Math.abs(ctx.m)+' '+ctx.yUnit+'.';
+    var mDisp=Math.max(1, Math.round(Math.abs(useM)));
+    var dir = useM>0?'increase':'decrease';
+    var correct='For each additional '+ctx.xUnit+', the '+ctx.yShort+' tends to '+dir+' by about '+mDisp+' '+ctx.yUnit+'.';
     var opts=[correct,
-      'The '+ctx.yShort+' starts at about '+Math.abs(ctx.m)+' '+ctx.yUnit+'.',
-      'For each additional '+ctx.xUnit+', the '+ctx.yShort+' tends to '+(dir==='increase'?'decrease':'increase')+' by about '+Math.abs(ctx.m)+' '+ctx.yUnit+'.',
+      'The '+ctx.yShort+' starts at about '+mDisp+' '+ctx.yUnit+'.',
+      'For each additional '+ctx.xUnit+', the '+ctx.yShort+' tends to '+(dir==='increase'?'decrease':'increase')+' by about '+mDisp+' '+ctx.yUnit+'.',
       'There is no association between '+ctx.xShort+' and '+ctx.yShort+'.'];
     opts=shuffle(opts.slice());
-    return {se:'A.4C', mode:'slope', ctx:ctx, pts:pts, options:opts, correctIdx:opts.indexOf(correct)};
+    return {se:'A.4C', mode:'slope', ctx:ctx, pts:pts, eqGiven:eqGiven, fit:fit, options:opts, correctIdx:opts.indexOf(correct)};
   }
   /* intercept */
-  var correctI='When '+ctx.xShort+' = 0, the model predicts a '+ctx.yShort+' of about '+ctx.b+' '+ctx.yUnit+'.';
+  var bDisp=Math.round(useB), mDispI=Math.max(1, Math.round(Math.abs(useM)));
+  if(bDisp===mDispI) mDispI+=1;   /* keep the two "predicts a Y of about N" options from colliding verbatim */
+  var correctI='When '+ctx.xShort+' = 0, the model predicts a '+ctx.yShort+' of about '+bDisp+' '+ctx.yUnit+'.';
   var optsI=[correctI,
-    'When '+ctx.xShort+' = 0, the model predicts a '+ctx.yShort+' of about '+Math.abs(ctx.m)+' '+ctx.yUnit+'.',
-    'The '+ctx.yShort+' changes by about '+ctx.b+' '+ctx.yUnit+' for each '+ctx.xUnit+'.',
-    'The '+ctx.yShort+' is always '+ctx.b+' '+ctx.yUnit+', no matter the '+ctx.xShort+'.'];
+    'When '+ctx.xShort+' = 0, the model predicts a '+ctx.yShort+' of about '+mDispI+' '+ctx.yUnit+'.',
+    'The '+ctx.yShort+' changes by about '+bDisp+' '+ctx.yUnit+' for each '+ctx.xUnit+'.',
+    'The '+ctx.yShort+' is always '+bDisp+' '+ctx.yUnit+', no matter the '+ctx.xShort+'.'];
   optsI=shuffle(optsI.slice());
-  return {se:'A.4C', mode:'intercept', ctx:ctx, pts:pts, options:optsI, correctIdx:optsI.indexOf(correctI)};
+  return {se:'A.4C', mode:'intercept', ctx:ctx, pts:pts, eqGiven:eqGiven, fit:fit, options:optsI, correctIdx:optsI.indexOf(correctI)};
 }
 function graphC(p){
-  return scatter({xmax:p.ctx.xmax, ymax:p.ctx.ymax, xstep:p.ctx.xstep, ystep:p.ctx.ystep,
-    points:p.pts, line:{m:p.ctx.m, k:p.ctx.b}, xlabel:p.ctx.xl, ylabel:p.ctx.yl});
+  var opts={xmax:p.ctx.xmax, ymax:p.ctx.ymax, xstep:p.ctx.xstep, ystep:p.ctx.ystep,
+    points:p.pts, xlabel:p.ctx.xl, ylabel:p.ctx.yl};
+  if(p.eqGiven) opts.line={m:p.ctx.m, k:p.ctx.b};   /* only draw the true line when it's been handed over */
+  var g=scatter(opts);
+  var xs=p.pts.map(function(pt){return pt.x;}), ys=p.pts.map(function(pt){return pt.y;});
+  var tbl=dataTable(xs, ys, p.ctx.xl, p.ctx.yl);
+  return '<div class="graphRow">'+g+tbl+'</div>';
 }
 function promptC(p){
   var segh=segWrap('MODE','cSeg',[['mix','Mixed'],['predict','Predict y'],['solve','Find x'],['slope','Slope meaning'],['intercept','Intercept meaning']]);
-  var fit='Its line of best fit is <span class="given">'+siStr(p.ctx.m,p.ctx.b)+'</span>';
   var lead='A data set relates <b>'+p.ctx.xShort+'</b> (x) to <b>'+p.ctx.yShort+'</b> (y). ';
+  var fit = p.eqGiven ? 'Its line of best fit is <span class="given">'+siStr(p.ctx.m,p.ctx.b)+'</span>' : '';
+  var findTip = p.eqGiven ? '' :
+    '<div class="lbl" style="margin:6px 0 0">Find the line of best fit from the data below (Desmos\u2019s regression tool works well) before answering.</div>';
   if(p.mode==='predict'){
-    return segh+lead+fit+'<br>Use the model to predict the <b>'+p.ctx.yShort+'</b> when '+p.ctx.xShort+' = <b>'+p.x0+'</b>.'+graphC(p);
+    var ask = p.eqGiven
+      ? 'Use the model to predict the <b>'+p.ctx.yShort+'</b> when '+p.ctx.xShort+' = <b>'+p.x0+'</b>.'
+      : 'Predict the <b>'+p.ctx.yShort+'</b> when '+p.ctx.xShort+' = <b>'+p.x0+'</b>.';
+    return segh+lead+fit+'<br>'+ask+findTip+graphC(p);
   }
   if(p.mode==='solve'){
-    return segh+lead+fit+'<br>Using the model, for what <b>'+p.ctx.xShort+'</b> is the '+p.ctx.yShort+' about <b>'+p.y0+'</b>?'+graphC(p);
+    var ask2 = p.eqGiven
+      ? 'Using the model, for what <b>'+p.ctx.xShort+'</b> is the '+p.ctx.yShort+' about <b>'+p.y0+'</b>?'
+      : 'For what <b>'+p.ctx.xShort+'</b> is the '+p.ctx.yShort+' about <b>'+p.y0+'</b>?';
+    return segh+lead+fit+'<br>'+ask2+findTip+graphC(p);
   }
   if(p.mode==='slope'){
-    return segh+lead+fit+'<br>What does the <b>slope</b> mean in this situation?'+graphC(p);
+    return segh+lead+fit+'<br>What does the <b>slope</b> mean in this situation?'+findTip+graphC(p);
   }
-  return segh+lead+fit+'<br>What does the <b>y-intercept</b> mean in this situation?'+graphC(p);
+  return segh+lead+fit+'<br>What does the <b>y-intercept</b> mean in this situation?'+findTip+graphC(p);
 }
 var cSel=null;
 function answerC(p){
-  if(p.mode==='predict') return '<div class="answer"><span>y \u2248</span>'+inBox('cVal',true)+'<span style="font-size:16px;color:var(--muted)">'+p.ctx.yUnit+'</span></div>'+
-    '<div class="lbl">Substitute x into y = '+siStr(p.ctx.m,p.ctx.b).replace('y = ','')+'.</div>';
-  if(p.mode==='solve') return '<div class="answer"><span>x \u2248</span>'+inBox('cVal',true)+'<span style="font-size:16px;color:var(--muted)">'+p.ctx.xUnit+'s</span></div>'+
-    '<div class="lbl">Set y = '+p.y0+' and solve for x.</div>';
+  if(p.mode==='predict'){
+    var help = p.eqGiven
+      ? '<div class="lbl">Substitute x into y = '+siStr(p.ctx.m,p.ctx.b).replace('y = ','')+'.</div>'
+      : '<div class="lbl">Find the line of best fit from the table (Desmos\u2019s regression tool works well), then substitute.</div>';
+    return '<div class="answer"><span>y \u2248</span>'+inBox('cVal',true)+'<span style="font-size:16px;color:var(--muted)">'+p.ctx.yUnit+'</span></div>'+help+sharedKbdHTML();
+  }
+  if(p.mode==='solve'){
+    var help2 = p.eqGiven
+      ? '<div class="lbl">Set y = '+p.y0+' and solve for x.</div>'
+      : '<div class="lbl">Find the line of best fit from the table, set y = '+p.y0+', and solve for x.</div>';
+    return '<div class="answer"><span>x \u2248</span>'+inBox('cVal',true)+'<span style="font-size:16px;color:var(--muted)">'+p.ctx.xUnit+'s</span></div>'+help2+sharedKbdHTML();
+  }
   var h='<div class="mc" id="cMC">';
   p.options.forEach(function(o,i){ h+='<button type="button" data-i="'+i+'">'+o+'</button>'; });
   return h+'</div>';
@@ -678,7 +869,13 @@ function readC(p){
   return cSel==null?null:{idx:cSel};
 }
 function checkC(p,a){
-  if(p.mode==='predict' || p.mode==='solve') return a.val && req(a.val, R(p.ans,1));
+  if(p.mode==='predict' || p.mode==='solve'){
+    if(!a.val) return false;
+    if(p.eqGiven) return req(a.val, R(p.ans,1));   /* clean given line -> exact match, unchanged */
+    var studentVal=a.val.n/a.val.d;
+    var tol = p.mode==='predict' ? p.tolY : p.tolY/Math.abs(p.fit.m);   /* y-tolerance -> x-tolerance for solve */
+    return Math.abs(studentVal-p.ans) <= tol;
+  }
   return a.idx===p.correctIdx;
 }
 function revealC(p){
@@ -691,6 +888,16 @@ function revealC(p){
   });
 }
 function hintsC(p){
+  if(!p.eqGiven){
+    if(p.mode==='predict') return ['First find the line of best fit for this data \u2014 in Desmos, enter the table and turn on its regression line.',
+      'Once you have y \u2248 mx + b, substitute x = '+p.x0+' and simplify.'];
+    if(p.mode==='solve') return ['First find the line of best fit for this data (Desmos\u2019s regression tool works well).',
+      'Once you have y \u2248 mx + b, set y = '+p.y0+' and solve for x.'];
+    if(p.mode==='slope') return ['Find the line of best fit (or just read the trend in the data) to estimate the slope.',
+      'The slope is a rate \u2014 change in '+p.ctx.yShort+' per 1 '+p.ctx.xUnit+'.'];
+    return ['Find the line of best fit, or look at where the trend seems to start near '+p.ctx.xShort+' = 0.',
+      'The y-intercept is a starting value, not a rate of change.'];
+  }
   if(p.mode==='predict') return ['Plug the given x-value into y = '+siStr(p.ctx.m,p.ctx.b).replace('y = ','')+'.',
     'Multiply first, then add the y-intercept.'];
   if(p.mode==='solve') return ['Replace y with '+p.y0+' in the equation, then undo the operations to isolate x.',
@@ -701,6 +908,26 @@ function hintsC(p){
     'It is the model\u2019s starting value, not a rate of change.'];
 }
 function stepsC(p){
+  if(!p.eqGiven){
+    var mR=Math.round(p.fit.m*100)/100, bR=Math.round(p.fit.b*100)/100;
+    var lineTxt='y \u2248 '+mR+'x'+(bR>=0?' + '+bR:' \u2212 '+Math.abs(bR));
+    var findStep='<span class="st">1. Enter the table into Desmos and turn on its regression line. For this data, that comes out to about <b>'+lineTxt+'</b>.</span>';
+    if(p.mode==='predict'){
+      var yEst=Math.round((p.fit.m*p.x0+p.fit.b)*10)/10;
+      return findStep+
+        '<span class="st">2. Substitute x = '+p.x0+': y \u2248 '+mR+'('+p.x0+')'+(bR>=0?' + '+bR:' \u2212 '+Math.abs(bR))+'.</span>'+
+        '<span class="st final">3. y \u2248 '+yEst+' '+p.ctx.yUnit+' (answers reasonably close to this are accepted).</span>';
+    }
+    if(p.mode==='solve'){
+      var xEst=Math.round(((p.y0-p.fit.b)/p.fit.m)*10)/10;
+      return findStep+
+        '<span class="st">2. Set y = '+p.y0+' and solve: '+p.y0+' = '+mR+'x'+(bR>=0?' + '+bR:' \u2212 '+Math.abs(bR))+'.</span>'+
+        '<span class="st final">3. x \u2248 '+xEst+' (answers reasonably close to this are accepted).</span>';
+    }
+    if(p.mode==='slope')
+      return findStep+'<span class="st final">2. That slope means each extra '+p.ctx.xUnit+' '+(p.fit.m>0?'adds about '+Math.round(Math.abs(p.fit.m)):'removes about '+Math.round(Math.abs(p.fit.m)))+' '+p.ctx.yUnit+'.</span>';
+    return findStep+'<span class="st final">2. That y-intercept means with 0 '+p.ctx.xShort+', the model predicts about '+Math.round(p.fit.b)+' '+p.ctx.yUnit+'.</span>';
+  }
   if(p.mode==='predict')
     return '<span class="st">1. y = '+siStr(p.ctx.m,p.ctx.b).replace('y = ','')+', with x = '+p.x0+'.</span>'+
       '<span class="st">2. y = '+p.ctx.m+'('+p.x0+')'+(p.ctx.b>=0?' + '+p.ctx.b:' \u2212 '+Math.abs(p.ctx.b))+' = '+(p.ctx.m*p.x0)+(p.ctx.b>=0?' + '+p.ctx.b:' \u2212 '+Math.abs(p.ctx.b))+'.</span>'+
@@ -722,20 +949,20 @@ var SES=[
   blurb:'Calculate, using technology, the correlation coefficient between two quantitative variables and interpret this quantity as a measure of the strength of the linear association.',
   gen:genA, prompt:promptA, answerHTML:answerA, read:readA, check:checkA, reveal:revealA,
   init:function(p){ wireSeg('aSeg', aMode, function(v){ aMode=v; newProblem(); }); initA(p); },
-  emptyMsg:'Pick the matching r \u2014 or choose a direction and a strength.',
+  emptyMsg:'Pick the matching r \u2014 or choose a strength (then a direction, unless it\u2019s \u201cNo correlation\u201d).',
   hints:hintsA, steps:stepsA },
 
 { id:'A.4B', letter:'B', short:'Assoc. vs Cause', title:'Association vs. Causation',
   blurb:'Compare and contrast association and causation in real-world problems.',
   gen:genB, prompt:promptB, answerHTML:answerB, read:readB, check:checkB, reveal:revealB,
-  init:function(p){ wireSeg('bSeg', bMode, function(v){ bMode=v; newProblem(); }); initB(p); },
+  init:function(p){ initB(p); },
   emptyMsg:'Tap the choice that best fits the situation.',
   hints:hintsB, steps:stepsB },
 
 { id:'A.4C', letter:'C', short:'Fit & Predict', title:'Line of Best Fit \u00b7 Predictions',
   blurb:'Write, with and without technology, linear functions that provide a reasonable fit to data to estimate solutions and make predictions for real-world problems.',
   gen:genC, prompt:promptC, answerHTML:answerC, read:readC, check:checkC, reveal:revealC,
-  init:function(p){ wireSeg('cSeg', cMode, function(v){ cMode=v; newProblem(); }); initC(p); },
+  init:function(p){ wireSeg('cSeg', cMode, function(v){ cMode=v; newProblem(); }); initC(p); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   emptyMsg:'Enter your prediction \u2014 or tap the interpretation that fits.',
   hints:hintsC, steps:stepsC }
 ];
