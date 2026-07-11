@@ -112,6 +112,17 @@
   .drSeg button.active{background:#f1f6ff; color:#133a9a}
   .drTog button.active{background:#eafff7; color:#0c6d54}
   .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKeyWide{grid-column:span 4; min-width:0; overflow-wrap:break-word; font-size:10.5px}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
 </style>
 </head>
 <body>
@@ -241,6 +252,16 @@ function segWrap(label,id,cur,opts){
     '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">'+label+'</span>'+
     seg(id,cur,opts)+'</div>';
 }
+/* Demoted secondary selector row — ported from the A.2/A.3 guide's Part 5.8 pattern
+   (formWrap): smaller 10.5px eyebrow, whole row at reduced opacity, inner seg scaled down.
+   Reuses the generic wireSeg(id,cur,cb) unchanged — it only cares about the id. */
+function formWrap(id,cur,opts){
+  var h='<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px;opacity:.75">'+
+    '<span style="font-size:10.5px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FORM</span>'+
+    '<div class="drSeg" id="'+id+'" role="tablist" style="transform:scale(.9);transform-origin:left center">';
+  opts.forEach(function(o){ h+='<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>'; });
+  return h+'</div></div>';
+}
 function wireSeg(id,cur,cb){
   var box=document.getElementById(id); if(!box) return;
   Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
@@ -250,6 +271,88 @@ function wireSeg(id,cur,cb){
       btn.classList.add('active'); cb(btn.getAttribute('data-v'));
     });
   });
+}
+
+/* ---------- floating keyboard: one button, types into whichever input last had focus ----------
+   Ported from the A.2/A.3 guide's Part 1.1, using the parameterized sharedKbdHTML(extraKeys)
+   form from Part 1a (not the older plain form) — no A.5 module currently needs an extra key,
+   but this keeps A.5 consistent with the "current" recommended version everywhere else. ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  var extra=(grid.dataset.extra||'').split(',').filter(Boolean);
+  SHARED_KEYS.concat(extra).forEach(function(k){
+    var b=document.createElement('button'); b.type='button';
+    b.className='drKey'+(k.length>1?' drKeyWide':''); b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT') sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function kbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function sharedKbdHTML(extraKeys){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid" data-extra="'+(extraKeys?extraKeys.join(','):'')+'"></div></div>'+
+  '</div>';
+}
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+var kbdDocWired=false;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
 }
 
 /* ===================================================================
@@ -412,9 +515,20 @@ function ineqHints(p){
 
 /* ================= A.5C — systems of two equations ================= */
 var sysMode='mix';
+var sysFormMode='mix';
+/* Mixed / Standard / Slope-intercept, per equation independently — same pattern as the
+   A.2/A.3 guide's Part 5.8 (A.3F's FORM selector). No point-slope option, same reasoning
+   as A.3F: point-slope doesn't fit a "system of two equations" framing as naturally. */
+function pickForm(mode){ return mode==='mix' ? rc(['std','si']) : mode; }
+/* Renders one equation (a x + b y = c) in either form. si-branch divides by b, so every
+   caller must guarantee b !== 0 — true for all three flavors (see Part 9.2 notes). */
+function sysEqStr(a,b,c,form){
+  if(form==='si'){ var m=R(-a,b), k=R(c,b); return siHTML(m,k); }
+  return stdEqHTML(a,b,c);
+}
 function genSys(){
   var flavor=(sysMode==='mix')? rc(['graph','elim','word']) : sysMode;
-  var p={se:'A.5C',flavor:flavor};
+  var p={se:'A.5C',flavor:flavor, form1:pickForm(sysFormMode), form2:pickForm(sysFormMode)};
   if(flavor==='graph'){
     var gx=ri(-4,4), gy=ri(-4,4), sl=[-3,-2,-1,0,1,2,3];
     var m1=rc(sl), m2; do{ m2=rc(sl); }while(m2===m1);
@@ -430,28 +544,44 @@ function genSys(){
   }
   return p;
 }
+function centsToDollars(c){ return '$'+(c/100).toFixed(2); }
 function buildWord(p){
-  var tpl=rc(['tickets','sumdiff','store']), x0,y0;
+  var tpl=rc(['tickets','sumdiff','store','multiple','coins']), x0,y0;
   if(tpl==='tickets'){
     x0=ri(2,9); y0=ri(2,9);
     var A=rc([8,10,12]), C=rc([4,5,6]), T=x0+y0, Rev=A*x0+C*y0;
     p.text='A theater sells adult tickets for $'+A+' and child tickets for $'+C+'. One show sold '
       +T+' tickets in all and collected $'+Rev+'. How many adult and child tickets were sold?';
     p.labX='Adults'; p.labY='Children';
-    p.eq1='x + y = '+T; p.eq2=A+'x + '+C+'y = '+Rev;
+    p.a1=1; p.b1=1; p.c1=T; p.a2=A; p.b2=C; p.c2=Rev;
   } else if(tpl==='sumdiff'){
     x0=ri(6,15); y0=ri(1,x0-1);
     var S=x0+y0, D=x0-y0;
     p.text='The sum of two numbers is '+S+' and their difference is '+D+'. Find the two numbers.';
     p.labX='Larger'; p.labY='Smaller';
-    p.eq1='x + y = '+S; p.eq2='x '+MIN+' y = '+D;
-  } else {
+    p.a1=1; p.b1=1; p.c1=S; p.a2=1; p.b2=-1; p.c2=D;
+  } else if(tpl==='store'){
     x0=ri(2,8); y0=ri(2,8);
     var a=rc([3,4,5]), b=rc([1,2]), N=x0+y0, Cost=a*x0+b*y0;
     p.text='Notebooks cost $'+a+' each and pens cost $'+b+' each. You buy '+N
       +' items in all for $'+Cost+'. How many notebooks and how many pens did you buy?';
     p.labX='Notebooks'; p.labY='Pens';
-    p.eq1='x + y = '+N; p.eq2=a+'x + '+b+'y = '+Cost;
+    p.a1=1; p.b1=1; p.c1=N; p.a2=a; p.b2=b; p.c2=Cost;
+  } else if(tpl==='multiple'){
+    y0=ri(4,15); var k=rc([2,3]), extra=ri(-4,8);
+    x0=k*y0+extra;
+    var S2=x0+y0;
+    var rel = extra===0 ? (k+' times a second number') : (extra>0 ? extra+' more than '+k+' times a second number' : Math.abs(extra)+' less than '+k+' times a second number');
+    p.text='One number is '+rel+'. Together the two numbers add up to '+S2+'. What are the two numbers?';
+    p.labX='First number'; p.labY='Second number';
+    p.a1=1; p.b1=-k; p.c1=extra; p.a2=1; p.b2=1; p.c2=S2;
+  } else {
+    x0=ri(3,12); y0=ri(3,12);
+    var T2=x0+y0, Cents=5*x0+10*y0;
+    p.text='A jar contains only nickels and dimes. There are '+T2+' coins in all, worth '
+      +centsToDollars(Cents)+'. How many nickels and how many dimes are in the jar?';
+    p.labX='Nickels'; p.labY='Dimes';
+    p.a1=1; p.b1=1; p.c1=T2; p.a2=5; p.b2=10; p.c2=Cents;
   }
   p.tpl=tpl; p.x0=R(x0,1); p.y0=R(y0,1);
 }
@@ -471,8 +601,8 @@ function sysSteps(p){
          + st('Substitute back to get y = '+ratHTML(p.y0),true);
   }
   return st('Let x = '+p.labX.toLowerCase()+' and y = '+p.labY.toLowerCase()+'.')
-       + st('(1)  '+p.eq1)
-       + st('(2)  '+p.eq2)
+       + st('(1)  '+sysEqStr(p.a1,p.b1,p.c1,p.form1))
+       + st('(2)  '+sysEqStr(p.a2,p.b2,p.c2,p.form2))
        + st('Solve the system:  x = '+ratHTML(p.x0)+',  y = '+ratHTML(p.y0),true);
 }
 function sysHints(p){
@@ -503,11 +633,14 @@ var SES=[
         + 'Solve the equation for <b>x</b>.<br>'
         + '<span class="given">'+eqLeft(p)+' = '+eqRight(p)+'</span>';
     },
-    answerHTML:function(p){ return '<div class="answer"><span>x =</span>'+inBox('x','wide')+'</div>'; },
+    answerHTML:function(p){ return '<div class="answer"><span>x =</span>'+inBox('x','wide')+'</div>'+sharedKbdHTML(); },
     read:function(p){ var x=parseRat(document.getElementById('x').value); return x?{x:x}:null; },
     check:function(p,a){ return req(a.x,p.x0); },
     hints:eqHints, steps:eqSteps,
-    init:function(p){ wireSeg('eqSeg',eqMode,function(v){ eqMode=v; newProblem(); }); },
+    init:function(p){
+      wireSeg('eqSeg',eqMode,function(v){ eqMode=v; newProblem(); });
+      wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    },
     emptyMsg:'Enter a value for x — fractions like 3/4 or \u22125/2 are fine.'
   },
   {
@@ -526,7 +659,7 @@ var SES=[
           '<option value="gt">&gt;</option>'+
           '<option value="le">\u2264</option>'+
           '<option value="ge">\u2265</option>'+
-        '</select>'+inBox('bv','wide')+'</div>';
+        '</select>'+inBox('bv','wide')+'</div>'+sharedKbdHTML();
     },
     read:function(p){
       var op=document.getElementById('op').value, v=parseRat(document.getElementById('bv').value);
@@ -534,7 +667,10 @@ var SES=[
     },
     check:function(p,a){ return a.op===p.op && req(a.val,p.x0); },
     hints:ineqHints, steps:ineqSteps,
-    init:function(p){ wireSeg('ineqSeg',ineqMode,function(v){ ineqMode=v; newProblem(); }); },
+    init:function(p){
+      wireSeg('ineqSeg',ineqMode,function(v){ ineqMode=v; newProblem(); });
+      wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    },
     emptyMsg:'Pick a symbol from the dropdown and enter the boundary number.'
   },
   {
@@ -542,18 +678,22 @@ var SES=[
     blurb:'Solve systems of two linear equations with two variables for mathematical and real-world problems.',
     gen:genSys,
     prompt:function(p){
-      var head=segWrap('TYPE','sysSeg',sysMode,[['mix','Mixed'],['graph','Graph'],['elim','Algebra'],['word','Word']]);
+      var head=segWrap('TYPE','sysSeg',sysMode,[['mix','Mixed'],['graph','Graph'],['elim','Algebra'],['word','Word']])
+        + formWrap('sysFormSeg',sysFormMode,[['mix','Mixed'],['std','Standard'],['si','Slope-intercept']]);
       if(p.flavor==='graph'){
         return head+'The two lines below are graphed. Find the solution of the system — the point where they cross (whole-number coordinates).'
           +'<div style="margin-top:8px">'
-          +'<span class="given" style="font-size:18px;color:#2f6cff">y = '+linHTML(p.m1,p.k1)+'</span> &nbsp; '
-          +'<span class="given" style="font-size:18px;color:#e5484d">y = '+linHTML(p.m2,p.k2)+'</span></div>'
+          +'<span class="given" style="font-size:18px;color:#2f6cff">'+sysEqStr(-p.m1,1,p.k1,p.form1)+'</span> &nbsp; '
+          +'<span class="given" style="font-size:18px;color:#e5484d">'+sysEqStr(-p.m2,1,p.k2,p.form2)+'</span></div>'
           +plot({Rg:6,lines:[{m:p.m1,k:p.k1,color:'#2f6cff'},{m:p.m2,k:p.k2,color:'#e5484d'}]});
       }
       if(p.flavor==='elim'){
         return head+'Solve the system of equations for x and y.<br>'
-          +'<span class="given" style="line-height:1.7">'+stdEqHTML(p.a1,p.b1,p.c1)+'<br>'+stdEqHTML(p.a2,p.b2,p.c2)+'</span>';
+          +'<span class="given" style="line-height:1.7">'+sysEqStr(p.a1,p.b1,p.c1,p.form1)+'<br>'+sysEqStr(p.a2,p.b2,p.c2,p.form2)+'</span>';
       }
+      /* word: equations are deliberately NOT shown here — translating the story into
+         equations is the point of this flavor. FORM only affects how they're written
+         out in Show Steps, once the student asks to see the setup (see Part 9.2). */
       return head+'<div style="font-weight:800">'+p.text+'</div>';
     },
     answerHTML:function(p){
@@ -561,7 +701,7 @@ var SES=[
       var note=(p.flavor==='word')?'<span class="lbl">Enter whole numbers.</span>':'';
       return '<div class="answer">'+note+
         '<span>'+lx+' =</span>'+inBox('sx','wide')+
-        '<span style="margin-left:14px">'+ly+' =</span>'+inBox('sy','wide')+'</div>';
+        '<span style="margin-left:14px">'+ly+' =</span>'+inBox('sy','wide')+'</div>'+sharedKbdHTML();
     },
     read:function(p){
       var x=parseRat(document.getElementById('sx').value), y=parseRat(document.getElementById('sy').value);
@@ -569,7 +709,11 @@ var SES=[
     },
     check:function(p,a){ return req(a.x,p.x0)&&req(a.y,p.y0); },
     hints:sysHints, steps:sysSteps,
-    init:function(p){ wireSeg('sysSeg',sysMode,function(v){ sysMode=v; newProblem(); }); },
+    init:function(p){
+      wireSeg('sysSeg',sysMode,function(v){ sysMode=v; newProblem(); });
+      wireSeg('sysFormSeg',sysFormMode,function(v){ sysFormMode=v; newProblem(); });
+      wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    },
     emptyMsg:'Fill in both boxes — one value for each variable.'
   }
 ];
