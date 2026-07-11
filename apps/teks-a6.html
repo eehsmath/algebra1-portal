@@ -107,12 +107,63 @@
   .stepsBox .st{display:block; margin:2px 0}
   .stepsBox .final{color:#4a2fae}
   .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
-  .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden; flex-wrap:wrap}
-  .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
+  .drSeg{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden; flex-wrap:wrap}
+  .drSeg button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
     cursor:pointer; font-family:inherit; color:var(--ink)}
   .drSeg button.active{background:#f4f1ff; color:#4a2fae}
-  .drTog button.active{background:#eafff7; color:#0c6d54}
   .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+
+  /* ---------- A.6A · Domain & Range Lab (ported from A.2A / domain-range.html; quadratic generators) ---------- */
+  .drWrap{display:grid; grid-template-columns:minmax(280px,480px) 1fr; gap:14px; align-items:start}
+  @media (max-width:860px){ .drWrap{grid-template-columns:1fr} }
+  .drCanvasBox{position:relative; max-width:480px}
+  #drCanvas{width:100%; aspect-ratio:1; display:block; border-radius:12px; border:1px solid #e7edff;
+    background:#fff; touch-action:none}
+  .drSide{display:flex; flex-direction:column; gap:10px; min-width:0}
+  .drCtl{display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .drField{position:relative}
+  .drVerbal{font-size:15px; font-weight:800; color:var(--muted); min-height:20px; margin:2px 2px 6px; line-height:1.3}
+  .drVerbal.ready{color:#4a2fae}
+  .drStatus{display:flex; align-items:center; gap:8px; margin:0 0 6px; min-height:24px; flex-wrap:wrap}
+  .drChipSlot{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
+  .drChip{padding:8px 13px; border-radius:999px; font-weight:900; font-size:14px; border:1px solid var(--ui);
+    background:#fff; box-shadow:0 6px 16px rgba(0,0,0,.06)}
+  .drChip.ok{color:#0b6b2f; background:#eafff2; border-color:#bfeacc}
+  .drChip.bad{color:#a33232; background:#fff3f3; border-color:#ffd4d4}
+  .drIO{display:flex; align-items:center; gap:6px}
+  .drInWrap{position:relative; flex:1; min-width:0}
+  .drBig{width:100%; min-height:52px; padding:10px 12px 10px 54px; border:2px solid var(--ui); border-radius:12px;
+    background:#fff; font-size:clamp(18px,2.6vw,24px); font-weight:800; font-family:inherit; color:var(--ink);
+    letter-spacing:.4px; word-spacing:.6ch; font-variant-numeric:tabular-nums lining-nums; outline:none}
+  .drBig::placeholder{color:#9aa9c9}
+  .drBig:focus{border-color:#c3b6ff; box-shadow:0 0 0 3px rgba(142,120,255,.22)}
+  .drKbdBtn{position:absolute; left:6px; top:50%; transform:translateY(-50%); width:36px; height:36px;
+    border:1px solid var(--ui); border-radius:10px; background:#fff; display:grid; place-items:center; cursor:pointer; z-index:5}
+  .drKbdBtn svg{width:18px; height:18px}
+  .drBandBtn{width:52px; height:52px; flex:none; border:1px solid var(--ui); border-radius:12px; background:#fff;
+    display:grid; place-items:center; cursor:pointer; font-size:26px; line-height:1; transition:.15s all}
+  .drBandBtn.active{background:#f4f1ff; border-color:#c3b6ff; box-shadow:0 0 0 3px rgba(142,120,255,.22) inset}
+  .drBandBtn:disabled{opacity:.35; cursor:default}
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKey.wide{grid-column:1 / -1; margin-top:2px; padding:8px 2px; font-size:15px; background:#f7f5ff}
+  .drCoach{display:none; border:1px solid #ffd4d4; background:#fff7f7; color:#7b3232; padding:10px;
+    border-radius:12px; font-weight:700; font-size:13.5px; line-height:1.35}
+  .drCoach h4{margin:0 0 6px; font-size:12px; letter-spacing:.3px}
+  .drCoach ul{margin:0; padding-left:18px}
+  .drCoach li{margin:3px 0}
+  .drCoach li.dom{color:#0e3d98; border-left:4px solid #2f6cff; padding-left:8px}
+  .drCoach li.rng{color:#0c6d54; border-left:4px solid #36c2a0; padding-left:8px}
+  .drAnsChip{display:inline-block; margin:2px 8px 2px 0; padding:8px 12px; border-radius:999px;
+    background:#fff7cc; border:1px solid #ffe28a; color:#7a5a00; font-weight:900; font-size:14.5px}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#f4f1ff; border-color:#c3b6ff}
 </style>
 </head>
 <body>
@@ -151,6 +202,29 @@
   </div>
 </div>
 
+<!-- CSV-driven coach messages for the A.6A Domain & Range Lab (ported from A.2A / domain-range.html,
+     plus one added row for the parabola-segment vertex-inside-range edge case). No mode column —
+     A.6A doesn't have a training/testing split; dragging a handle in still logs as a hint use
+     instead (see logHintUse() in the controller). Inequality notation only — no interval mentions. -->
+<script id="coachMessages" type="text/csv">
+tip_id,priority,category,applies_to,condition,message
+numbers_segment,1,numbers,both,segment_two_numbers,Numbers: Check the endpoint values.
+numbers_one_sided,1,numbers,both,ray_or_full_one_number,Number: Check the boundary point values. (the starting point of the function)
+numbers_parabola_segment_range,1,numbers,range,parabola_segment_vertex_inside,Numbers: Check the max/min value — the vertex may be the actual endpoint.
+direction_domain,2,direction,domain,inequality_direction_mismatch,Direction: Shade to the {{left_or_right}}. Use ≥/≤ for that direction. (Tap the band line to change)
+direction_range,2,direction,range,inequality_direction_mismatch,Direction: Shade {{up_or_down}}. Use ≥/≤ for that direction. (Tap the band line to change)
+endpoint_included,3,endpoints,both,endpoint_should_be_included,Endpoints: The endpoint at {{var}} = {{a}} is included — use ≤ or ≥.
+endpoint_excluded,3,endpoints,both,endpoint_should_be_excluded,Endpoints: The endpoint at {{var}} = {{a}} is not included — use < or >.
+form_one_sided,4,form,both,answer_is_one_sided,Form: This one is one-sided (ray). Use a single inequality like {{var}} ≥ a or {{var}} ≤ a.
+form_two_sided,4,form,both,answer_is_two_sided,Form: This one is two-sided (segment). Use two bounds like a ≤ {{var}} ≤ b.
+form_all_reals_true,4,form,both,answer_is_all_reals,Form: Here it’s all real numbers (no endpoints to find).
+unbounded_domain,5,unbounded,domain,extends_left_or_right_infinite,Unbounded: The graph extends left/right without bound.
+unbounded_range,5,unbounded,range,extends_up_or_down_infinite,Unbounded: The graph extends up/down without bound.
+variable_mismatch_domain,6,variable,domain,used_y_instead_of_x,Variable: Use x for Domain.
+variable_mismatch_range,6,variable,range,used_x_instead_of_y,Variable: Use y for Range.
+order_bounds,6,order,both,bounds_reversed,Order: Put the smaller number first: a ≤ {{var}} ≤ b.
+unreadable,6,readability,both,parse_failed,"I can’t read that yet. Try x ≤ 3 or −2 ≤ x ≤ 5."
+</script>
 <script src="../portal.js"></script>
 <script>
 (function(){
@@ -226,6 +300,806 @@ function wireSeg(id,cur,cb){
 }
 
 /* =====================================================================
+   A.6A LAB ENGINE — ported from A.2A's Domain & Range Lab (teks-a2.html),
+   which was itself ported from the standalone domain-range.html. Same
+   canvas / draggable-band / CSV-coach machinery as A.2A, unchanged where
+   it isn't shape-specific. What's swapped in: the generator, the
+   domain/range interval math, and drawGraph's per-type branches — all
+   taken from domain-range.html's genQuadratic()/graphDomain()/
+   graphRange()/drawGraph() quad-* cases (that legacy app already had
+   parabola support; A.2A's port never carried it over because A.2 only
+   needed lines). Zig-zag is deliberately NOT offered here — it's a
+   piecewise-*linear* shape and doesn't belong in a quadratics section;
+   see the tweaking-guide addendum for this call.
+   ===================================================================== */
+var LAB={ level:'mix' };
+var CFG={ xmin:-10, xmax:10, ymin:-10, ymax:10, tick:1, grid:true };
+var EPS=1e-6, handleRadiusPx=8, hitRadiusPx=26, tapThreshold=6, lineHitPx=16;
+
+var canvas=null, c=null, curG=null, reveal=false, gridYLabelX=null, labRO=null;
+var domainBand={mode:'double', visible:false, lo:-2, hi:3, loInc:true, hiInc:true, value:0, dir:1, inc:true};
+var rangeBand ={mode:'double', visible:false, lo:-1, hi:4, loInc:true, hiInc:true, value:0, dir:1, inc:true};
+var tool='idle', dragStart={x:0,y:0}, activeDrag={which:null, moved:false};
+
+function roundT(v){ return Math.round(v/CFG.tick)*CFG.tick; }
+function clampN(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function ux(x){ return (x-CFG.xmin)/(CFG.xmax-CFG.xmin)*canvas.clientWidth; }
+function uy(y){ var H=canvas.clientHeight; return H-(y-CFG.ymin)/(CFG.ymax-CFG.ymin)*H; }
+function wx(px){ return CFG.xmin + px/canvas.clientWidth*(CFG.xmax-CFG.xmin); }
+function wy(py){ var H=canvas.clientHeight; return CFG.ymin + (H-py)/H*(CFG.ymax-CFG.ymin); }
+
+/* ---------- generator (answerable, integers) — ported from domain-range.html's genQuadratic() ---------- */
+function genQuad(level){
+  var a=rc([-2,-1,1,2]), h=ri(-4,4), k=ri(-2,3);
+  if(level==='full') return {type:'quad-full', a:a, h:h, k:k};
+  function dMax(){
+    return a>0 ? Math.floor(Math.sqrt(Math.max(0,(CFG.ymax-2-k)/a)))
+               : Math.floor(Math.sqrt(Math.max(0,(k-(CFG.ymin+2))/(-a))));
+  }
+  var dmax=Math.max(2,Math.min(6,dMax())); if(dmax%2===1) dmax--;
+  if(dmax<2){ a=a>0?1:-1; dmax=2; }
+  var opts=[2,4,6].filter(function(v){ return v<=dmax; });
+  var d=rc(opts), L=h-d, R=h+d;
+  if(level==='segment'){
+    var pats=[{cL:true,cR:false},{cL:false,cR:true},{cL:true,cR:true},{cL:false,cR:false}];
+    var pk=Math.random(), idx=(pk<0.30)?0:(pk<0.60)?1:(pk<0.80)?2:3;
+    return {type:'quad-seg', a:a, h:h, k:k, L:L, R:R, cL:pats[idx].cL, cR:pats[idx].cR};
+  }
+  var right=Math.random()<0.5, closed=Math.random()<0.5;
+  return {type:'quad-ray', a:a, h:h, k:k, right:right, closed:closed};
+}
+function answerable(g){
+  function inside(x,y){ return x>CFG.xmin+0.8 && x<CFG.xmax-0.8 && y>CFG.ymin+0.8 && y<CFG.ymax-0.8; }
+  switch(g.type){
+    case 'quad-full': return inside(g.h,g.k);
+    case 'quad-seg' : return inside(g.L, g.a*(g.L-g.h)*(g.L-g.h)+g.k) && inside(g.R, g.a*(g.R-g.h)*(g.R-g.h)+g.k);
+    case 'quad-ray' : return inside(g.h,g.k);
+    default: return false;
+  }
+}
+function newLabGraph(){
+  var lvl=LAB.level;
+  var kind=(lvl==='mix')? rc(['segment','ray','full']) : lvl;
+  var g=null, tries=0;
+  do{ g=genQuad(kind); tries++; } while(!answerable(g)&&tries<60);
+  if(!answerable(g)) g={type:'quad-seg', a:1, h:0, k:-2, L:-4, R:4, cL:true, cR:false};
+  g.domainAnswer=graphDomainOf(g);
+  g.rangeAnswer=graphRangeOf(g);
+  return g;
+}
+
+/* ---------- intervals (identical to A.2A's I helper, minus the interval-
+   notation branch — this app only practices inequality notation now) ---------- */
+var I={
+  all:function(){ return {lo:-Infinity, hi:Infinity, loInc:true, hiInc:true}; },
+  withEnds:function(lo,hi,loInc,hiInc){ if(hi<lo){ var t=lo;lo=hi;hi=t; var s=loInc;loInc=hiInc;hiInc=s; } return {lo:lo,hi:hi,loInc:loInc,hiInc:hiInc}; },
+  half:function(a,aInc,b,bInc){ return {lo:a, hi:b, loInc:aInc, hiInc:bInc}; },
+  eq:function(a,b){ return Math.abs(a-b)<1e-6; },
+  same:function(A,B){
+    var loInf=(A.lo===-Infinity&&B.lo===-Infinity), hiInf=(A.hi===Infinity&&B.hi===Infinity);
+    return (loInf||this.eq(A.lo,B.lo)) && (hiInf||this.eq(A.hi,B.hi)) &&
+           (loInf|| !!A.loInc===!!B.loInc) && (hiInf|| !!A.hiInc===!!B.hiInc);
+  },
+  fmt:function(A,axis){
+    function n(v){ return v===Infinity?'\u221e':(v===-Infinity?'\u2212\u221e':roundT(v)); }
+    var varCh=(axis==='x'?'x':'y'), out='';
+    if(A.lo===-Infinity&&A.hi===Infinity) out='all real numbers';
+    else if(A.lo===-Infinity) out=varCh+' '+(A.hiInc?'\u2264':'<')+' '+n(A.hi);
+    else if(A.hi===Infinity)  out=varCh+' '+(A.loInc?'\u2265':'>')+' '+n(A.lo);
+    else out=n(A.lo)+' '+(A.loInc?'\u2264':'<')+' '+varCh+' '+(A.hiInc?'\u2264':'<')+' '+n(A.hi);
+    return out;
+  }
+};
+
+
+/* ---------- correct answers — ported from domain-range.html's graphDomain()/graphRange() (quad cases only) ---------- */
+function graphDomainOf(g){
+  switch(g.type){
+    case 'quad-full': return I.all();
+    case 'quad-seg' : return I.withEnds(Math.min(g.L,g.R), Math.max(g.L,g.R), !!g.cL, !!g.cR);
+    case 'quad-ray' : return g.right? I.half(g.h,!!g.closed,Infinity,true) : I.half(-Infinity,true,g.h,!!g.closed);
+  }
+}
+function graphRangeOf(g){
+  switch(g.type){
+    case 'quad-full': return (g.a>0)? I.half(g.k,true,Infinity,true) : I.half(-Infinity,true,g.k,true);
+    case 'quad-seg': {
+      var yL=g.a*(g.L-g.h)*(g.L-g.h)+g.k, yR=g.a*(g.R-g.h)*(g.R-g.h)+g.k;
+      var lo=Math.min(yL,yR), hi=Math.max(yL,yR), loInc, hiInc;
+      if(yL<yR){ loInc=!!g.cL; hiInc=!!g.cR; }
+      else if(yR<yL){ loInc=!!g.cR; hiInc=!!g.cL; }
+      else { loInc=hiInc=!!(g.cL||g.cR); }
+      /* the vertex sits strictly between L and R: it's a hidden third point
+         that can quietly become the true min/max, overriding whichever
+         endpoint the naive yL/yR comparison above picked */
+      if(g.L<g.h && g.h<g.R){
+        var yV=g.k;
+        if(g.a>0){ if(Math.abs(yV-lo)<1e-6) loInc=true; else if(yV<lo-1e-6){ lo=yV; loInc=true; } }
+        else { if(Math.abs(yV-hi)<1e-6) hiInc=true; else if(yV>hi+1e-6){ hi=yV; hiInc=true; } }
+      }
+      return I.withEnds(lo,hi,loInc,hiInc);
+    }
+    case 'quad-ray': return (g.a>0)? I.half(g.k,!!g.closed,Infinity,true) : I.half(-Infinity,true,g.k,!!g.closed);
+  }
+}
+function explainWhy(g){
+  switch(g.type){
+    case 'quad-full': return 'A full parabola has vertex ('+fmtInt(g.h)+', '+fmtInt(g.k)+'). It stretches left and right forever, so Domain is all real numbers; it only opens '+(g.a>0?'up':'down')+' from the vertex, so Range is y '+(g.a>0?'\u2265':'\u2264')+' '+fmtInt(g.k)+'.';
+    case 'quad-seg' : return 'For a parabola segment, Domain runs from the left x-end to the right x-end. Range runs between the y-values at those ends \u2014 unless the vertex sits between them, in which case the vertex itself is the actual min or max.';
+    case 'quad-ray' : return 'This parabola ray starts at the vertex ('+fmtInt(g.h)+', '+fmtInt(g.k)+') and runs '+(g.right?'right':'left')+' forever; Range is y '+(g.a>0?'\u2265':'\u2264')+' '+fmtInt(g.k)+', same as the vertex.';
+  }
+}
+
+/* ---------- band shapes (quad-full still needs a range band, even with no domain band \u2014
+   the parabola's domain is always all reals, but its range is a one-sided ray) ---------- */
+function applyBandShape(){
+  if(!curG) return;
+  if(curG.type==='quad-full'){ domainBand.mode='none'; rangeBand.mode='single'; }
+  else if(curG.type==='quad-ray'){ domainBand.mode='single'; rangeBand.mode='single'; }
+  else { domainBand.mode='double'; rangeBand.mode='double'; } /* quad-seg */
+}
+function bandDefaults(){
+  if(domainBand.mode==='double'){ domainBand.lo=-2; domainBand.hi=3; domainBand.loInc=true; domainBand.hiInc=true; }
+  if(domainBand.mode==='single'){ domainBand.value=0; domainBand.dir=1; domainBand.inc=true; }
+  if(rangeBand.mode==='double'){ rangeBand.lo=-1; rangeBand.hi=4; rangeBand.loInc=true; rangeBand.hiInc=true; }
+  if(rangeBand.mode==='single'){ rangeBand.value=0; rangeBand.dir=1; rangeBand.inc=true; }
+  domainBand.visible=false; rangeBand.visible=false;
+}
+function bandToInterval(b){
+  if(b.mode==='double'){ return I.withEnds(Math.min(b.lo,b.hi), Math.max(b.lo,b.hi), b.lo<=b.hi?b.loInc:b.hiInc, b.lo<=b.hi?b.hiInc:b.loInc); }
+  if(b.mode==='single'){ return (b.dir>0)? I.half(b.value,b.inc,Infinity,true) : I.half(-Infinity,true,b.value,b.inc); }
+  return I.all();
+}
+function syncInputsFromBands(){
+  var d=document.getElementById('drDom'), r=document.getElementById('drRng');
+  if(!d||!r) return;
+  if(domainBand.visible){ d.value=I.fmt(bandToInterval(domainBand),'x'); d.dispatchEvent(new Event('input',{bubbles:true})); }
+  if(rangeBand.visible){  r.value=I.fmt(bandToInterval(rangeBand ),'y'); r.dispatchEvent(new Event('input',{bubbles:true})); }
+}
+
+/* ---------- plain-language translation of whatever the student typed (ported from A.2A) ---------- */
+function verbalize(A,axis){
+  if(!A) return null;
+  var v=axis;
+  if(A.lo===-Infinity&&A.hi===Infinity) return v+' can be any real number.';
+  if(A.hi===Infinity) return v+' is '+(A.loInc?'at least ':'greater than ')+fmtInt(roundT(A.lo))+'.';
+  if(A.lo===-Infinity) return v+' is '+(A.hiInc?'at most ':'less than ')+fmtInt(roundT(A.hi))+'.';
+  var loPhrase=(A.loInc?'at least ':'greater than ')+fmtInt(roundT(A.lo));
+  var hiPhrase=(A.hiInc?'at most ':'less than ')+fmtInt(roundT(A.hi));
+  return v+' is '+loPhrase+' and '+hiPhrase+'.';
+}
+function updateVerbal(inputId,verbalId,axis){
+  var input=document.getElementById(inputId), out=document.getElementById(verbalId);
+  if(!input||!out) return;
+  var msg=verbalize(parseField(input.value.trim()),axis);
+  if(msg){ out.textContent=msg; out.classList.add('ready'); }
+  else{ out.textContent='Type or drag '+(axis==='x'?'\u2194\ufe0f':'\u2195\ufe0f')+' to see what it means'; out.classList.remove('ready'); }
+}
+
+/* ---------- canvas sizing + draw (identical machinery to A.2A) ---------- */
+function ensureCanvasSize(){
+  if(!canvas) return false;
+  var dpr=Math.max(1,Math.floor(window.devicePixelRatio||1));
+  var cssSize=Math.min(canvas.parentElement.clientWidth,480);
+  if(cssSize<=0) return false;
+  var target=Math.floor(cssSize*dpr);
+  if(canvas.width!==target){
+    canvas.style.width=cssSize+'px'; canvas.style.height=cssSize+'px';
+    canvas.width=target; canvas.height=target;
+    c.setTransform(1,0,0,1,0,0); c.scale(dpr,dpr);
+  }
+  return true;
+}
+function withCanvasReady(fn,tries){
+  tries=tries||0;
+  if(ensureCanvasSize()&&canvas.clientWidth>0){ fn(); return; }
+  if(tries<12){ requestAnimationFrame(function(){ withCanvasReady(fn,tries+1); }); } else { fn(); }
+}
+function draw(){
+  if(!canvas||!c) return;
+  c.save(); c.resetTransform(); c.clearRect(0,0,canvas.width,canvas.height); c.restore();
+  drawGrid();
+  if(curG) drawGraph(curG,'#8e78ff');
+  if(reveal&&curG){
+    drawBand(curG.domainAnswer,'x','#f4c431',true);
+    drawBand(curG.rangeAnswer ,'y','#f4c431',true);
+  }
+  if(domainBand.visible&&domainBand.mode!=='none') drawBand(domainBand,'x','#ff5577');
+  if(rangeBand.visible &&rangeBand.mode!=='none')  drawBand(rangeBand ,'y','#ff5577');
+  drawAnchorLabels();
+}
+function drawGrid(){
+  var W=canvas.clientWidth, H=canvas.clientHeight;
+  if(CFG.grid){
+    c.save(); c.strokeStyle='#e9eefb'; c.lineWidth=1;
+    for(var x=CFG.xmin;x<=CFG.xmax+EPS;x+=CFG.tick){ var px=ux(x); c.beginPath(); c.moveTo(px,0); c.lineTo(px,H); c.stroke(); }
+    for(var y=CFG.ymin;y<=CFG.ymax+EPS;y+=CFG.tick){ var py=uy(y); c.beginPath(); c.moveTo(0,py); c.lineTo(W,py); c.stroke(); }
+    c.restore();
+  }
+  c.save();
+  var ax=ux(0), ay=uy(0);
+  c.strokeStyle='#0b52ff'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(ax,0); c.lineTo(ax,H); c.stroke();
+  c.beginPath(); c.moveTo(0,ay); c.lineTo(W,ay); c.stroke();
+  c.fillStyle='rgba(15,35,64,.95)'; c.font='900 16px ui-rounded, system-ui';
+  c.shadowColor='rgba(255,255,255,.9)'; c.shadowBlur=6;
+  c.textAlign='center'; c.textBaseline='top';
+  var yLabel=(ay>H-26)? ay-22 : ay+6;
+  for(var xx=Math.ceil(CFG.xmin/2)*2; xx<=CFG.xmax; xx+=2){ if(Math.abs(xx)<EPS) continue; c.fillText(xx, ux(xx), Math.max(2,Math.min(H-20,yLabel))); }
+  var leftSide=ax>26; c.textAlign=leftSide?'right':'left'; c.textBaseline='middle';
+  var xTickCol=Math.max(8,Math.min(W-8, ax+(leftSide?-8:8)));
+  for(var yy=Math.ceil(CFG.ymin/2)*2; yy<=CFG.ymax; yy+=2){ if(Math.abs(yy)<EPS) continue; c.fillText(yy, xTickCol, uy(yy)); }
+  c.font='900 18px ui-rounded, system-ui';
+  c.textAlign=leftSide?'left':'right'; c.textBaseline='top';
+  gridYLabelX=Math.max(12,Math.min(W-12, ax+26*(leftSide?1:-1)));
+  c.fillText('(y)', gridYLabelX, 10);
+  c.textAlign='left'; c.textBaseline='bottom';
+  c.fillText('(x)', Math.max(0,W-30), Math.max(16,Math.min(H-6,ay-6)));
+  c.restore();
+}
+function drawGraph(g,color){
+  c.save(); c.strokeStyle=color; c.lineWidth=4; c.lineJoin='round'; c.lineCap='round';
+  switch(g.type){
+    case 'quad-full': {
+      var step=(CFG.xmax-CFG.xmin)/200; c.beginPath();
+      for(var x=CFG.xmin; x<=CFG.xmax; x+=step){ var y=g.a*(x-g.h)*(x-g.h)+g.k, px=ux(x), py=uy(y); (x===CFG.xmin?c.moveTo(px,py):c.lineTo(px,py)); }
+      c.stroke();
+      break;
+    }
+    case 'quad-seg': {
+      var step2=(g.R-g.L)/160; c.beginPath();
+      for(var x2=g.L; x2<=g.R+EPS; x2+=step2){ var y2=g.a*(x2-g.h)*(x2-g.h)+g.k, px2=ux(x2), py2=uy(y2); (x2===g.L?c.moveTo(px2,py2):c.lineTo(px2,py2)); }
+      c.stroke();
+      drawEnd(ux(g.L),uy(g.a*(g.L-g.h)*(g.L-g.h)+g.k),g.cL);
+      drawEnd(ux(g.R),uy(g.a*(g.R-g.h)*(g.R-g.h)+g.k),g.cR);
+      break;
+    }
+    case 'quad-ray': {
+      var step3=(CFG.xmax-CFG.xmin)/200, xStart=g.h, xEnd=g.right?CFG.xmax:CFG.xmin;
+      c.beginPath();
+      for(var x3=xStart; g.right? x3<=xEnd : x3>=xEnd; x3+= g.right? step3 : -step3){ var y3=g.a*(x3-g.h)*(x3-g.h)+g.k, px3=ux(x3), py3=uy(y3); (x3===xStart?c.moveTo(px3,py3):c.lineTo(px3,py3)); }
+      c.stroke();
+      drawEnd(ux(g.h),uy(g.k),g.closed);
+      drawArrowTowards(ux(xEnd),uy(g.a*(xEnd-g.h)*(xEnd-g.h)+g.k), g.right?1:-1);
+      break;
+    }
+  }
+  c.restore();
+}
+function drawEnd(x,y,closed){
+  var r=handleRadiusPx;
+  c.save();
+  c.beginPath(); c.arc(x,y,r+2,0,Math.PI*2); c.strokeStyle='rgba(255,255,255,0.95)'; c.lineWidth=4; c.stroke();
+  if(closed){
+    c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fillStyle='#ff5566'; c.fill();
+    c.beginPath(); c.arc(x,y,r-1,0,Math.PI*2); c.strokeStyle='rgba(255,255,255,0.9)'; c.lineWidth=2; c.stroke();
+  } else {
+    c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.strokeStyle='#ff5566'; c.lineWidth=4; c.stroke();
+  }
+  c.restore();
+}
+function drawArrowTowards(x,y,dir){
+  c.save(); c.fillStyle='#1a60ff'; c.beginPath(); var s=10;
+  if(dir>0){ c.moveTo(x,y); c.lineTo(x-s,y-s); c.lineTo(x-s,y+s); }
+  else{ c.moveTo(x,y); c.lineTo(x+s,y-s); c.lineTo(x+s,y+s); }
+  c.closePath(); c.fill(); c.restore();
+}
+function drawBand(b,axis,color,asAnswer){
+  c.save(); c.setLineDash([8,6]); c.lineWidth=2; c.strokeStyle=color;
+  if(b.mode==='double'||asAnswer===true){
+    if(!asAnswer){
+      c.globalAlpha=0.18; c.fillStyle=color;
+      if(axis==='x'){ var x1f=ux(b.lo), x2f=ux(b.hi); c.fillRect(Math.min(x1f,x2f),0,Math.abs(x2f-x1f),canvas.clientHeight); }
+      else{ var y1f=uy(b.lo), y2f=uy(b.hi); c.fillRect(0,Math.min(y1f,y2f),canvas.clientWidth,Math.abs(y2f-y1f)); }
+      c.globalAlpha=1;
+    }
+    if(axis==='x'){
+      var x1=ux((b.mode==='double')?b.lo:b.value), x2=ux((b.mode==='double')?b.hi:b.value);
+      c.beginPath(); c.moveTo(x1,0); c.lineTo(x1,canvas.clientHeight); c.moveTo(x2,0); c.lineTo(x2,canvas.clientHeight); c.stroke();
+      if(b.mode==='double'){ drawEnd(x1,uy(0),b.loInc); drawEnd(x2,uy(0),b.hiInc); }
+    } else {
+      var y1=uy((b.mode==='double')?b.lo:b.value), y2=uy((b.mode==='double')?b.hi:b.value);
+      c.beginPath(); c.moveTo(0,y1); c.lineTo(canvas.clientWidth,y1); c.moveTo(0,y2); c.lineTo(canvas.clientWidth,y2); c.stroke();
+      if(b.mode==='double'){ drawEnd(ux(0),y1,b.loInc); drawEnd(ux(0),y2,b.hiInc); }
+    }
+  }
+  if(b.mode==='single'&&!asAnswer){
+    if(axis==='x'){
+      var x=ux(b.value);
+      c.globalAlpha=0.18; c.fillStyle=color;
+      var fillW=(b.dir>0? canvas.clientWidth-x : x);
+      c.fillRect(b.dir>0?x:0, 0, Math.max(0,fillW), canvas.clientHeight);
+      c.globalAlpha=1;
+      c.beginPath(); c.moveTo(x,0); c.lineTo(x,canvas.clientHeight); c.stroke();
+      drawEnd(x,uy(0),b.inc);
+    } else {
+      var y=uy(b.value);
+      c.globalAlpha=0.18; c.fillStyle=color;
+      c.fillRect(0, b.dir>0?0:y, canvas.clientWidth, b.dir>0? y : (canvas.clientHeight-y));
+      c.globalAlpha=1;
+      c.beginPath(); c.moveTo(0,y); c.lineTo(canvas.clientWidth,y); c.stroke();
+      drawEnd(ux(0),y,b.inc);
+    }
+  }
+  c.restore();
+}
+function drawZenNum(text,x,y,align){
+  c.save(); c.font='800 30px ui-rounded, system-ui'; c.textAlign=align||'center'; c.textBaseline='middle';
+  c.shadowColor='rgba(255,255,255,.9)'; c.shadowBlur=9; c.fillStyle='rgba(15,35,64,.95)';
+  c.fillText(String(text),x,y); c.restore();
+}
+function drawAnchorLabels(){
+  var baseTop=24, rightX=canvas.clientWidth-24;
+  if(domainBand.visible&&domainBand.mode!=='none'){
+    if(domainBand.mode==='double'){
+      var xLo=Math.max(24,Math.min(canvas.clientWidth-24,ux(domainBand.lo)));
+      var xHi=Math.max(24,Math.min(canvas.clientWidth-24,ux(domainBand.hi)));
+      var avoid=(gridYLabelX==null)?-9999:gridYLabelX;
+      drawZenNum(roundT(domainBand.lo), xLo, (Math.abs(xLo-avoid)<26)?baseTop+18:baseTop, 'center');
+      drawZenNum(roundT(domainBand.hi), xHi, (Math.abs(xHi-avoid)<26)?baseTop+18:baseTop, 'center');
+    } else {
+      var x=Math.max(24,Math.min(canvas.clientWidth-24,ux(domainBand.value)));
+      var avoid2=(gridYLabelX==null)?-9999:gridYLabelX;
+      drawZenNum(roundT(domainBand.value), x, (Math.abs(x-avoid2)<26)?baseTop+18:baseTop, 'center');
+    }
+  }
+  if(rangeBand.visible&&rangeBand.mode!=='none'){
+    if(rangeBand.mode==='double'){
+      drawZenNum(roundT(rangeBand.lo), rightX, Math.max(22,Math.min(canvas.clientHeight-22,uy(rangeBand.lo))), 'right');
+      drawZenNum(roundT(rangeBand.hi), rightX, Math.max(22,Math.min(canvas.clientHeight-22,uy(rangeBand.hi))), 'right');
+    } else {
+      drawZenNum(roundT(rangeBand.value), rightX, Math.max(22,Math.min(canvas.clientHeight-22,uy(rangeBand.value))), 'right');
+    }
+  }
+}
+
+/* ---------- pointer interactions (drag handles / tap to toggle) ---------- */
+function handleHit(px,py){
+  function test(x,y,which){ return Math.hypot(px-x,py-y)<=hitRadiusPx?which:null; }
+  if(domainBand.visible&&domainBand.mode!=='none'){
+    if(domainBand.mode==='double'){
+      var y0=uy(0), h=test(ux(domainBand.lo),y0,'DLO')||test(ux(domainBand.hi),y0,'DHI');
+      if(h) return h;
+    } else {
+      var hS=test(ux(domainBand.value),uy(0),'DS'); if(hS) return hS;
+      if(Math.abs(px-ux(domainBand.value))<=lineHitPx) return 'DLINE';
+    }
+  }
+  if(rangeBand.visible&&rangeBand.mode!=='none'){
+    if(rangeBand.mode==='double'){
+      var x0=ux(0), h2=test(x0,uy(rangeBand.lo),'RLO')||test(x0,uy(rangeBand.hi),'RHI');
+      if(h2) return h2;
+    } else {
+      var h3=test(ux(0),uy(rangeBand.value),'RS'); if(h3) return h3;
+      if(Math.abs(py-uy(rangeBand.value))<=lineHitPx) return 'RLINE';
+    }
+  }
+  return null;
+}
+function labDown(e){
+  canvas.setPointerCapture(e.pointerId);
+  var px=e.offsetX, py=e.offsetY;
+  dragStart={x:px,y:py};
+  var hh=handleHit(px,py);
+  if(hh){ tool='drag'; activeDrag.which=hh; activeDrag.moved=false; }
+}
+function labMove(e){
+  if(tool!=='drag') return;
+  var px=e.offsetX, py=e.offsetY;
+  activeDrag.moved=Math.hypot(px-dragStart.x,py-dragStart.y)>tapThreshold;
+  if(activeDrag.which==='DLO') domainBand.lo=clampN(roundT(wx(px)),CFG.xmin,CFG.xmax);
+  if(activeDrag.which==='DHI') domainBand.hi=clampN(roundT(wx(px)),CFG.xmin,CFG.xmax);
+  if(activeDrag.which==='RLO') rangeBand.lo=clampN(roundT(wy(py)),CFG.ymin,CFG.ymax);
+  if(activeDrag.which==='RHI') rangeBand.hi=clampN(roundT(wy(py)),CFG.ymin,CFG.ymax);
+  if(activeDrag.which==='DS')  domainBand.value=clampN(roundT(wx(px)),CFG.xmin,CFG.xmax);
+  if(activeDrag.which==='RS')  rangeBand.value=clampN(roundT(wy(py)),CFG.ymin,CFG.ymax);
+  syncInputsFromBands();
+  draw();
+}
+function labUp(e){
+  canvas.releasePointerCapture(e.pointerId);
+  if(tool!=='drag') return;
+  if(!activeDrag.moved){
+    var isAlt=e.altKey||e.metaKey||e.ctrlKey;
+    if(activeDrag.which==='DLO') domainBand.loInc=!domainBand.loInc;
+    if(activeDrag.which==='DHI') domainBand.hiInc=!domainBand.hiInc;
+    if(activeDrag.which==='RLO') rangeBand.loInc=!rangeBand.loInc;
+    if(activeDrag.which==='RHI') rangeBand.hiInc=!rangeBand.hiInc;
+    if(activeDrag.which==='DS'){ if(isAlt) domainBand.dir*=-1; else domainBand.inc=!domainBand.inc; }
+    if(activeDrag.which==='RS'){ if(isAlt) rangeBand.dir*=-1; else rangeBand.inc=!rangeBand.inc; }
+    if(activeDrag.which==='DLINE') domainBand.dir*=-1;
+    if(activeDrag.which==='RLINE') rangeBand.dir*=-1;
+    syncInputsFromBands();
+  }
+  tool='idle'; draw();
+}
+
+/* ---------- math keyboard ---------- */
+var KEYS=['0','1','2','3','4','5','6','7','8','9','\u2264','<','\u2265','>','\u211d','x','y','\u2212','.','\u2423'];
+var kbdDocWired=false;
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,input){
+  var r=input.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
+}
+function wireKbd(inputId){
+  var input=document.getElementById(inputId);
+  var btn=document.querySelector('.drKbdBtn[data-for="'+inputId+'"]');
+  var pop=document.getElementById('drKbd-'+inputId);
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  KEYS.forEach(function(k){
+    var b=document.createElement('button'); b.type='button'; b.className='drKey'; b.textContent=k;
+    b.addEventListener('click',function(){
+      input.focus();
+      var token=(k==='\u2423')?' ':k;
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+token+input.value.slice(e2);
+      var pos=s+token.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide'; bs.textContent='\u232b';
+  bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){ if(s===0) return; s=s-1; }
+    input.value=input.value.slice(0,s)+input.value.slice(e2);
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){ pop.style.display='block'; placeKbd(pop,input); }
+  });
+  ensureKbdDocWiring();
+}
+
+/* ---------- floating keyboard: one button, types into whichever input last had focus ----------
+   Reusable across any SE with several small inline number/fraction boxes (A.6B and friends).
+   Tap the button to show it; it types into the last-focused box in its scope; tap the
+   button again to hide it. Ported from A.2A's version of the same building block (Part 1 of
+   the tweaking guide) \u2014 same shape, just reusing labKbdSVG() for the icon instead of a
+   separate kbdSVG(), since A.6A already had one under that name. ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  SHARED_KEYS.forEach(function(k){
+    var b=document.createElement('button'); b.type='button'; b.className='drKey'; b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide'; bs.textContent='\u232b';
+  bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){ if(s===0) return; s=s-1; }
+    input.value=input.value.slice(0,s)+input.value.slice(e2);
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT') sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function sharedKbdHTML(){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+labKbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid"></div></div>'+
+  '</div>';
+}
+
+/* ---------- CSV coach ---------- */
+function parseLabCSV(text){
+  var rows=[], i=0, field='', rec=[], inQ=false;
+  function pushField(){ rec.push(field); field=''; }
+  function pushRec(){ if(rec.length){ rows.push(rec); rec=[]; } }
+  while(i<text.length){
+    var ch=text[i++];
+    if(inQ){
+      if(ch==='"'&&text[i]==='"'){ field+='"'; i++; }
+      else if(ch==='"'){ inQ=false; }
+      else field+=ch;
+    } else {
+      if(ch==='"'){ inQ=true; }
+      else if(ch===','){ pushField(); }
+      else if(ch==='\n'){ pushField(); pushRec(); }
+      else if(ch==='\r'){ /* skip */ }
+      else field+=ch;
+    }
+  }
+  if(field.length>0||rec.length){ pushField(); pushRec(); }
+  if(!rows.length) return [];
+  var header=rows.shift().map(function(h){ return h.trim(); });
+  return rows.filter(function(r){ return r.length===header.length; }).map(function(r){
+    var obj={}; header.forEach(function(h,idx){ obj[h]=r[idx]; }); return obj;
+  });
+}
+var COACH=(function(){
+  var el=document.getElementById('coachMessages');
+  var data=parseLabCSV(el?el.textContent.trim():'');
+  var rows=data.map(function(r){
+    return { tip_id:r.tip_id, priority:parseInt(r.priority||'999',10),
+      applies_to:(r.applies_to||'both'),
+      condition:r.condition, message:r.message };
+  });
+  function find(condition,applies){
+    var pool=rows.filter(function(r){
+      return r.condition===condition &&
+        (r.applies_to==='both'||r.applies_to===applies);
+    });
+    pool.sort(function(a,b){ return a.priority-b.priority; });
+    return pool;
+  }
+  function fill(template,tokens){
+    return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,function(_,k){
+      return (k in tokens)?String(tokens[k]):'{{'+k+'}}';
+    });
+  }
+  return { find:find, fill:fill };
+})();
+function runCoach(side,A,U,list){
+  var varChar=(side==='domain'?'x':'y');
+  var isHalf=(A.lo===-Infinity||A.hi===Infinity);
+  var isAll=(A.lo===-Infinity&&A.hi===Infinity);
+  var tips=[];
+  function pushBy(condition,tokens){
+    COACH.find(condition,side).forEach(function(r){
+      tips.push({ id:r.tip_id, prio:r.priority, msg:COACH.fill(r.message,tokens||{}) });
+    });
+  }
+  function appendTips(){
+    tips.sort(function(a,b){ return a.prio-b.prio; });
+    var dedup={}, count=0;
+    for(var i=0;i<tips.length;i++){
+      var t=tips[i]; if(dedup[t.id]) continue; dedup[t.id]=1;
+      var li=document.createElement('li');
+      li.className=(side==='domain')?'dom':'rng';
+      li.textContent=(side==='domain'?'(Domain) ':'(Range) ')+t.msg;
+      list.appendChild(li);
+      if(++count>=3) break;
+    }
+  }
+  if(!U){ pushBy('parse_failed'); appendTips(); return; }
+  if(U._var&&U._var!==varChar){
+    pushBy(side==='domain'?'used_y_instead_of_x':'used_x_instead_of_y');
+  }
+  var U_half=(U.lo===-Infinity||U.hi===Infinity);
+  var U_all=(U.lo===-Infinity&&U.hi===Infinity);
+  var numsMatchTwo=(!isHalf&&!U_half&&Math.abs(A.lo-U.lo)<1e-6&&Math.abs(A.hi-U.hi)<1e-6);
+  /* one-sided: compare the finite boundary of each, whichever side it sits on,
+     so a right number with a flipped direction still earns the Direction tip */
+  var aFin=(A.hi===Infinity)?A.lo:A.hi, uFin=(U.hi===Infinity)?U.lo:U.hi;
+  var numsMatchOne=(isHalf&&!isAll&&U_half&&!U_all&&isFinite(uFin)&&Math.abs(aFin-uFin)<1e-6);
+  if(isHalf&&!isAll){ if(!numsMatchOne) pushBy('ray_or_full_one_number',{var:varChar}); }
+  else if(!isAll){
+    if(!numsMatchTwo) pushBy('segment_two_numbers');
+    /* parabola segment only: the vertex is a hidden third value that can
+       silently become the true min/max \u2014 nudge the student to check it */
+    if(side==='range' && curG && curG.type==='quad-seg' && curG.L<curG.h && curG.h<curG.R){
+      pushBy('parabola_segment_vertex_inside');
+    }
+  }
+  if(isHalf&&numsMatchOne){
+    var ansRightOrUp=(A.hi===Infinity);
+    if((U.hi===Infinity)!==ansRightOrUp){
+      if(side==='domain') pushBy('inequality_direction_mismatch',{left_or_right:ansRightOrUp?'right':'left'});
+      else pushBy('inequality_direction_mismatch',{up_or_down:ansRightOrUp?'up':'down'});
+    }
+  }
+  if(numsMatchTwo){
+    if(!!A.loInc!==!!U.loInc) pushBy(A.loInc?'endpoint_should_be_included':'endpoint_should_be_excluded',{var:varChar,a:A.lo});
+    if(!!A.hiInc!==!!U.hiInc) pushBy(A.hiInc?'endpoint_should_be_included':'endpoint_should_be_excluded',{var:varChar,a:A.hi});
+  }
+  if(numsMatchOne){
+    var aVal=(A.hi===Infinity?A.lo:A.hi);
+    var needInc=(A.hi===Infinity?A.loInc:A.hiInc);
+    var hasInc=(U.hi===Infinity?U.loInc:U.hiInc);
+    if(!!needInc!==!!hasInc) pushBy(needInc?'endpoint_should_be_included':'endpoint_should_be_excluded',{var:varChar,a:aVal});
+  }
+  if(isAll){ if(!(U.lo===-Infinity&&U.hi===Infinity)) pushBy('answer_is_all_reals'); }
+  else{
+    if(isHalf&&!U_half) pushBy('answer_is_one_sided',{var:varChar});
+    if(!isHalf&&U_half) pushBy('answer_is_two_sided',{var:varChar});
+  }
+  if(isHalf&&!isAll) pushBy(side==='domain'?'extends_left_or_right_infinite':'extends_up_or_down_infinite');
+  if(U.lo>U.hi) pushBy('bounds_reversed',{var:varChar});
+  appendTips();
+}
+
+/* ---------- parse the student's typed notation ---------- */
+function parseField(text){
+  if(!text) return null;
+  var t=text.trim().replace(/\u2013|\u2212/g,'-');
+  if(/all\s+real/i.test(t)||/\u211d/.test(t)) return I.all();
+  var m=t.match(/^([^xy]+?)\s*(\u2264|<)\s*([xy])\s*(\u2264|<)\s*([^xy]+)$/i);
+  if(m){ var out2=I.withEnds(normNum(m[1]),normNum(m[5]),m[2]==='\u2264',m[4]==='\u2264'); out2._var=m[3].toLowerCase(); return out2; }
+  m=t.match(/^([xy])\s*(\u2265|>|\u2264|<)\s*(\S+)$/i);
+  if(m){
+    var varCh=m[1].toLowerCase(), op=m[2], v=normNum(m[3]);
+    var out=(op==='\u2265'||op==='>')? I.half(v,op==='\u2265',Infinity,true) : I.half(-Infinity,true,v,op==='\u2264');
+    out._var=varCh; return out;
+  }
+  return null;
+}
+function normNum(s){
+  s=String(s).trim().replace('\u221e','Infinity');
+  if(/Infinity/i.test(s)) return s.charAt(0)==='-'?-Infinity:Infinity;
+  return parseFloat(s);
+}
+
+/* ---------- lab UI glue ---------- */
+function setChip(slotId,text,kind){
+  var slot=document.getElementById(slotId); if(!slot) return;
+  slot.innerHTML='';
+  if(text==null) return;
+  var d=document.createElement('div'); d.className='drChip';
+  if(kind===true) d.classList.add('ok'); else if(kind===false) d.classList.add('bad');
+  d.textContent=text; slot.appendChild(d);
+}
+function wireLabSeg(id,cur,cb){
+  var el=document.getElementById(id);
+  Array.prototype.forEach.call(el.children,function(x){ x.classList.toggle('active',x.dataset.v===cur); });
+  el.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(el.children,function(x){ x.classList.toggle('active',x===b); });
+    cb(b.dataset.v);
+  });
+}
+function labKbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function labAnswerHTML(){
+  return ''+
+  '<div class="drWrap">'+
+    '<div class="drCanvasBox"><canvas id="drCanvas"></canvas></div>'+
+    '<div class="drSide">'+
+      '<div class="drCtl">'+
+        '<div class="drSeg" id="drLevel" role="tablist" aria-label="Graph type">'+
+          '<button type="button" data-v="mix">Mix</button><button type="button" data-v="segment">Segment</button>'+
+          '<button type="button" data-v="ray">Ray</button><button type="button" data-v="full">Full</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="drField" aria-label="Domain input group">'+
+        '<div class="drStatus"><div class="drChipSlot" id="drDChip" aria-live="polite"></div></div>'+
+        '<div class="drVerbal" id="drDomVerbal">Type or drag \u2194\ufe0f to see what it means</div>'+
+        '<div class="drIO"><div class="drInWrap">'+
+          '<button type="button" class="drKbdBtn" data-for="drDom" title="Math keyboard" aria-label="Open keyboard for Domain">'+labKbdSVG()+'</button>'+
+          '<input id="drDom" class="drBig" placeholder="Domain (x)" aria-label="Domain" autocomplete="off"/>'+
+          '<div class="drKbdPop" id="drKbd-drDom"><div class="drKbdGrid"></div></div>'+
+        '</div>'+
+        '<button type="button" id="drDomBand" class="drBandBtn" title="Domain band \u2014 drag the handles on the graph" aria-label="Toggle domain band">\u2194\ufe0f</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="drField" aria-label="Range input group">'+
+        '<div class="drStatus"><div class="drChipSlot" id="drRChip" aria-live="polite"></div></div>'+
+        '<div class="drVerbal" id="drRngVerbal">Type or drag \u2195\ufe0f to see what it means</div>'+
+        '<div class="drIO"><div class="drInWrap">'+
+          '<button type="button" class="drKbdBtn" data-for="drRng" title="Math keyboard" aria-label="Open keyboard for Range">'+labKbdSVG()+'</button>'+
+          '<input id="drRng" class="drBig" placeholder="Range (y)" aria-label="Range" autocomplete="off"/>'+
+          '<div class="drKbdPop" id="drKbd-drRng"><div class="drKbdGrid"></div></div>'+
+        '</div>'+
+        '<button type="button" id="drRngBand" class="drBandBtn" title="Range band \u2014 drag the handles on the graph" aria-label="Toggle range band">\u2195\ufe0f</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="drCoach" id="drCoach"><h4>Try this:</h4><ul id="drCoachList"></ul></div>'+
+    '</div>'+
+  '</div>';
+}
+function labInit(){
+  canvas=document.getElementById('drCanvas'); c=canvas.getContext('2d');
+  reveal=false; tool='idle';
+  applyBandShape(); bandDefaults();
+
+  wireLabSeg('drLevel', LAB.level, function(v){ LAB.level=v; newProblem(); });
+
+  var db=document.getElementById('drDomBand'), rb=document.getElementById('drRngBand');
+  db.disabled=(domainBand.mode==='none'); rb.disabled=(rangeBand.mode==='none');
+  db.addEventListener('click',function(){
+    if(domainBand.mode==='none') return;
+    domainBand.visible=!domainBand.visible;
+    db.classList.toggle('active',domainBand.visible);
+    if(domainBand.visible){ syncInputsFromBands(); logHintUse(); }
+    draw();
+  });
+  rb.addEventListener('click',function(){
+    if(rangeBand.mode==='none') return;
+    rangeBand.visible=!rangeBand.visible;
+    rb.classList.toggle('active',rangeBand.visible);
+    if(rangeBand.visible){ syncInputsFromBands(); logHintUse(); }
+    draw();
+  });
+
+  canvas.addEventListener('pointerdown',labDown);
+  canvas.addEventListener('pointermove',labMove);
+  canvas.addEventListener('pointerup',labUp);
+  canvas.addEventListener('pointercancel',labUp);
+
+  wireKbd('drDom'); wireKbd('drRng');
+
+  document.getElementById('drDom').addEventListener('input',function(){ updateVerbal('drDom','drDomVerbal','x'); });
+  document.getElementById('drRng').addEventListener('input',function(){ updateVerbal('drRng','drRngVerbal','y'); });
+  updateVerbal('drDom','drDomVerbal','x'); updateVerbal('drRng','drRngVerbal','y');
+
+  if(labRO) labRO.disconnect();
+  labRO=new ResizeObserver(function(){ if(ensureCanvasSize()) draw(); });
+  labRO.observe(canvas.parentElement);
+  withCanvasReady(draw);
+}
+function labCheck(){
+  closeKeyboards();
+  var A_dom=curG.domainAnswer, A_rng=curG.rangeAnswer;
+  var uD=parseField(document.getElementById('drDom').value.trim());
+  var uR=parseField(document.getElementById('drRng').value.trim());
+  var dOK=!!uD&&I.same(A_dom,uD), rOK=!!uR&&I.same(A_rng,uR);
+  setChip('drDChip', uD?(dOK?'Domain correct \u2713':'Domain not correct yet \u00d7'):'Enter a valid domain', uD?dOK:null);
+  setChip('drRChip', uR?(rOK?'Range correct \u2713':'Range not correct yet \u00d7'):'Enter a valid range', uR?rOK:null);
+  var list=document.getElementById('drCoachList'); list.innerHTML='';
+  if(!dOK) runCoach('domain',A_dom,uD,list);
+  if(!rOK) runCoach('range',A_rng,uR,list);
+  document.getElementById('drCoach').style.display=list.children.length?'block':'none';
+  return dOK&&rOK;
+}
+
+/* =====================================================================
    GRAPH HELPER — signed-grid parabola (adapted from plot(), Section 6A)
    ===================================================================== */
 function plotParab(o){
@@ -294,76 +1168,17 @@ function val(id){ var el=document.getElementById(id); return el?el.value:''; }
    TODO ZONE 1 — per-SE generators / prompts / checkers / steps
    ===================================================================== */
 
-/* ---------- A.6A : Domain & Range ---------- */
-var a6aMode='mix';
-function genA6A(){
-  var kind = a6aMode==='mix' ? rc(['vertex','standard','graph']) : a6aMode;
-  var a = rc([1,-1,2,-2]);
-  var h = ri(-4,4), k = ri(-5,5);
-  var b = -2*a*h, c = a*h*h + k;
-  return {kind:kind, a:a, h:h, k:k, b:b, c:c};
-}
-function promptA6A(p){
-  var body;
-  if(p.kind==='graph'){
-    body='The graph of a quadratic function is shown. State its <b>domain</b> and <b>range</b>.'+
-      plotParab({Rg:6, a:p.a, h:p.h, k:p.k, color:'#8e78ff',
-        points:[{x:p.h,y:p.k,color:'#e5484d',label:'vertex ('+fmtInt(p.h)+', '+fmtInt(p.k)+')'}]});
-  } else {
-    var eq = (p.kind==='vertex') ? vertexFormHTML(p.a,p.h,p.k) : standardFormHTML(p.a,p.b,p.c);
-    body='Consider the quadratic function below. State its <b>domain</b> and <b>range</b>.'+
-      '<div class="given">'+eq+'</div>';
-  }
-  return segWrap('SHOW','a6aSeg',a6aMode,[['mix','Mixed'],['vertex','Vertex form'],['standard','Standard form'],['graph','Graph']])+body;
-}
-function answerA6A(p){
-  var doms = shuffle([
-    {v:'all', t:'All real numbers'},
-    {v:'gx',  t:'x \u2265 '+fmtInt(p.h)},
-    {v:'lx',  t:'x \u2264 '+fmtInt(p.h)}
-  ]);
-  var domHTML='<div class="radio" id="a6a_dom">'+doms.map(function(o){
-    return '<label><input type="radio" name="a6a_dom" value="'+o.v+'"> '+o.t+'</label>';
-  }).join('')+'</div>';
-  var rangeHTML='<div class="answer"><span>y</span>'+
-    '<select class="sel" id="a6a_dir"><option value="">?</option><option value="ge">\u2265</option><option value="le">\u2264</option></select>'+
-    inBox('a6a_k')+'</div>';
-  return L('Domain')+domHTML+L('Range')+rangeHTML;
-}
-function readA6A(){
-  var dom=document.querySelector('input[name=a6a_dom]:checked');
-  var dir=val('a6a_dir');
-  var k=parseRat(val('a6a_k'));
-  if(!dom || !dir || !k) return null;
-  return {dom:dom.value, dir:dir, k:k};
-}
-function checkA6A(p,ans){
-  var okDom = ans.dom==='all';
-  var okDir = (p.a>0 && ans.dir==='ge') || (p.a<0 && ans.dir==='le');
-  var okK   = req(ans.k, rint(p.k));
-  return okDom && okDir && okK;
-}
-function stepsA6A(p){
-  var vtx='('+fmtInt(p.h)+', '+fmtInt(p.k)+')';
-  var s='<span class="st">1. Domain: a parabola stretches left and right forever, so every x-value works \u2192 all real numbers.</span>';
-  if(p.kind==='standard'){
-    s+='<span class="st">2. Find the vertex: x = '+MIN+'b/(2a) = '+MIN+'('+fmtInt(p.b)+') / (2\u00b7'+fmtInt(p.a)+') = '+fmtInt(p.h)+'.</span>';
-    s+='<span class="st">3. Vertex y-value: f('+fmtInt(p.h)+') = '+fmtInt(p.k)+', so the vertex is '+vtx+'.</span>';
-    s+='<span class="st">4. a = '+fmtInt(p.a)+' '+(p.a>0?'(opens up) \u2192 vertex is the minimum':'(opens down) \u2192 vertex is the maximum')+'.</span>';
-  } else {
-    s+='<span class="st">2. The vertex is '+vtx+'.</span>';
-    s+='<span class="st">3. a = '+fmtInt(p.a)+' '+(p.a>0?'(opens up) \u2192 vertex is the minimum':'(opens down) \u2192 vertex is the maximum')+'.</span>';
-  }
-  s+='<span class="st final">Domain: all real numbers &nbsp;&middot;&nbsp; Range: y '+(p.a>0?'\u2265':'\u2264')+' '+fmtInt(p.k)+'</span>';
-  return s;
-}
-function hintsA6A(p){
-  var h=['Domain first: can you substitute ANY number for x? What does that make the domain?'];
-  if(p.kind==='standard') h.push('Find the vertex before the range: x = '+MIN+'b/(2a), then compute the y-value.');
-  h.push('The parabola '+(p.a>0?'opens up, so the vertex is the LOWEST point':'opens down, so the vertex is the HIGHEST point')+'.');
-  h.push('Range is y '+(p.a>0?'\u2265':'\u2264')+' the vertex y-value.');
-  return h;
-}
+/* ---------- A.6A : Domain & Range ----------
+   Retired the old MC-style equation-reading version that used to live
+   here (vertex/standard/graph prompt + radio/select/inBox answer) —
+   genA6A, promptA6A, answerA6A, readA6A, checkA6A, stepsA6A, hintsA6A,
+   and the a6aMode/a6aSeg selector are gone. Superseded by the drag-band
+   graph lab (LAB / newLabGraph / labAnswerHTML / labInit / labCheck etc.,
+   defined earlier in this script right after the shared building blocks)
+   — see the SES registry entry below and the tweaking-guide addendum for
+   this session. The equation-given (vertex/standard form \u2192 state domain
+   & range) flavor isn't implemented anywhere anymore; that's a possible
+   future stone, not something quietly still running. --- */
 
 /* ---------- A.6B : Write vertex form / convert to standard form ---------- */
 var a6bMode='mix';
@@ -396,11 +1211,15 @@ function promptA6B(p){
 }
 function answerA6B(p){
   if(p.kind==='write'){
-    return '<div class="answer"><span class="lbl">f(x) = a(x '+MIN+' h)<sup>2</sup> + k</span>'+
-      '<span>a =</span>'+inBox('a6b_a')+'<span>h =</span>'+inBox('a6b_h')+'<span>k =</span>'+inBox('a6b_k')+'</div>';
+    return '<div class="answer"><span>f(x) =</span>'+inBox('a6b_a')+
+      '<span>( x '+MIN+'</span>'+inBox('a6b_h')+'<span>)<sup>2</sup> +</span>'+inBox('a6b_k')+'</div>'+
+      '<div class="lbl" style="font-size:13px;color:var(--muted);font-weight:800;margin-top:4px">Entries may be negative \u2014 just type the minus sign, e.g. '+MIN+'4.</div>'+
+      sharedKbdHTML();
   }
-  return '<div class="answer"><span class="lbl">f(x) = ax<sup>2</sup> + bx + c</span>'+
-    '<span>a =</span>'+inBox('a6b_ea')+'<span>b =</span>'+inBox('a6b_eb')+'<span>c =</span>'+inBox('a6b_ec')+'</div>';
+  return '<div class="answer"><span>f(x) =</span>'+inBox('a6b_ea')+
+    '<span>x<sup>2</sup> +</span>'+inBox('a6b_eb')+'<span>x +</span>'+inBox('a6b_ec')+'</div>'+
+    '<div class="lbl" style="font-size:13px;color:var(--muted);font-weight:800;margin-top:4px">Entries may be negative \u2014 just type the minus sign, e.g. '+MIN+'4.</div>'+
+    sharedKbdHTML();
 }
 function readA6B(p){
   if(p.kind==='write'){
@@ -477,10 +1296,12 @@ function promptA6C(p){
 function answerA6C(p){
   if(p.form==='factored'){
     return '<div class="answer"><span>f(x) =</span>'+inBox('a6c_a')+
-      '<span>( x '+MIN+'</span>'+inBox('a6c_r1')+'<span>)( x '+MIN+'</span>'+inBox('a6c_r2')+'<span>)</span></div>';
+      '<span>( x '+MIN+'</span>'+inBox('a6c_r1')+'<span>)( x '+MIN+'</span>'+inBox('a6c_r2')+'<span>)</span></div>'+
+      sharedKbdHTML();
   }
   return '<div class="answer"><span>f(x) =</span>'+inBox('a6c_a')+
-    '<span>x<sup>2</sup> +</span>'+inBox('a6c_b')+'<span>x +</span>'+inBox('a6c_c')+'</div>';
+    '<span>x<sup>2</sup> +</span>'+inBox('a6c_b')+'<span>x +</span>'+inBox('a6c_c')+'</div>'+
+    sharedKbdHTML();
 }
 function readA6C(p){
   if(p.form==='factored'){
@@ -523,12 +1344,35 @@ function hintsA6C(p){
    ===================================================================== */
 var SES=[
   { id:'A.6A', letter:'A', short:'Domain & Range',
-    title:'Domain and Range of Quadratic Functions',
-    blurb:'Determine the domain and range of quadratic functions and represent them using inequalities.',
-    gen:genA6A, prompt:promptA6A, answerHTML:answerA6A, read:function(){return readA6A();},
-    check:checkA6A, steps:stepsA6A, hints:hintsA6A,
-    emptyMsg:'Choose a domain, pick \u2265 or \u2264 for the range, and enter the vertex y-value.',
-    init:function(){ wireSeg('a6aSeg', a6aMode, function(v){ a6aMode=v; newProblem(); }); }
+    title:'Domain & Range from Graphs',
+    blurb:'Determine the domain and range of quadratic functions represented as graphs \u2014 full parabolas, segments, and rays \u2014 and represent the domain and range using inequalities.',
+    gen:function(){ curG=newLabGraph(); return {se:'A.6A', graph:curG}; },
+    prompt:function(){
+      return 'Find the <b>domain</b> and <b>range</b> of the graphed function.'+
+        '<br><span style="font-size:15px;color:var(--muted)">Open the \u2194\ufe0f / \u2195\ufe0f helper bands and drag the handles into place \u2014 tap a handle to switch \u25cf included / \u25cb excluded, or tap the band line to flip direction. Or just type the notation directly in the boxes.</span>';
+    },
+    answerHTML:labAnswerHTML,
+    init:labInit,
+    allowRecheck:true,
+    emptyMsg:'Type the domain and range \u2014 or drag out the \u2194\ufe0f / \u2195\ufe0f helper bands to build them.',
+    read:function(){
+      var d=document.getElementById('drDom').value.trim(), r=document.getElementById('drRng').value.trim();
+      return (d||r)? {d:d, r:r} : null;
+    },
+    check:function(){ return labCheck(); },
+    hints:function(){ return [
+      'Domain = the x-values the graph covers (left \u2194 right). Range = the y-values it reaches (bottom \u2195 top).',
+      'Tap \u2194\ufe0f or \u2195\ufe0f to open a helper band, then drag its handles to hug the ends of the graph.',
+      'Closed dot \u25cf \u2192 included \u2192 use \u2264 or \u2265. Open dot \u25cb \u2192 not included \u2192 use < or >.',
+      'An arrow means the graph runs forever on that side \u2014 that direction is unbounded (\u221e).',
+      'The vertex is the parabola\u2019s highest or lowest point \u2014 if it falls between a segment\u2019s two ends, it\u2019s the true min or max, not whichever endpoint looks lower on screen.' ]; },
+    steps:function(){
+      reveal=true; draw();
+      var D=curG.domainAnswer, R=curG.rangeAnswer;
+      return '<span class="st"><span class="drAnsChip">Domain: '+I.fmt(D,'x')+'</span>'+
+             '<span class="drAnsChip">Range: '+I.fmt(R,'y')+'</span></span>'+
+             '<span class="st">'+explainWhy(curG)+'</span>';
+    }
   },
   { id:'A.6B', letter:'B', short:'Write / Convert',
     title:'Write Quadratics in Vertex &amp; Standard Form',
@@ -536,7 +1380,10 @@ var SES=[
     gen:genA6B, prompt:promptA6B, answerHTML:answerA6B, read:function(p){return readA6B(p);},
     check:checkA6B, steps:stepsA6B, hints:hintsA6B,
     emptyMsg:'Fill in every box \u2014 fractions like 3/4 are fine.',
-    init:function(){ wireSeg('a6bSeg', a6bMode, function(v){ a6bMode=v; newProblem(); }); }
+    init:function(){
+      wireSeg('a6bSeg', a6bMode, function(v){ a6bMode=v; newProblem(); });
+      wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    }
   },
   { id:'A.6C', letter:'C', short:'From Solutions',
     title:'Write Quadratics from Solutions &amp; Graphs',
@@ -544,7 +1391,10 @@ var SES=[
     gen:genA6C, prompt:promptA6C, answerHTML:answerA6C, read:function(p){return readA6C(p);},
     check:checkA6C, steps:stepsA6C, hints:hintsA6C,
     emptyMsg:'Fill in every box \u2014 fractions like 3/4 are fine.',
-    init:function(){ wireSeg('a6cSeg', a6cMode, function(v){ a6cMode=v; newProblem(); }); }
+    init:function(){
+      wireSeg('a6cSeg', a6cMode, function(v){ a6cMode=v; newProblem(); });
+      wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    }
   }
 ];
 
@@ -611,18 +1461,21 @@ function onCheck(){
                       :'Not quite \u2717 \u2014 open the steps to see the path.');
   renderRail();
 }
+function logHintUse(){
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
 function onHint(){
   var hints=current.se.hints(current.p);
   var h=hints[Math.min(current.hintIdx, hints.length-1)];
   current.hintIdx++;
   var box=$('#hintBox'); box.classList.add('show');
   box.innerHTML += (box.innerHTML?'<br>':'')+'\u2022 '+h;
-  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+  logHintUse();
 }
 function onSteps(){
   var box=$('#stepsBox'); box.classList.add('show');
   box.innerHTML=current.se.steps(current.p);
-  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+  logHintUse();
 }
 $('#checkBtn').addEventListener('click', onCheck);
 $('#hintBtn').addEventListener('click', onHint);
