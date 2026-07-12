@@ -68,6 +68,9 @@
   .ttab th{background:#f1f6ff; color:#133a9a}
   .answer{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:clamp(20px,3.4vw,28px); font-weight:900; margin:10px 0 6px}
   .answer .lbl{font-size:15px; color:var(--muted); width:100%; font-weight:900}
+  .qPart{padding-top:10px; margin-top:10px; border-top:1px dashed #e5e7eb}
+  .qPart:first-child{padding-top:0; margin-top:0; border-top:none}
+  .qLabel{font-size:11px; font-weight:900; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; margin-bottom:6px}
   .in{height:56px; width:96px; border:2px solid var(--ui); border-radius:12px; text-align:center;
     font-weight:900; font-size:22px; font-family:inherit; color:var(--ink)}
   .in.wide{width:120px}
@@ -112,6 +115,18 @@
   .drSeg button.active{background:#f1f6ff; color:#133a9a}
   .drTog button.active{background:#eafff7; color:#0c6d54}
   .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
+  .drKeyWide{grid-column:span 4; min-width:0; overflow-wrap:break-word; font-size:10.5px}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
 </style>
 </head>
 <body>
@@ -208,6 +223,12 @@ function vertexHTML(a,h,k){
   if(k!==0) s += (k>0?' + ':' '+MIN+' ')+Math.abs(k);
   return s;
 }
+function stdFormHTML(a,b,c){
+  var s='f(x) = '+(a===1?'':(a===-1?MIN:fmtInt(a)))+'x<sup>2</sup>';
+  if(b!==0){ s += (b>0?' + ':' '+MIN+' '); var ab=Math.abs(b); s += (ab===1?'':String(ab))+'x'; }
+  if(c!==0) s += (c>0?' + ':' '+MIN+' ') + Math.abs(c);
+  return s;
+}
 function tableHTML(xs,ys){
   var h='<table class="ttab"><tr><th>x</th>';
   xs.forEach(function(x){ h+='<td>'+fmtInt(x)+'</td>'; });
@@ -238,6 +259,100 @@ function wireSeg(id,cur,cb){
       btn.classList.add('active'); cb(btn.getAttribute('data-v'));
     });
   });
+}
+
+/* ---------- shared floating keyboard: one button, types into whichever input last had focus ----------
+   Reusable across any SE with several small inline number/fraction boxes.
+   Tap the button to show it; it types into the last-focused box in its scope; tap the
+   button again to hide it. ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  var extra=(grid.dataset.extra||'').split(',').filter(Boolean);
+  SHARED_KEYS.concat(extra).forEach(function(k){
+    var b=document.createElement('button'); b.type='button';
+    b.className='drKey'+(k.length>1?' drKeyWide':''); b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide'; bs.innerHTML='\u232B';
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){ if(s===0) return; s=s-1; }
+    input.value=input.value.slice(0,s)+input.value.slice(e2);
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT'&&e.target.classList.contains('in')) sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function kbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function sharedKbdHTML(extraKeys){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid" data-extra="'+(extraKeys?extraKeys.join(','):'')+'"></div></div>'+
+  '</div>';
+}
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+var kbdDocWired=false;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
 }
 
 /* ---- curved-graph renderer (signed grid, parabola path) ---- */
@@ -335,15 +450,22 @@ var SE_A8A = {
   },
   answerHTML:function(p){
     return '<div class="answer"><span class="lbl">Enter both solutions (any order):</span>'+
-      '<span>x =</span>'+inBox('x1')+'<span>or&nbsp;x =</span>'+inBox('x2')+'</div>';
+      '<span>x =</span>'+inBox('x1')+'<span>or&nbsp;x =</span>'+inBox('x2')+'</div>'+
+      '<div class="kbdnote">If the equation has only one repeated solution, just fill in one box.</div>'+
+      sharedKbdHTML();
   },
   read:function(p){
     var a1=parseRat(document.getElementById('x1').value);
     var a2=parseRat(document.getElementById('x2').value);
-    if(a1===null||a2===null) return null;
+    if(a1===null && a2===null) return null;
     return {x1:a1,x2:a2};
   },
   check:function(p,ans){
+    if(req(p.r1,p.r2)){
+      var filled=[ans.x1,ans.x2].filter(function(v){return v!==null;});
+      return filled.length>0 && filled.every(function(v){return req(v,p.r1);});
+    }
+    if(ans.x1===null||ans.x2===null) return false;
     var m1 = req(ans.x1,p.r1) && req(ans.x2,p.r2);
     var m2 = req(ans.x1,p.r2) && req(ans.x2,p.r1);
     return m1||m2;
@@ -397,12 +519,17 @@ var SE_A8A = {
     s += '<div style="margin-top:10px">'+g+'</div>';
     return s;
   },
-  emptyMsg:'Enter both x-values \u2014 fractions like 3/2 are fine.',
-  init:function(p){ wireSeg('methSeg',cModeA,function(v){ cModeA=v; newProblem(); }); }
+  emptyMsg:'Enter at least one solution \u2014 fractions like 3/2 are fine.',
+  init:function(p){
+    wireSeg('methSeg',cModeA,function(v){ cModeA=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  }
 };
 
 /* =====================================================================
-   A.8B — Model Data with Quadratic Functions (vertex form + prediction)
+   A.8B — Model Data with Quadratic Functions (standard form + prediction,
+          two-part qPart/qLabel layout; vertex form is still the internal
+          derivation shown in hints/steps, just not the graded answer)
    ===================================================================== */
 function genDataModel(){
   var a = rc([-3,-2,-1,1,2]);
@@ -412,7 +539,12 @@ function genDataModel(){
   var ys=xs.map(function(x){ return a*(x-h)*(x-h)+k; });
   var predX = (Math.random()<0.5) ? (h+3) : (h-3);
   var predY = a*(predX-h)*(predX-h)+k;
-  return {a:R(a,1),h:R(h,1),k:R(k,1),xs:xs,ys:ys,predX:predX,predY:R(predY,1)};
+  // a(x-h)^2+k expanded: a*x^2 - 2ah*x + (ah^2+k) -- this is what the student is
+  // actually graded against now (standard form), while a/h/k stay on p for the
+  // vertex-form derivation shown in hints/steps.
+  var A=a, B=-2*a*h, C=a*h*h+k;
+  return {a:R(a,1),h:R(h,1),k:R(k,1),xs:xs,ys:ys,predX:predX,predY:R(predY,1),
+    A:R(A,1),B:R(B,1),C:R(C,1)};
 }
 
 var SE_A8B = {
@@ -422,33 +554,33 @@ var SE_A8B = {
 
   gen:function(){ return genDataModel(); },
   prompt:function(p){
-    return 'The table shows data collected from an experiment. Write a quadratic function in vertex form that models the pattern, then use your model to make a prediction.<br>'+
+    return 'The table shows data collected from an experiment. Write a quadratic function in standard form that models the pattern, then use your model to make a prediction.<br>'+
       tableHTML(p.xs,p.ys);
   },
   answerHTML:function(p){
-    return '<div class="answer"><span class="lbl">Vertex-form model:</span>'+
-        '<span>f(x) =</span>'+inBox('a')+'<span>(x '+MIN+'</span>'+inBox('h')+'<span>)</span><sup>2</sup><span>+</span>'+inBox('k')+
+    return '<div class="qPart"><div class="qLabel">1 \u00b7 Standard-form model</div>'+
+        '<div class="answer"><span>f(x) =</span>'+inBox('a')+'<span>x</span><sup>2</sup><span>+</span>'+inBox('b')+'<span>x +</span>'+inBox('c')+'</div>'+
       '</div>'+
-      '<div class="answer" style="margin-top:14px"><span class="lbl">Use your model to predict:</span>'+
-        '<span>f('+fmtInt(p.predX)+') =</span>'+inBox('py','wide')+
-      '</div>';
+      '<div class="qPart"><div class="qLabel">2 \u00b7 Use your model to predict</div>'+
+        '<div class="answer"><span>f('+fmtInt(p.predX)+') =</span>'+inBox('py','wide')+'</div>'+
+      '</div>'+sharedKbdHTML();
   },
   read:function(p){
-    var a=parseRat(document.getElementById('a').value);
-    var h=parseRat(document.getElementById('h').value);
-    var k=parseRat(document.getElementById('k').value);
+    var A=parseRat(document.getElementById('a').value);
+    var B=parseRat(document.getElementById('b').value);
+    var C=parseRat(document.getElementById('c').value);
     var py=parseRat(document.getElementById('py').value);
-    if(a===null||h===null||k===null||py===null) return null;
-    return {a:a,h:h,k:k,py:py};
+    if(A===null||B===null||C===null||py===null) return null;
+    return {A:A,B:B,C:C,py:py};
   },
   check:function(p,ans){
-    return req(ans.a,p.a) && req(ans.h,p.h) && req(ans.k,p.k) && req(ans.py,p.predY);
+    return req(ans.A,p.A) && req(ans.B,p.B) && req(ans.C,p.C) && req(ans.py,p.predY);
   },
   hints:function(p){
     return [
       'Find the vertex in the table \u2014 it\u2019s the point where y stops decreasing/increasing and turns around; that gives you h and k.',
-      'Use a nearby point (x, y) with the vertex (h, k): solve a = (y \u2212 k) / (x \u2212 h)\u00b2.',
-      'Once a, h, and k are set, substitute the prediction\u2019s x-value into f(x) = a(x '+MIN+' h)\u00b2 + k to finish.'
+      'Use a nearby point (x, y) with the vertex (h, k): solve a = (y \u2212 k) / (x \u2212 h)\u00b2, giving the vertex-form model f(x) = a(x '+MIN+' h)\u00b2 + k.',
+      'Expand that into standard form (multiply out the squared binomial) to get f(x) = Ax\u00b2 + Bx + C, then substitute the prediction\u2019s x-value to finish part 2.'
     ];
   },
   steps:function(p){
@@ -464,12 +596,14 @@ var SE_A8B = {
     var s='';
     s+='<span class="st">1. Read the vertex straight from the table: the y-values turn around at x = '+fmtInt(p.h.n)+', y = '+fmtInt(p.k.n)+', so (h, k) = ('+fmtInt(p.h.n)+', '+fmtInt(p.k.n)+').</span>';
     s+='<span class="st">2. Use another table point ('+fmtInt(otherX)+', '+fmtInt(otherY)+') to solve for a: a = (y \u2212 k) / (x \u2212 h)\u00b2 = ('+fmtInt(otherY)+' \u2212 '+fmtInt(p.k.n)+') / ('+fmtInt(otherX)+' \u2212 '+fmtInt(p.h.n)+')\u00b2 = '+fmtInt(p.a.n)+'.</span>';
-    s+='<span class="st">3. Model: '+vertexHTML(p.a.n,p.h.n,p.k.n)+'</span>';
-    s+='<span class="st final">Prediction: f('+fmtInt(p.predX)+') = '+fmtInt(p.a.n)+'('+fmtInt(p.predX)+' '+MIN+' ('+fmtInt(p.h.n)+'))\u00b2 + '+fmtInt(p.k.n)+' = '+fmtInt(p.predY.n)+'</span>';
+    s+='<span class="st">3. Vertex form: '+vertexHTML(p.a.n,p.h.n,p.k.n)+'</span>';
+    s+='<span class="st">4. Expand to standard form: '+stdFormHTML(p.A.n,p.B.n,p.C.n)+'</span>';
+    s+='<span class="st final">Prediction: f('+fmtInt(p.predX)+') = '+fmtInt(p.predY.n)+'</span>';
     s += '<div style="margin-top:10px">'+g+'</div>';
     return s;
   },
-  emptyMsg:'Fill in a, h, k, and your prediction \u2014 fractions like 3/2 are fine.'
+  emptyMsg:'Fill in a, b, c, and your prediction \u2014 fractions like 3/2 are fine.',
+  init:function(p){ wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); }
 };
 
 var SES=[SE_A8A, SE_A8B];
