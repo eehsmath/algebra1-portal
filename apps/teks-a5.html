@@ -118,6 +118,7 @@
   .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
     font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
   .drKeyWide{grid-column:span 4; min-width:0; overflow-wrap:break-word; font-size:10.5px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
   .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
     border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
     font-family:inherit; margin-top:10px}
@@ -296,6 +297,23 @@ function buildSharedKbdGrid(pop){
     });
     grid.appendChild(b);
   });
+  /* Backspace — appended last, full-width third row (per the current keyboard notes:
+     no reason to reintroduce the pre-fix gap into a new port). Deletes the selected
+     range if there is one, otherwise the single character before the cursor; a no-op
+     (no value change, no dispatch) if the cursor is already at 0 with nothing selected. */
+  var back=document.createElement('button'); back.type='button'; back.className='drKey wide';
+  back.textContent='\u232B'; back.setAttribute('aria-label','Backspace');
+  back.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){ if(s===0) return; s=s-1; }
+    input.value=input.value.slice(0,s)+input.value.slice(e2);
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(back);
 }
 function wireSharedKbd(scopeEl,btnId,popId){
   var btn=document.getElementById(btnId), pop=document.getElementById(popId);
