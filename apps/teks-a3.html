@@ -7,7 +7,7 @@
 <style>
   :root{
     --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
-    --blue:#2f6cff; --teal:#36c2a0; --gold:#f4c431; --danger:#e5484d; --vio:#8e78ff;
+    --blue:#2f6cff; --teal:#36c2a0;
     --accent:#2f6cff; --shadow:0 8px 20px rgba(25,40,80,.06);
   }
   *{box-sizing:border-box}
@@ -93,12 +93,9 @@
   .sel{height:56px; border:2px solid var(--ui); border-radius:12px; font-weight:900; font-size:20px;
     font-family:inherit; color:var(--ink); background:#fff; padding:0 8px}
   .sysRow{display:flex; align-items:center; gap:8px; margin:6px 0; flex-wrap:wrap}
-  .radio{display:flex; gap:16px; flex-wrap:wrap; font-size:16px; margin-top:6px}
   .qPart{padding-top:10px; margin-top:10px; border-top:1px dashed #e5e7eb}
   .qPart:first-child{padding-top:0; margin-top:0; border-top:none}
   .qLabel{font-size:11px; font-weight:900; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; margin-bottom:6px}
-  .radio label{display:flex; align-items:center; gap:6px; font-weight:800; cursor:pointer}
-  .radio input{accent-color:var(--blue); width:18px; height:18px}
 
   /* MC chips (A.3E identify) */
   .mc{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:8px}
@@ -159,6 +156,7 @@
   .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
     font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
   .drKeyWide{grid-column:span 4; font-size:10.5px; min-width:0; white-space:normal; overflow-wrap:break-word; line-height:1.2; padding:7px 3px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
   .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
     border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
     font-family:inherit; margin-top:10px}
@@ -222,10 +220,12 @@ function shuffle(a){ for(var i=a.length-1;i>0;i--){ var j=ri(0,i); var t=a[i]; a
 /* ---- rationals ---- */
 function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
 function R(n,d){ d=(d===undefined)?1:d; if(d<0){n=-n;d=-d;} var g=gcd(n,d); return {n:n/g, d:d/g}; }
+/* rsub(a,b)=R(a.n*b.d-b.n*a.d,a.d*b.d) and rdiv(a,b)=R(a.n*b.d,a.d*b.n) were part of
+   this rational toolkit but had zero call sites anywhere in A.3 \u2014 removed as dead
+   code; trivial one-liners to restore from the pattern above if a future module needs
+   rational subtraction/division (radd/rmul/rneg below are the live siblings). */
 function radd(a,b){ return R(a.n*b.d + b.n*a.d, a.d*b.d); }
-function rsub(a,b){ return R(a.n*b.d - b.n*a.d, a.d*b.d); }
 function rmul(a,b){ return R(a.n*b.n, a.d*b.d); }
-function rdiv(a,b){ return R(a.n*b.d, a.d*b.n); }
 function rneg(a){ return R(-a.n, a.d); }
 function req(a,b){ return a.n*b.d === b.n*a.d; }
 function rzero(a){ return a.n===0; }
@@ -517,6 +517,27 @@ function buildSharedKbdGrid(pop){
     });
     grid.appendChild(b);
   });
+  /* backspace \u2014 established convention (tweaking guide Part 11.4/7.7/13.2):
+     its own full-width row (.drKey.wide, grid-column:1/-1), not folded into
+     SHARED_KEYS, so an even 14th key doesn't wrap into a lopsided short row. */
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide';
+  bs.textContent='\u232B'; bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){
+      if(s===0) return;
+      input.value=input.value.slice(0,s-1)+input.value.slice(e2);
+      s=s-1;
+    } else {
+      input.value=input.value.slice(0,s)+input.value.slice(e2);
+    }
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
 }
 function wireSharedKbd(scopeEl,btnId,popId){
   var btn=document.getElementById(btnId), pop=document.getElementById(popId);
@@ -526,7 +547,7 @@ function wireSharedKbd(scopeEl,btnId,popId){
   if(!scopeEl._sharedKbdWired){
     scopeEl._sharedKbdWired=true;
     scopeEl.addEventListener('focusin',function(e){
-      if(e.target&&e.target.tagName==='INPUT') sharedActiveInput=e.target;
+      if(e.target&&e.target.tagName==='INPUT'&&e.target.classList.contains('in')) sharedActiveInput=e.target;
     });
   }
   btn.addEventListener('click',function(e){
