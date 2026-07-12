@@ -144,6 +144,7 @@
   .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
   .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
     font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
   .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
     border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
     font-family:inherit; margin-top:10px}
@@ -312,6 +313,24 @@ function buildSharedKbdGrid(pop){
     });
     grid.appendChild(b);
   });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide';
+  bs.textContent='\u232B'; bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){
+      if(s===0) return;   /* nothing to the left of the cursor -- no-op */
+      input.value=input.value.slice(0,s-1)+input.value.slice(e2);
+      s=s-1;
+    } else {
+      input.value=input.value.slice(0,s)+input.value.slice(e2);
+    }
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
 }
 function wireSharedKbd(scopeEl,btnId,popId){
   var btn=document.getElementById(btnId), pop=document.getElementById(popId);
