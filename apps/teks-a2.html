@@ -166,6 +166,7 @@
   .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
   .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
     font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
   .drCoach{display:none; border:1px solid #ffd4d4; background:#fff7f7; color:#7b3232; padding:10px;
     border-radius:12px; font-weight:700; font-size:13.5px; line-height:1.35}
   .drCoach h4{margin:0 0 6px; font-size:12px; letter-spacing:.3px}
@@ -1288,6 +1289,25 @@ function wireKbd(inputId){
     });
     grid.appendChild(b);
   });
+  /* backspace \u2014 its own full-width row (.drKey.wide), not folded into
+     KEYS, so an even 21st key doesn't wrap into a lopsided short row. */
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide';
+  bs.textContent='\u232B'; bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){
+      if(s===0) return;
+      input.value=input.value.slice(0,s-1)+input.value.slice(e2);
+      s=s-1;
+    } else {
+      input.value=input.value.slice(0,s)+input.value.slice(e2);
+    }
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
   btn.addEventListener('click',function(e){
     e.stopPropagation();
     var show=pop.style.display!=='block';
@@ -1318,6 +1338,26 @@ function buildSharedKbdGrid(pop){
     });
     grid.appendChild(b);
   });
+  /* backspace \u2014 its own full-width row (.drKey.wide), not folded into
+     SHARED_KEYS, so an even 14th key doesn't wrap into a lopsided short row. */
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide';
+  bs.textContent='\u232B'; bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){
+      if(s===0) return;
+      input.value=input.value.slice(0,s-1)+input.value.slice(e2);
+      s=s-1;
+    } else {
+      input.value=input.value.slice(0,s)+input.value.slice(e2);
+    }
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
 }
 function wireSharedKbd(scopeEl,btnId,popId){
   var btn=document.getElementById(btnId), pop=document.getElementById(popId);
@@ -1327,7 +1367,7 @@ function wireSharedKbd(scopeEl,btnId,popId){
   if(!scopeEl._sharedKbdWired){
     scopeEl._sharedKbdWired=true;
     scopeEl.addEventListener('focusin',function(e){
-      if(e.target&&e.target.tagName==='INPUT') sharedActiveInput=e.target;
+      if(e.target&&e.target.tagName==='INPUT'&&e.target.classList.contains('in')) sharedActiveInput=e.target;
     });
   }
   btn.addEventListener('click',function(e){
