@@ -86,6 +86,17 @@
   .mc button:disabled{cursor:default; opacity:.85}
   .mc button.right{border-color:#7de0a6; background:#eafff2}
   .mc button.wrong{border-color:#ffb3b3; background:#fff3f3}
+  .qPart{padding-top:10px; margin-top:10px; border-top:1px dashed #e5e7eb}
+  .qPart:first-child{padding-top:0; margin-top:0; border-top:none}
+  .qLabel{font-size:11px; font-weight:900; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; margin-bottom:6px}
+  .choice2{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:2px}
+  @media (max-width:520px){ .choice2{grid-template-columns:1fr} }
+  .choice2 button{border:2px solid var(--ui); background:#fff; border-radius:14px; padding:13px 14px;
+    font-family:inherit; font-weight:900; font-size:clamp(15px,2vw,16.5px); text-align:center; cursor:pointer; color:var(--ink)}
+  .choice2 button.sel{border-color:var(--vio); background:#f4f1ff}
+  .choice2 button:disabled{cursor:default; opacity:.85}
+  .choice2 button.right{border-color:#7de0a6; background:#eafff2}
+  .choice2 button.wrong{border-color:#ffb3b3; background:#fff3f3}
   .btnRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; align-items:center}
   .btn{height:46px; border-radius:12px; border:1px solid var(--ui); background:#fff; font-weight:900;
     padding:0 16px; cursor:pointer; font-family:inherit; font-size:15px; color:var(--ink)}
@@ -112,6 +123,18 @@
   .drSeg button.active{background:#f4f1ff; color:#4b2fa9}
   .drTog button.active{background:#eafff7; color:#0c6d54}
   .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKeyWide{grid-column:span 4; min-width:0; overflow-wrap:break-word; font-size:10.5px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
 </style>
 </head>
 <body>
@@ -221,6 +244,100 @@ function wireSeg(id,cur,cb){
       btn.classList.add('active'); cb(btn.getAttribute('data-v'));
     });
   });
+}
+
+/* ---------- floating keyboard: one button, types into whichever input last had focus ----------
+   Reusable across any SE with several small inline number/fraction boxes.
+   Tap the button to show it; it types into the last-focused box in its scope; tap the
+   button again to hide it. ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  var extra=(grid.dataset.extra||'').split(',').filter(Boolean);
+  SHARED_KEYS.concat(extra).forEach(function(k){
+    var b=document.createElement('button'); b.type='button';
+    b.className='drKey'+(k.length>1?' drKeyWide':''); b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bk=document.createElement('button'); bk.type='button'; bk.className='drKey wide'; bk.textContent='\u232B';
+  bk.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){ if(s===0) return; input.value=input.value.slice(0,s-1)+input.value.slice(s); s=s-1; e2=s; }
+    else{ input.value=input.value.slice(0,s)+input.value.slice(e2); e2=s; }
+    input.setSelectionRange(s,e2);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bk);
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT'&&e.target.classList.contains('in')) sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function kbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function sharedKbdHTML(extraKeys){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid" data-extra="'+(extraKeys?extraKeys.join(','):'')+'"></div></div>'+
+  '</div>';
+}
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+var kbdDocWired=false;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
 }
 
 /* =====================================================================
@@ -433,30 +550,48 @@ var SES=[
   gen:genA,
   prompt:function(p){
     var body='From the graph of the quadratic below, determine its <b>'+A_LABEL[p.kind]+'</b>.'+
-      '<div class="given">'+quadHTML(p.a,p.b,p.c)+'</div>'+
-      plotParab({Rg:9, parabs:[{a:p.a,h:p.h,k:p.k,color:'#8e78ff'}]});
+      '<div class="given">'+quadHTML(p.a,p.b,p.c)+'</div><br>'+
+      plotParab({Rg:9, parabs:[{a:p.a,h:p.h,k:p.k,color:'#8e78ff'}]})+
+      '<div class="kbdnote">If a feature does not appear on this grid, graph the equation in Desmos to see beyond this window.</div>';
     return segWrap('FEATURE','aSeg',aMode,[['mix','Mixed'],['vertex','Vertex'],['zeros','Zeros'],
            ['axis','Axis'],['yint','y-int'],['minmax','Max/Min']])+body;
   },
-  init:function(p){ wireSeg('aSeg',aMode,function(v){ aMode=v; newProblem(); }); },
+  init:function(p){
+    wireSeg('aSeg',aMode,function(v){ aMode=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    if(p.kind==='minmax'){
+      p.mmSel=null;
+      var box=document.getElementById('mmChoice');
+      Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+        btn.addEventListener('click',function(){
+          if(current.done) return;
+          Array.prototype.forEach.call(box.querySelectorAll('button'),function(b){b.classList.remove('sel');});
+          btn.classList.add('sel'); p.mmSel=btn.getAttribute('data-v');
+        });
+      });
+    }
+  },
   answerHTML:function(p){
     switch(p.kind){
       case 'vertex':
         return '<div class="answer"><span class="lbl">Vertex</span><span>(</span>'+inBox('vh')+
-               '<span>,</span>'+inBox('vk')+'<span>)</span></div>';
+               '<span>,</span>'+inBox('vk')+'<span>)</span></div>'+sharedKbdHTML();
       case 'zeros':
         return '<div class="answer"><span class="lbl">Zeros (x-values)</span>'+inBox('z1')+
-               '<span>and</span>'+inBox('z2')+'</div>';
+               '<span>and</span>'+inBox('z2')+'</div>'+sharedKbdHTML();
       case 'axis':
-        return '<div class="answer"><span class="lbl">Axis of symmetry</span><span>x =</span>'+inBox('ax')+'</div>';
+        return '<div class="answer"><span class="lbl">Axis of symmetry</span><span>x =</span>'+inBox('ax')+'</div>'+sharedKbdHTML();
       case 'yint':
-        return '<div class="answer"><span class="lbl">y-intercept (y-value)</span><span>y =</span>'+inBox('yi')+'</div>';
+        return '<div class="answer"><span class="lbl">y-intercept (y-value)</span><span>y =</span>'+inBox('yi')+'</div>'+sharedKbdHTML();
       case 'minmax':
-        return '<div class="radio" id="mm">'+
-                 '<label><input type="radio" name="mmr" value="min"> Minimum</label>'+
-                 '<label><input type="radio" name="mmr" value="max"> Maximum</label>'+
-               '</div>'+
-               '<div class="answer"><span class="lbl">Its value</span><span>y =</span>'+inBox('mmv')+'</div>';
+        return '<div class="qPart"><div class="qLabel">1 \u00b7 Minimum or maximum?</div>'+
+                 '<div class="choice2" id="mmChoice">'+
+                   '<button type="button" data-v="min">Minimum</button>'+
+                   '<button type="button" data-v="max">Maximum</button>'+
+                 '</div></div>'+
+               '<div class="qPart"><div class="qLabel">2 \u00b7 Its value</div>'+
+                 '<div class="answer"><span>y =</span>'+inBox('mmv')+'</div>'+
+               '</div>'+sharedKbdHTML();
     }
     return '';
   },
@@ -468,8 +603,8 @@ var SES=[
       case 'axis':{ var x=g('ax'); return x?{x:x}:null; }
       case 'yint':{ var y=g('yi'); return y?{y:y}:null; }
       case 'minmax':{
-        var r=document.querySelector('input[name="mmr"]:checked'); var v=g('mmv');
-        return (r&&v)?{which:r.value,v:v}:null;
+        var v=g('mmv');
+        return (p.mmSel&&v)?{which:p.mmSel,v:v}:null;
       }
     }
     return null;
@@ -485,6 +620,17 @@ var SES=[
       case 'minmax': return ans.which===(p.a>0?'min':'max') && req(ans.v,rint(p.k));
     }
     return false;
+  },
+  reveal:function(p){
+    if(p.kind!=='minmax') return;
+    var box=document.getElementById('mmChoice'); if(!box) return;
+    var correct=(p.a>0?'min':'max');
+    Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
+      var v=btn.getAttribute('data-v');
+      btn.disabled=true;
+      if(v===correct) btn.classList.add('right');
+      else if(v===p.mmSel) btn.classList.add('wrong');
+    });
   },
   hints:function(p){
     var base=['The graph crosses the x-axis at its zeros; it turns around at the vertex.',
@@ -535,14 +681,17 @@ var SES=[
     }
     return segWrap('TASK','bSeg',bMode,[['mix','Mixed'],['zeros','Find zeros'],['factors','Write factors']])+body;
   },
-  init:function(p){ wireSeg('bSeg',bMode,function(v){ bMode=v; newProblem(); }); },
+  init:function(p){
+    wireSeg('bSeg',bMode,function(v){ bMode=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
   answerHTML:function(p){
     if(p.kind==='zeros'){
       return '<div class="answer"><span class="lbl">Zeros</span><span>x =</span>'+inBox('bz1')+
-             '<span>and</span><span>x =</span>'+inBox('bz2')+'</div>';
+             '<span>and</span><span>x =</span>'+inBox('bz2')+'</div>'+sharedKbdHTML();
     }
     return '<div class="answer"><span class="lbl">Factored form</span><span>f(x) = ( x '+MIN+'</span>'+
-           inBox('bf1')+'<span>) ( x '+MIN+'</span>'+inBox('bf2')+'<span>)</span></div>';
+           inBox('bf1')+'<span>) ( x '+MIN+'</span>'+inBox('bf2')+'<span>)</span></div>'+sharedKbdHTML();
   },
   read:function(p){
     var a=parseRat(document.getElementById(p.kind==='zeros'?'bz1':'bf1').value);
@@ -594,10 +743,14 @@ var SES=[
   },
   answerHTML:function(p){
     if(p.kind==='describe') return mcHTML('cMc',p.options);
-    return '<div class="answer"><span class="lbl">Vertex form</span><span>g(x) =</span>'+inBox('wa')+
-           '<span>( x '+MIN+'</span>'+inBox('wc')+'<span>)\u00b2 +</span>'+inBox('wd')+'</div>';
+    return '<div class="answer"><span class="lbl">Vertex form: <span style="font-weight:700;font-style:italic">a(x '+MIN+' h)\u00b2 + k</span></span><span>g(x) =</span>'+inBox('wa')+
+           '<span>( x '+MIN+'</span>'+inBox('wc')+'<span>)\u00b2 +</span>'+inBox('wd')+'</div>'+sharedKbdHTML();
   },
-  init:function(p){ wireSeg('cSeg',cMode,function(v){ cMode=v; newProblem(); }); if(p.kind==='describe') wireMC('cMc',p); },
+  init:function(p){
+    wireSeg('cSeg',cMode,function(v){ cMode=v; newProblem(); });
+    if(p.kind==='describe') wireMC('cMc',p);
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  },
   read:function(p){
     if(p.kind==='describe') return (p.sel===null||p.sel===undefined)?null:{sel:p.sel};
     var a=parseRat(document.getElementById('wa').value),
