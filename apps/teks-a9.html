@@ -112,7 +112,63 @@
   .drSeg button.active{background:#f1f6ff; color:#133a9a}
   .drTog button.active{background:#eafff7; color:#0c6d54}
   .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
-  .qhead{font-weight:900; margin-top:14px}
+  .qhead{font-weight:900; margin-top:14px; font-size:clamp(17px,2.4vw,21px)}
+  .qPart{padding-top:12px; margin-top:12px; border-top:1px dashed #e5e7eb}
+  .qPart:first-child{padding-top:0; margin-top:0; border-top:none}
+  .qLabel{font-size:11px; font-weight:900; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; margin-bottom:6px}
+
+  /* ---------- shared floating keyboard (ported from the tweaking guide's Part 1/1a building block) ---------- */
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKey.wide{grid-column:1 / -1; margin-top:2px; padding:8px 2px; font-size:15px; background:#f1f6ff}
+  .drKbdBtn{position:absolute; left:6px; top:50%; transform:translateY(-50%); width:36px; height:36px;
+    border:1px solid var(--ui); border-radius:10px; background:#fff; display:grid; place-items:center; cursor:pointer; z-index:5}
+  .drKbdBtn svg{width:18px; height:18px}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#aac6ff}
+
+  /* ---------- A.9A · Domain & Range Lab (ported from A.2A/A.6A's drag-band lab pattern; exponential generator) ---------- */
+  .drWrap{display:grid; grid-template-columns:minmax(280px,480px) 1fr; gap:14px; align-items:start}
+  @media (max-width:860px){ .drWrap{grid-template-columns:1fr} }
+  .drCanvasBox{position:relative; max-width:480px}
+  #drCanvas{width:100%; aspect-ratio:1; display:block; border-radius:12px; border:1px solid #e7edff;
+    background:#fff; touch-action:none}
+  .drSide{display:flex; flex-direction:column; gap:10px; min-width:0}
+  .drField{position:relative}
+  .drVerbal{font-size:15px; font-weight:800; color:var(--muted); min-height:20px; margin:2px 2px 6px; line-height:1.3}
+  .drVerbal.ready{color:#133a9a}
+  .drStatus{display:flex; align-items:center; gap:8px; margin:0 0 6px; min-height:24px; flex-wrap:wrap}
+  .drChipSlot{margin-left:auto; display:flex; gap:8px; flex-wrap:wrap}
+  .drChip{padding:8px 13px; border-radius:999px; font-weight:900; font-size:14px; border:1px solid var(--ui);
+    background:#fff; box-shadow:0 6px 16px rgba(0,0,0,.06)}
+  .drChip.ok{color:#0b6b2f; background:#eafff2; border-color:#bfeacc}
+  .drChip.bad{color:#a33232; background:#fff3f3; border-color:#ffd4d4}
+  .drIO{display:flex; align-items:center; gap:6px}
+  .drInWrap{position:relative; flex:1; min-width:0}
+  .drBig{width:100%; min-height:52px; padding:10px 12px 10px 54px; border:2px solid var(--ui); border-radius:12px;
+    background:#fff; font-size:clamp(18px,2.6vw,24px); font-weight:800; font-family:inherit; color:var(--ink);
+    letter-spacing:.4px; word-spacing:.6ch; font-variant-numeric:tabular-nums lining-nums; outline:none}
+  .drBig::placeholder{color:#9aa9c9}
+  .drBig:focus{border-color:#9bc6ff; box-shadow:0 0 0 3px rgba(47,108,255,.18)}
+  .drBandBtn{width:52px; height:52px; flex:none; border:1px solid var(--ui); border-radius:12px; background:#fff;
+    display:grid; place-items:center; cursor:pointer; font-size:26px; line-height:1; transition:.15s all}
+  .drBandBtn.active{background:#eaf1ff; border-color:#aac6ff; box-shadow:0 0 0 3px rgba(47,108,255,.18) inset}
+  .drBandBtn:disabled{opacity:.35; cursor:default}
+  .drCoach{display:none; border:1px solid #ffd4d4; background:#fff7f7; color:#7b3232; padding:10px;
+    border-radius:12px; font-weight:700; font-size:13.5px; line-height:1.35}
+  .drCoach h4{margin:0 0 6px; font-size:12px; letter-spacing:.3px}
+  .drCoach ul{margin:0; padding-left:18px}
+  .drCoach li{margin:3px 0}
+  .drCoach li.dom{color:#0e3d98; border-left:4px solid #2f6cff; padding-left:8px}
+  .drCoach li.rng{color:#0c6d54; border-left:4px solid #36c2a0; padding-left:8px}
+  .drAnsChip{display:inline-block; margin:2px 8px 2px 0; padding:8px 12px; border-radius:999px;
+    background:#fff7cc; border:1px solid #ffe28a; color:#7a5a00; font-weight:900; font-size:14.5px}
 </style>
 </head>
 <body>
@@ -151,6 +207,36 @@
   </div>
 </div>
 
+<!-- CSV-driven coach messages for the A.9A Domain & Range Lab (ported from
+     A.2A/A.6A's coach pattern). Unlike the earlier "Equation Only"-style
+     draft of this file, Domain is no longer always "all real numbers" —
+     Segment and Ray shapes give it real endpoints too — so this is close
+     to A.6A's original full coaching set, just without a "hidden vertex"
+     row (monotonic exponentials have no such case) and with the numbers
+     tip worded generically instead of hardcoding "the asymptote" (a
+     ray's finite boundary is sometimes a real marked endpoint, sometimes
+     the asymptote, depending on which side of the ray blows up). No mode
+     column — A.9A doesn't have a training/testing split; opening a
+     helper band logs as a hint instead (see logHintUse() in the
+     controller). Inequality notation only — no interval mentions. -->
+<script id="coachMessages" type="text/csv">
+tip_id,priority,category,applies_to,condition,message
+numbers_segment,1,numbers,both,segment_two_numbers,Numbers: Check the endpoint values.
+numbers_one_sided,1,numbers,both,ray_or_full_one_number,"Numbers: Check the boundary value (it's either the graph's marked endpoint, or the asymptote y = 0)."
+direction_domain,2,direction,domain,inequality_direction_mismatch,Direction: Shade to the {{left_or_right}}. Use ≥/≤ for that direction. (Tap the band line to change)
+direction_range,2,direction,range,inequality_direction_mismatch,Direction: Shade {{up_or_down}}. Use ≥/≤ for that direction. (Tap the band line to change)
+endpoint_included,3,endpoints,both,endpoint_should_be_included,Endpoints: The endpoint at {{var}} = {{a}} is included — use ≤ or ≥.
+endpoint_excluded,3,endpoints,both,endpoint_should_be_excluded,"Endpoints: The endpoint at {{var}} = {{a}} is not included — use < or >. (If this is the asymptote, remember the curve never actually reaches it.)"
+form_one_sided,4,form,both,answer_is_one_sided,Form: This one is one-sided (ray). Use a single inequality like {{var}} ≥ a or {{var}} ≤ a.
+form_two_sided,4,form,both,answer_is_two_sided,Form: This one is two-sided (segment). Use two bounds like a ≤ {{var}} ≤ b.
+form_all_reals_true,4,form,both,answer_is_all_reals,Form: Here it’s all real numbers (no endpoints to find).
+unbounded_domain,5,unbounded,domain,extends_left_or_right_infinite,Unbounded: The graph extends left/right without bound.
+unbounded_range,5,unbounded,range,extends_up_or_down_infinite,Unbounded: The graph extends up/down without bound.
+variable_mismatch_domain,6,variable,domain,used_y_instead_of_x,Variable: Use x for Domain.
+variable_mismatch_range,6,variable,range,used_x_instead_of_y,Variable: Use y for Range.
+order_bounds,6,order,both,bounds_reversed,Order: Put the smaller number first: a ≤ {{var}} ≤ b.
+unreadable,6,readability,both,parse_failed,"I can’t read that yet. Try x ≤ 3 or −2 ≤ x ≤ 5."
+</script>
 <script src="../portal.js"></script>
 <script>
 (function(){
@@ -187,6 +273,8 @@ function ratHTML(r){
   return s+'<span class="vfrac"><span>'+Math.abs(r.n)+'</span><span>'+r.d+'</span></span>';
 }
 function ratText(r){ return r.d===1 ? String(r.n) : r.n+'/'+r.d; }
+/* signed term helper for step text: returns " + 5" or " \u2212 3" */
+function sgn(x){ return x<0 ? ' '+MIN+' '+Math.abs(x) : ' + '+x; }
 function tableHTML(xs,ys){
   var h='<table class="ttab"><tr><th>x</th>';
   xs.forEach(function(x){ h+='<td>'+fmtInt(x)+'</td>'; });
@@ -197,13 +285,81 @@ function tableHTML(xs,ys){
 }
 
 /* ---- exponential-specific display helper ---- */
-function expHTML(a,b){
+function expHTML(a,b,k){
   var coeff = a===1 ? '' : (a===-1 ? MIN : fmtInt(a));
-  return 'f(x) = '+coeff+'('+ratHTML(b)+')<sup>x</sup>';
+  var kPart = (!k) ? '' : (k>0 ? ' + '+k : ' '+MIN+' '+Math.abs(k));
+  return 'f(x) = '+coeff+'('+ratHTML(b)+')<sup>x</sup>'+kPart;
 }
 
 /* ---- UI helpers ---- */
 function inBox(id, wide){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off" />'; }
+
+/* =====================================================================
+   SHARED FLOATING KEYBOARD (Part 1/1a of the tweaking guide) — for any
+   module with free-entry number/fraction boxes. Types into whichever
+   input last had focus; tap the button again to hide it. Used by
+   A.9C, A.9D, and A.9E below (A.9A gets its own richer per-field
+   keyboard as part of its domain/range lab, further down).
+   ===================================================================== */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  SHARED_KEYS.forEach(function(k){
+    var b=document.createElement('button'); b.type='button'; b.className='drKey'; b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide'; bs.textContent='\u232b';
+  bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){ if(s===0) return; s=s-1; }
+    input.value=input.value.slice(0,s)+input.value.slice(e2);
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT') sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function sharedKbdHTML(){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+labKbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid"></div></div>'+
+  '</div>';
+}
 
 /* ---- multiple-choice helpers (shuffle + read + grade) ---- */
 function makeMC(items, correctIdx){
@@ -260,9 +416,9 @@ function plotExpo(o){
     s+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+4)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="end">'+i+'</text>';
   }
   (o.curves||[]).forEach(function(C){
-    var d='', pen=false, x, y;
+    var d='', pen=false, x, y, kk=(C.k||0);
     for(x=-Rg; x<=Rg+1e-9; x+=0.06){
-      y=C.a*Math.pow(C.b,x);
+      y=C.a*Math.pow(C.b,x)+kk;
       if(isFinite(y) && y<=Rg && y>=-Rg){ d+=(pen?'L':'M')+X(x).toFixed(1)+' '+Y(y).toFixed(1)+' '; pen=true; }
       else pen=false;
     }
@@ -272,6 +428,7 @@ function plotExpo(o){
     s+='<line x1="0" y1="'+Y(Hl.y)+'" x2="'+W+'" y2="'+Y(Hl.y)+'" stroke="'+(Hl.color||'#f4c431')+'" stroke-width="2.5"'+(Hl.dash?' stroke-dasharray="8 6"':'')+'/>';
   });
   (o.points||[]).forEach(function(Pt){
+    if(Pt.x>Rg||Pt.x<-Rg||Pt.y>Rg||Pt.y<-Rg) return; /* off the visible grid \u2014 don't mark it, matching what a student would actually see */
     s+='<circle cx="'+X(Pt.x)+'" cy="'+Y(Pt.y)+'" r="5.5" fill="'+(Pt.color||'#2f6cff')+'" stroke="'+(Pt.color||'#2f6cff')+'" stroke-width="3"/>';
   });
   (o.labels||[]).forEach(function(t,idx){
@@ -292,6 +449,794 @@ var CONTEXTS=[
 var BASES=[R(2,1),R(3,1),R(4,1),R(5,1),R(1,2),R(1,3),R(1,4),R(3,2),R(2,3),R(5,2),R(4,3)];
 
 /* =====================================================================
+   A.9A LAB ENGINE — Domain & Range of Exponential Functions, ported from
+   A.2A's / A.6A's drag-band Domain & Range Lab (same canvas / draggable-
+   band / CSV-coach machinery, same Mix/Segment/Ray/Full Level selector).
+   What's swapped in: the generator, and the domain/range math itself.
+
+   Unlike A.6A's parabolas, an exponential f(x) = ab^x is always strictly
+   monotonic (always increasing, or always decreasing — never turns
+   around), so there's no "hidden vertex" case to special-case: Range is
+   simply the image of whatever Domain interval is showing, evaluated at
+   its two ends. That makes one small helper (expoLimitAt, below) do the
+   work that A.6A needed several shape-specific branches for — an end that
+   runs off to \u00b1x always either blows up without bound (matching the sign
+   of a) or settles on the asymptote y = 0 (always excluded, since the
+   curve never actually reaches it), depending only on whether the base is
+   above or below 1 and which direction that end runs.
+
+   A fourth Level option, "Equation Only," is new here and doesn't exist
+   in A.2A/A.6A: no picture at all, just the bare equation, always the
+   Full shape (there's nothing to show a restricted window on without a
+   graph) \u2014 this is the flavor the very first version of A.9A used
+   (multiple-choice, pre-lab), now folded in as one more selector choice
+   instead of a separate module.
+   ===================================================================== */
+var LAB={ level:'mix' };
+var CFG={ xmin:-10, xmax:10, ymin:-10, ymax:10, tick:1, grid:true };
+var EPS=1e-6, handleRadiusPx=8, hitRadiusPx=26, tapThreshold=6, lineHitPx=16;
+
+var canvas=null, c=null, curG=null, reveal=false, gridYLabelX=null, labRO=null;
+var domainBand={mode:'double', visible:false, lo:-2, hi:3, loInc:true, hiInc:true, value:0, dir:1, inc:true};
+var rangeBand ={mode:'double', visible:false, lo:-1, hi:4, loInc:true, hiInc:true, value:0, dir:1, inc:true};
+var tool='idle', dragStart={x:0,y:0}, activeDrag={which:null, moved:false};
+
+function roundT(v){ return Math.round(v/CFG.tick)*CFG.tick; }
+function clampN(v,a,b){ return Math.max(a,Math.min(b,v)); }
+function ux(x){ return (x-CFG.xmin)/(CFG.xmax-CFG.xmin)*canvas.clientWidth; }
+function uy(y){ var H=canvas.clientHeight; return H-(y-CFG.ymin)/(CFG.ymax-CFG.ymin)*H; }
+function wx(px){ return CFG.xmin + px/canvas.clientWidth*(CFG.xmax-CFG.xmin); }
+function wy(py){ var H=canvas.clientHeight; return CFG.ymin + (H-py)/H*(CFG.ymax-CFG.ymin); }
+
+/* ---------- UI helpers for the Level selector (not previously in A.9) ---------- */
+function seg(id,cur,opts){
+  var h='<div class="drSeg" id="'+id+'" role="tablist">';
+  opts.forEach(function(o){ h+='<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>'; });
+  return h+'</div>';
+}
+function segWrap(label,id,cur,opts){
+  return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+    '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">'+label+'</span>'+
+    seg(id,cur,opts)+'</div>';
+}
+function wireLabSeg(id,cur,cb){
+  var el=document.getElementById(id);
+  Array.prototype.forEach.call(el.children,function(x){ x.classList.toggle('active',x.dataset.v===cur); });
+  el.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b) return;
+    Array.prototype.forEach.call(el.children,function(x){ x.classList.toggle('active',x===b); });
+    cb(b.dataset.v);
+  });
+}
+
+/* ---------- generator ----------
+   Segment/ray shapes need their endpoint y-values to land on exact
+   integers — the app grades and displays on a tick=1 grid (roundT), and
+   an arbitrary a*b^x (e.g. 3*(1/4)^2 = 0.1875) would silently make a
+   correct student answer ungradable (the reveal would show "0" but the
+   true stored answer would still be 0.1875). Quadratics/lines never had
+   this problem (integer a,h,k always gives an integer y at an integer
+   x), but a*b^x only lands on an integer in general when the base is a
+   whole number and x >= 0, or the base is a unit fraction (1/n) and
+   x <= 0 — so segment/ray restrict to one of those two "clean" regions;
+   Full/Equation Only don't need this at all, since their answer is
+   always all-reals / y > 0 / y < 0 with the asymptote fixed at y = 0. */
+var BASES_UP  =[R(2,1),R(3,1),R(4,1),R(5,1)];   /* integer base: a*b^x is exact for x >= 0 */
+var BASES_DOWN=[R(1,2),R(1,3),R(1,4)];          /* unit-fraction base: a*b^x is exact for x <= 0 */
+function fOf(g,x){ return g.a*Math.pow(g.bv,x); }
+function insideExpo(x,y){ return x>CFG.xmin+0.8 && x<CFG.xmax-0.8 && y>CFG.ymin+0.8 && y<CFG.ymax-0.8; }
+function genExpoShape(shapeLvl){
+  var a=rc([-4,-3,-2,-1,1,2,3,4]);
+  if(shapeLvl==='full'){
+    var bFull=rc(BASES);
+    return {type:'expo-full', a:a, b:bFull, bv:bFull.n/bFull.d};
+  }
+  var up=Math.random()<0.5;
+  var b=up? rc(BASES_UP) : rc(BASES_DOWN);
+  var bv=b.n/b.d;
+  var bAbs=Math.max(b.n,b.d)/Math.min(b.n,b.d); /* how fast it grows per step, regardless of direction */
+  var wMax = bAbs>=4 ? 2 : 3;
+  if(shapeLvl==='segment'){
+    var width=ri(1,wMax);
+    var anchor = up ? ri(0,2) : ri(-2,0);
+    var L,R;
+    if(up){ L=anchor; R=anchor+width; } else { R=anchor; L=anchor-width; }
+    var pats=[{cL:true,cR:false},{cL:false,cR:true},{cL:true,cR:true},{cL:false,cR:false}];
+    var pk=Math.random(), idx=(pk<0.30)?0:(pk<0.60)?1:(pk<0.80)?2:3;
+    return {type:'expo-seg', a:a, b:b, bv:bv, L:L, R:R, cL:pats[idx].cL, cR:pats[idx].cR};
+  }
+  /* ray */
+  var right=Math.random()<0.5, closed=Math.random()<0.5;
+  var hMax = bAbs>=4 ? 2 : 3;
+  var h = up ? ri(0,hMax) : ri(-hMax,0);
+  return {type:'expo-ray', a:a, b:b, bv:bv, h:h, right:right, closed:closed};
+}
+function answerableExpo(g){
+  switch(g.type){
+    case 'expo-full': return true;
+    case 'expo-seg' : return insideExpo(g.L,fOf(g,g.L)) && insideExpo(g.R,fOf(g,g.R));
+    case 'expo-ray' : return insideExpo(g.h,fOf(g,g.h));
+    default: return false;
+  }
+}
+function fallbackExpoShape(shapeLvl){
+  if(shapeLvl==='segment') return {type:'expo-seg', a:1, b:R(2,1), bv:2, L:0, R:2, cL:true, cR:false};
+  if(shapeLvl==='ray')     return {type:'expo-ray', a:1, b:R(2,1), bv:2, h:0, right:true, closed:true};
+  return {type:'expo-full', a:1, b:R(2,1), bv:2};
+}
+function genExpoLab(level){
+  var lvl=(level==='mix')? rc(['segment','ray','full','equation']) : level;
+  var rep=(lvl==='equation')? 'equation' : 'graph';
+  var shapeLvl=(lvl==='equation')? 'full' : lvl;
+  var g=null, tries=0;
+  do{ g=genExpoShape(shapeLvl); tries++; } while(!answerableExpo(g)&&tries<60);
+  if(!answerableExpo(g)) g=fallbackExpoShape(shapeLvl);
+  g.rep=rep;
+  g.domainAnswer=graphDomainOfExpo(g);
+  g.rangeAnswer=graphRangeOfExpo(g);
+  return g;
+}
+function newLabGraph(){ return genExpoLab(LAB.level); }
+
+/* ---------- intervals (identical to A.2A's/A.6A's I helper) ---------- */
+var I={
+  all:function(){ return {lo:-Infinity, hi:Infinity, loInc:true, hiInc:true}; },
+  withEnds:function(lo,hi,loInc,hiInc){ if(hi<lo){ var t=lo;lo=hi;hi=t; var s=loInc;loInc=hiInc;hiInc=s; } return {lo:lo,hi:hi,loInc:loInc,hiInc:hiInc}; },
+  half:function(a,aInc,b,bInc){ return {lo:a, hi:b, loInc:aInc, hiInc:bInc}; },
+  eq:function(a,b){ return Math.abs(a-b)<1e-6; },
+  same:function(A,B){
+    var loInf=(A.lo===-Infinity&&B.lo===-Infinity), hiInf=(A.hi===Infinity&&B.hi===Infinity);
+    return (loInf||this.eq(A.lo,B.lo)) && (hiInf||this.eq(A.hi,B.hi)) &&
+           (loInf|| !!A.loInc===!!B.loInc) && (hiInf|| !!A.hiInc===!!B.hiInc);
+  },
+  fmt:function(A,axis){
+    function n(v){ return v===Infinity?'\u221e':(v===-Infinity?'\u2212\u221e':roundT(v)); }
+    var varCh=(axis==='x'?'x':'y'), out='';
+    if(A.lo===-Infinity&&A.hi===Infinity) out='all real numbers';
+    else if(A.lo===-Infinity) out=varCh+' '+(A.hiInc?'\u2264':'<')+' '+n(A.hi);
+    else if(A.hi===Infinity)  out=varCh+' '+(A.loInc?'\u2265':'>')+' '+n(A.lo);
+    else out=n(A.lo)+' '+(A.loInc?'\u2264':'<')+' '+varCh+' '+(A.hiInc?'\u2264':'<')+' '+n(A.hi);
+    return out;
+  }
+};
+
+/* ---------- correct answers ----------
+   Domain is read straight off the shape (all reals / segment endpoints /
+   ray from its starting point). Range is the image of that domain
+   interval under f — since f is always strictly monotonic, that's just
+   "evaluate both ends and let I.withEnds sort out which is lo and which
+   is hi." An end that runs off to \u00b1\u221e either blows up (unbounded,
+   matching the sign of a) or settles on the asymptote y=0 (always
+   excluded), depending on whether the base is above or below 1. ---------- */
+function graphDomainOfExpo(g){
+  switch(g.type){
+    case 'expo-full': return I.all();
+    case 'expo-seg' : return I.withEnds(g.L,g.R,!!g.cL,!!g.cR);
+    case 'expo-ray' : return g.right? I.half(g.h,!!g.closed,Infinity,true) : I.half(-Infinity,true,g.h,!!g.closed);
+  }
+}
+function expoLimitAt(g,towardPositive){
+  var blowsUp=(towardPositive && g.bv>1) || (!towardPositive && g.bv<1);
+  if(blowsUp) return { value: g.a>0?Infinity:-Infinity, included:true };
+  return { value:0, included:false }; /* approaches the asymptote, never reaches it */
+}
+function graphRangeOfExpo(g){
+  var D=graphDomainOfExpo(g);
+  var leftB = (D.lo===-Infinity) ? expoLimitAt(g,false) : {value:fOf(g,D.lo), included:!!D.loInc};
+  var rightB= (D.hi=== Infinity) ? expoLimitAt(g,true)  : {value:fOf(g,D.hi), included:!!D.hiInc};
+  return I.withEnds(leftB.value, rightB.value, leftB.included, rightB.included);
+}
+function explainWhy(g){
+  if(g.type==='expo-full'){
+    return (g.rep==='equation'
+        ? 'The function '+expHTML(g.a,g.b)+' is defined for every real value of x, so Domain is all real numbers.'
+        : 'This curve is drawn across the whole window with no marked endpoints, so Domain is all real numbers.')+
+      ' It '+(g.a>0?'stays above':'stays below')+' its asymptote y = 0 but never actually reaches it, so Range is '+(g.a>0?'y > 0':'y < 0')+'.';
+  }
+  if(g.type==='expo-seg'){
+    return 'Domain runs from the left x-end to the right x-end of this piece, using the dot styles shown. Since an exponential curve is always increasing or always decreasing (it never turns around), Range runs between the curve\u2019s heights at those same two x-values \u2014 whichever is lower is the low end, whichever is higher is the high end.';
+  }
+  return 'Domain starts at the marked point and runs '+(g.right?'right':'left')+' forever, using the dot style shown at that starting point. Because the curve is always increasing or always decreasing, Range runs from the curve\u2019s height at that point toward whatever happens at the far end \u2014 either it keeps growing/shrinking without bound, or it settles onto the asymptote y = 0 without ever touching it.';
+}
+
+/* ---------- band shape: depends on which graph shape is showing (exactly
+   A.6A's applyBandShape logic, renamed for exponentials) ---------- */
+function applyBandShape(){
+  if(!curG) return;
+  if(curG.type==='expo-full'){ domainBand.mode='none'; rangeBand.mode='single'; }
+  else if(curG.type==='expo-ray'){ domainBand.mode='single'; rangeBand.mode='single'; }
+  else { domainBand.mode='double'; rangeBand.mode='double'; } /* expo-seg */
+}
+function bandDefaults(){
+  if(domainBand.mode==='double'){ domainBand.lo=-2; domainBand.hi=3; domainBand.loInc=true; domainBand.hiInc=true; }
+  if(domainBand.mode==='single'){ domainBand.value=0; domainBand.dir=1; domainBand.inc=true; }
+  if(rangeBand.mode==='double'){ rangeBand.lo=-1; rangeBand.hi=4; rangeBand.loInc=true; rangeBand.hiInc=true; }
+  if(rangeBand.mode==='single'){ rangeBand.value=0; rangeBand.dir=1; rangeBand.inc=true; }
+  domainBand.visible=false; rangeBand.visible=false;
+}
+function bandToInterval(b){
+  if(b.mode==='double'){ return I.withEnds(Math.min(b.lo,b.hi), Math.max(b.lo,b.hi), b.lo<=b.hi?b.loInc:b.hiInc, b.lo<=b.hi?b.hiInc:b.loInc); }
+  if(b.mode==='single'){ return (b.dir>0)? I.half(b.value,b.inc,Infinity,true) : I.half(-Infinity,true,b.value,b.inc); }
+  return I.all();
+}
+function syncInputsFromBands(){
+  var d=document.getElementById('drDom'), r=document.getElementById('drRng');
+  if(!d||!r) return;
+  if(domainBand.visible){ d.value=I.fmt(bandToInterval(domainBand),'x'); d.dispatchEvent(new Event('input',{bubbles:true})); }
+  if(rangeBand.visible){  r.value=I.fmt(bandToInterval(rangeBand ),'y'); r.dispatchEvent(new Event('input',{bubbles:true})); }
+}
+
+/* ---------- plain-language translation of whatever the student typed ---------- */
+function verbalize(A,axis){
+  if(!A) return null;
+  var v=axis;
+  if(A.lo===-Infinity&&A.hi===Infinity) return v+' can be any real number.';
+  if(A.hi===Infinity) return v+' is '+(A.loInc?'at least ':'greater than ')+fmtInt(roundT(A.lo))+'.';
+  if(A.lo===-Infinity) return v+' is '+(A.hiInc?'at most ':'less than ')+fmtInt(roundT(A.hi))+'.';
+  var loPhrase=(A.loInc?'at least ':'greater than ')+fmtInt(roundT(A.lo));
+  var hiPhrase=(A.hiInc?'at most ':'less than ')+fmtInt(roundT(A.hi));
+  return v+' is '+loPhrase+' and '+hiPhrase+'.';
+}
+function updateVerbal(inputId,verbalId,axis){
+  var input=document.getElementById(inputId), out=document.getElementById(verbalId);
+  if(!input||!out) return;
+  var msg=verbalize(parseField(input.value.trim()),axis);
+  if(msg){ out.textContent=msg; out.classList.add('ready'); }
+  else{ out.textContent=(curG&&curG.rep==='equation')?'Type to see what it means':'Type or drag to see what it means'; out.classList.remove('ready'); }
+}
+
+/* ---------- canvas sizing + draw (no-ops safely when there's no canvas
+   this round, i.e. curG.rep==='equation') ---------- */
+function ensureCanvasSize(){
+  if(!canvas) return false;
+  var dpr=Math.max(1,Math.floor(window.devicePixelRatio||1));
+  var cssSize=Math.min(canvas.parentElement.clientWidth,480);
+  if(cssSize<=0) return false;
+  var target=Math.floor(cssSize*dpr);
+  if(canvas.width!==target){
+    canvas.style.width=cssSize+'px'; canvas.style.height=cssSize+'px';
+    canvas.width=target; canvas.height=target;
+    c.setTransform(1,0,0,1,0,0); c.scale(dpr,dpr);
+  }
+  return true;
+}
+function withCanvasReady(fn,tries){
+  tries=tries||0;
+  if(ensureCanvasSize()&&canvas.clientWidth>0){ fn(); return; }
+  if(tries<12){ requestAnimationFrame(function(){ withCanvasReady(fn,tries+1); }); } else { fn(); }
+}
+function draw(){
+  if(!canvas||!c) return;
+  c.save(); c.resetTransform(); c.clearRect(0,0,canvas.width,canvas.height); c.restore();
+  drawGrid();
+  if(curG) drawGraph(curG,'#2f6cff');
+  if(reveal&&curG){
+    drawBand(curG.domainAnswer,'x','#f4c431',true);
+    drawBand(curG.rangeAnswer ,'y','#f4c431',true);
+  }
+  if(domainBand.visible&&domainBand.mode!=='none') drawBand(domainBand,'x','#ff5577');
+  if(rangeBand.visible &&rangeBand.mode!=='none')  drawBand(rangeBand ,'y','#ff5577');
+  drawAnchorLabels();
+}
+function drawGrid(){
+  var W=canvas.clientWidth, H=canvas.clientHeight;
+  if(CFG.grid){
+    c.save(); c.strokeStyle='#e9eefb'; c.lineWidth=1;
+    for(var x=CFG.xmin;x<=CFG.xmax+EPS;x+=CFG.tick){ var px=ux(x); c.beginPath(); c.moveTo(px,0); c.lineTo(px,H); c.stroke(); }
+    for(var y=CFG.ymin;y<=CFG.ymax+EPS;y+=CFG.tick){ var py=uy(y); c.beginPath(); c.moveTo(0,py); c.lineTo(W,py); c.stroke(); }
+    c.restore();
+  }
+  c.save();
+  var ax=ux(0), ay=uy(0);
+  c.strokeStyle='#0b52ff'; c.lineWidth=2;
+  c.beginPath(); c.moveTo(ax,0); c.lineTo(ax,H); c.stroke();
+  c.beginPath(); c.moveTo(0,ay); c.lineTo(W,ay); c.stroke();
+  c.fillStyle='rgba(15,35,64,.95)'; c.font='900 16px ui-rounded, system-ui';
+  c.shadowColor='rgba(255,255,255,.9)'; c.shadowBlur=6;
+  c.textAlign='center'; c.textBaseline='top';
+  var yLabel=(ay>H-26)? ay-22 : ay+6;
+  for(var xx=Math.ceil(CFG.xmin/2)*2; xx<=CFG.xmax; xx+=2){ if(Math.abs(xx)<EPS) continue; c.fillText(xx, ux(xx), Math.max(2,Math.min(H-20,yLabel))); }
+  var leftSide=ax>26; c.textAlign=leftSide?'right':'left'; c.textBaseline='middle';
+  var xTickCol=Math.max(8,Math.min(W-8, ax+(leftSide?-8:8)));
+  for(var yy=Math.ceil(CFG.ymin/2)*2; yy<=CFG.ymax; yy+=2){ if(Math.abs(yy)<EPS) continue; c.fillText(yy, xTickCol, uy(yy)); }
+  c.font='900 18px ui-rounded, system-ui';
+  c.textAlign=leftSide?'left':'right'; c.textBaseline='top';
+  gridYLabelX=Math.max(12,Math.min(W-12, ax+26*(leftSide?1:-1)));
+  c.fillText('(y)', gridYLabelX, 10);
+  c.textAlign='left'; c.textBaseline='bottom';
+  c.fillText('(x)', Math.max(0,W-30), Math.max(16,Math.min(H-6,ay-6)));
+  c.restore();
+}
+function clampYExpo(y){ return isFinite(y) ? Math.max(CFG.ymin-1.2,Math.min(CFG.ymax+1.2,y)) : (y>0?CFG.ymax+1.2:CFG.ymin-1.2); }
+function drawGraph(g,color){
+  c.save(); c.strokeStyle=color; c.lineWidth=4; c.lineJoin='round'; c.lineCap='round';
+  var over=1.2;
+  function sampleCurve(xStart,xEnd,stepSigned){
+    var pen=false;
+    c.beginPath();
+    for(var x=xStart; (stepSigned>0? x<=xEnd+EPS : x>=xEnd-EPS); x+=stepSigned){
+      var y=g.a*Math.pow(g.bv,x);
+      if(isFinite(y) && y<=CFG.ymax+over && y>=CFG.ymin-over){
+        var px=ux(x), py=uy(Math.max(CFG.ymin-over,Math.min(CFG.ymax+over,y)));
+        if(pen) c.lineTo(px,py); else { c.moveTo(px,py); pen=true; }
+      } else pen=false;
+    }
+    c.stroke();
+  }
+  switch(g.type){
+    case 'expo-full': sampleCurve(CFG.xmin, CFG.xmax, (CFG.xmax-CFG.xmin)/240); break;
+    case 'expo-seg': {
+      sampleCurve(g.L, g.R, (g.R-g.L)/160);
+      drawEnd(ux(g.L), uy(clampYExpo(fOf(g,g.L))), g.cL);
+      drawEnd(ux(g.R), uy(clampYExpo(fOf(g,g.R))), g.cR);
+      break;
+    }
+    case 'expo-ray': {
+      var xEnd=g.right?CFG.xmax:CFG.xmin;
+      var step=(CFG.xmax-CFG.xmin)/200*(g.right?1:-1);
+      sampleCurve(g.h, xEnd, step);
+      drawEnd(ux(g.h), uy(clampYExpo(fOf(g,g.h))), g.closed);
+      drawArrowTowards(ux(xEnd), uy(clampYExpo(fOf(g,xEnd))), g.right?1:-1);
+      break;
+    }
+  }
+  c.restore();
+}
+function drawEnd(x,y,closed){
+  var r=handleRadiusPx;
+  c.save();
+  c.beginPath(); c.arc(x,y,r+2,0,Math.PI*2); c.strokeStyle='rgba(255,255,255,0.95)'; c.lineWidth=4; c.stroke();
+  if(closed){
+    c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.fillStyle='#ff5566'; c.fill();
+    c.beginPath(); c.arc(x,y,r-1,0,Math.PI*2); c.strokeStyle='rgba(255,255,255,0.9)'; c.lineWidth=2; c.stroke();
+  } else {
+    c.beginPath(); c.arc(x,y,r,0,Math.PI*2); c.strokeStyle='#ff5566'; c.lineWidth=4; c.stroke();
+  }
+  c.restore();
+}
+function drawArrowTowards(x,y,dir){
+  c.save(); c.fillStyle='#1a60ff'; c.beginPath(); var s=10;
+  if(dir>0){ c.moveTo(x,y); c.lineTo(x-s,y-s); c.lineTo(x-s,y+s); }
+  else{ c.moveTo(x,y); c.lineTo(x+s,y-s); c.lineTo(x+s,y+s); }
+  c.closePath(); c.fill(); c.restore();
+}
+function drawBand(b,axis,color,asAnswer){
+  c.save(); c.setLineDash([8,6]); c.lineWidth=2; c.strokeStyle=color;
+  if(b.mode==='double'||asAnswer===true){
+    if(!asAnswer){
+      c.globalAlpha=0.18; c.fillStyle=color;
+      if(axis==='x'){ var x1f=ux(b.lo), x2f=ux(b.hi); c.fillRect(Math.min(x1f,x2f),0,Math.abs(x2f-x1f),canvas.clientHeight); }
+      else{ var y1f=uy(b.lo), y2f=uy(b.hi); c.fillRect(0,Math.min(y1f,y2f),canvas.clientWidth,Math.abs(y2f-y1f)); }
+      c.globalAlpha=1;
+    }
+    if(axis==='x'){
+      var x1=ux((b.mode==='double')?b.lo:b.value), x2=ux((b.mode==='double')?b.hi:b.value);
+      c.beginPath(); c.moveTo(x1,0); c.lineTo(x1,canvas.clientHeight); c.moveTo(x2,0); c.lineTo(x2,canvas.clientHeight); c.stroke();
+      if(b.mode==='double'){ drawEnd(x1,uy(0),b.loInc); drawEnd(x2,uy(0),b.hiInc); }
+    } else {
+      var y1=uy((b.mode==='double')?b.lo:b.value), y2=uy((b.mode==='double')?b.hi:b.value);
+      c.beginPath(); c.moveTo(0,y1); c.lineTo(canvas.clientWidth,y1); c.moveTo(0,y2); c.lineTo(canvas.clientWidth,y2); c.stroke();
+      if(b.mode==='double'){ drawEnd(ux(0),y1,b.loInc); drawEnd(ux(0),y2,b.hiInc); }
+    }
+  }
+  if(b.mode==='single'&&!asAnswer){
+    if(axis==='x'){
+      var x=ux(b.value);
+      c.globalAlpha=0.18; c.fillStyle=color;
+      var fillW=(b.dir>0? canvas.clientWidth-x : x);
+      c.fillRect(b.dir>0?x:0, 0, Math.max(0,fillW), canvas.clientHeight);
+      c.globalAlpha=1;
+      c.beginPath(); c.moveTo(x,0); c.lineTo(x,canvas.clientHeight); c.stroke();
+      drawEnd(x,uy(0),b.inc);
+    } else {
+      var y=uy(b.value);
+      c.globalAlpha=0.18; c.fillStyle=color;
+      c.fillRect(0, b.dir>0?0:y, canvas.clientWidth, b.dir>0? y : (canvas.clientHeight-y));
+      c.globalAlpha=1;
+      c.beginPath(); c.moveTo(0,y); c.lineTo(canvas.clientWidth,y); c.stroke();
+      drawEnd(ux(0),y,b.inc);
+    }
+  }
+  c.restore();
+}
+function drawZenNum(text,x,y,align){
+  c.save(); c.font='800 30px ui-rounded, system-ui'; c.textAlign=align||'center'; c.textBaseline='middle';
+  c.shadowColor='rgba(255,255,255,.9)'; c.shadowBlur=9; c.fillStyle='rgba(15,35,64,.95)';
+  c.fillText(String(text),x,y); c.restore();
+}
+function drawAnchorLabels(){
+  var baseTop=24, rightX=canvas.clientWidth-24;
+  if(domainBand.visible&&domainBand.mode!=='none'){
+    if(domainBand.mode==='double'){
+      var xLo=Math.max(24,Math.min(canvas.clientWidth-24,ux(domainBand.lo)));
+      var xHi=Math.max(24,Math.min(canvas.clientWidth-24,ux(domainBand.hi)));
+      var avoid=(gridYLabelX==null)?-9999:gridYLabelX;
+      drawZenNum(roundT(domainBand.lo), xLo, (Math.abs(xLo-avoid)<26)?baseTop+18:baseTop, 'center');
+      drawZenNum(roundT(domainBand.hi), xHi, (Math.abs(xHi-avoid)<26)?baseTop+18:baseTop, 'center');
+    } else {
+      var x=Math.max(24,Math.min(canvas.clientWidth-24,ux(domainBand.value)));
+      var avoid2=(gridYLabelX==null)?-9999:gridYLabelX;
+      drawZenNum(roundT(domainBand.value), x, (Math.abs(x-avoid2)<26)?baseTop+18:baseTop, 'center');
+    }
+  }
+  if(rangeBand.visible&&rangeBand.mode!=='none'){
+    if(rangeBand.mode==='double'){
+      drawZenNum(roundT(rangeBand.lo), rightX, Math.max(22,Math.min(canvas.clientHeight-22,uy(rangeBand.lo))), 'right');
+      drawZenNum(roundT(rangeBand.hi), rightX, Math.max(22,Math.min(canvas.clientHeight-22,uy(rangeBand.hi))), 'right');
+    } else {
+      drawZenNum(roundT(rangeBand.value), rightX, Math.max(22,Math.min(canvas.clientHeight-22,uy(rangeBand.value))), 'right');
+    }
+  }
+}
+
+/* ---------- pointer interactions (drag handles / tap to toggle) ---------- */
+function handleHit(px,py){
+  function test(x,y,which){ return Math.hypot(px-x,py-y)<=hitRadiusPx?which:null; }
+  if(domainBand.visible&&domainBand.mode!=='none'){
+    if(domainBand.mode==='double'){
+      var y0=uy(0), h=test(ux(domainBand.lo),y0,'DLO')||test(ux(domainBand.hi),y0,'DHI');
+      if(h) return h;
+    } else {
+      var hS=test(ux(domainBand.value),uy(0),'DS'); if(hS) return hS;
+      if(Math.abs(px-ux(domainBand.value))<=lineHitPx) return 'DLINE';
+    }
+  }
+  if(rangeBand.visible&&rangeBand.mode!=='none'){
+    if(rangeBand.mode==='double'){
+      var x0=ux(0), h2=test(x0,uy(rangeBand.lo),'RLO')||test(x0,uy(rangeBand.hi),'RHI');
+      if(h2) return h2;
+    } else {
+      var h3=test(ux(0),uy(rangeBand.value),'RS'); if(h3) return h3;
+      if(Math.abs(py-uy(rangeBand.value))<=lineHitPx) return 'RLINE';
+    }
+  }
+  return null;
+}
+function labDown(e){
+  canvas.setPointerCapture(e.pointerId);
+  var px=e.offsetX, py=e.offsetY;
+  dragStart={x:px,y:py};
+  var hh=handleHit(px,py);
+  if(hh){ tool='drag'; activeDrag.which=hh; activeDrag.moved=false; }
+}
+function labMove(e){
+  if(tool!=='drag') return;
+  var px=e.offsetX, py=e.offsetY;
+  activeDrag.moved=Math.hypot(px-dragStart.x,py-dragStart.y)>tapThreshold;
+  if(activeDrag.which==='DLO') domainBand.lo=clampN(roundT(wx(px)),CFG.xmin,CFG.xmax);
+  if(activeDrag.which==='DHI') domainBand.hi=clampN(roundT(wx(px)),CFG.xmin,CFG.xmax);
+  if(activeDrag.which==='RLO') rangeBand.lo=clampN(roundT(wy(py)),CFG.ymin,CFG.ymax);
+  if(activeDrag.which==='RHI') rangeBand.hi=clampN(roundT(wy(py)),CFG.ymin,CFG.ymax);
+  if(activeDrag.which==='DS')  domainBand.value=clampN(roundT(wx(px)),CFG.xmin,CFG.xmax);
+  if(activeDrag.which==='RS')  rangeBand.value=clampN(roundT(wy(py)),CFG.ymin,CFG.ymax);
+  syncInputsFromBands();
+  draw();
+}
+function labUp(e){
+  canvas.releasePointerCapture(e.pointerId);
+  if(tool!=='drag') return;
+  if(!activeDrag.moved){
+    var isAlt=e.altKey||e.metaKey||e.ctrlKey;
+    if(activeDrag.which==='DLO') domainBand.loInc=!domainBand.loInc;
+    if(activeDrag.which==='DHI') domainBand.hiInc=!domainBand.hiInc;
+    if(activeDrag.which==='RLO') rangeBand.loInc=!rangeBand.loInc;
+    if(activeDrag.which==='RHI') rangeBand.hiInc=!rangeBand.hiInc;
+    if(activeDrag.which==='DS'){ if(isAlt) domainBand.dir*=-1; else domainBand.inc=!domainBand.inc; }
+    if(activeDrag.which==='RS'){ if(isAlt) rangeBand.dir*=-1; else rangeBand.inc=!rangeBand.inc; }
+    if(activeDrag.which==='DLINE') domainBand.dir*=-1;
+    if(activeDrag.which==='RLINE') rangeBand.dir*=-1;
+    syncInputsFromBands();
+  }
+  tool='idle'; draw();
+}
+
+/* ---------- math keyboard (per-field, for drDom/drRng \u2014 richer than the
+   plain SHARED_KEYS pad, since inequality notation needs \u2264 < \u2265 > \u211d x y) ---------- */
+var KEYS=['0','1','2','3','4','5','6','7','8','9','\u2264','<','\u2265','>','\u211d','x','y','\u2212','.','\u2423'];
+var kbdDocWired=false;
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
+}
+function labKbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function wireKbd(inputId){
+  var input=document.getElementById(inputId);
+  var btn=document.querySelector('.drKbdBtn[data-for="'+inputId+'"]');
+  var pop=document.getElementById('drKbd-'+inputId);
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  KEYS.forEach(function(k){
+    var b=document.createElement('button'); b.type='button'; b.className='drKey'; b.textContent=k;
+    b.addEventListener('click',function(){
+      input.focus();
+      var token=(k==='\u2423')?' ':k;
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+token+input.value.slice(e2);
+      var pos=s+token.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide'; bs.textContent='\u232b';
+  bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){ if(s===0) return; s=s-1; }
+    input.value=input.value.slice(0,s)+input.value.slice(e2);
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){ pop.style.display='block'; placeKbd(pop,input); }
+  });
+  ensureKbdDocWiring();
+}
+
+/* ---------- CSV coach ---------- */
+function parseLabCSV(text){
+  var rows=[], i=0, field='', rec=[], inQ=false;
+  function pushField(){ rec.push(field); field=''; }
+  function pushRec(){ if(rec.length){ rows.push(rec); rec=[]; } }
+  while(i<text.length){
+    var ch=text[i++];
+    if(inQ){
+      if(ch==='"'&&text[i]==='"'){ field+='"'; i++; }
+      else if(ch==='"'){ inQ=false; }
+      else field+=ch;
+    } else {
+      if(ch==='"'){ inQ=true; }
+      else if(ch===','){ pushField(); }
+      else if(ch==='\n'){ pushField(); pushRec(); }
+      else if(ch==='\r'){ /* skip */ }
+      else field+=ch;
+    }
+  }
+  if(field.length>0||rec.length){ pushField(); pushRec(); }
+  if(!rows.length) return [];
+  var header=rows.shift().map(function(h){ return h.trim(); });
+  return rows.filter(function(r){ return r.length===header.length; }).map(function(r){
+    var obj={}; header.forEach(function(h,idx){ obj[h]=r[idx]; }); return obj;
+  });
+}
+var COACH=(function(){
+  var el=document.getElementById('coachMessages');
+  var data=parseLabCSV(el?el.textContent.trim():'');
+  var rows=data.map(function(r){
+    return { tip_id:r.tip_id, priority:parseInt(r.priority||'999',10),
+      applies_to:(r.applies_to||'both'),
+      condition:r.condition, message:r.message };
+  });
+  function find(condition,applies){
+    var pool=rows.filter(function(r){
+      return r.condition===condition &&
+        (r.applies_to==='both'||r.applies_to===applies);
+    });
+    pool.sort(function(a,b){ return a.priority-b.priority; });
+    return pool;
+  }
+  function fill(template,tokens){
+    return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g,function(_,k){
+      return (k in tokens)?String(tokens[k]):'{{'+k+'}}';
+    });
+  }
+  return { find:find, fill:fill };
+})();
+function runCoach(side,A,U,list){
+  var varChar=(side==='domain'?'x':'y');
+  var isHalf=(A.lo===-Infinity||A.hi===Infinity);
+  var isAll=(A.lo===-Infinity&&A.hi===Infinity);
+  var tips=[];
+  function pushBy(condition,tokens){
+    COACH.find(condition,side).forEach(function(r){
+      tips.push({ id:r.tip_id, prio:r.priority, msg:COACH.fill(r.message,tokens||{}) });
+    });
+  }
+  function appendTips(){
+    tips.sort(function(a,b){ return a.prio-b.prio; });
+    var dedup={}, count=0;
+    for(var i=0;i<tips.length;i++){
+      var t=tips[i]; if(dedup[t.id]) continue; dedup[t.id]=1;
+      var li=document.createElement('li');
+      li.className=(side==='domain')?'dom':'rng';
+      li.textContent=(side==='domain'?'(Domain) ':'(Range) ')+t.msg;
+      list.appendChild(li);
+      if(++count>=3) break;
+    }
+  }
+  if(!U){ pushBy('parse_failed'); appendTips(); return; }
+  if(U._var&&U._var!==varChar){
+    pushBy(side==='domain'?'used_y_instead_of_x':'used_x_instead_of_y');
+  }
+  var U_half=(U.lo===-Infinity||U.hi===Infinity);
+  var U_all=(U.lo===-Infinity&&U.hi===Infinity);
+  var numsMatchTwo=(!isHalf&&!U_half&&Math.abs(A.lo-U.lo)<1e-6&&Math.abs(A.hi-U.hi)<1e-6);
+  var aFin=(A.hi===Infinity)?A.lo:A.hi, uFin=(U.hi===Infinity)?U.lo:U.hi;
+  var numsMatchOne=(isHalf&&!isAll&&U_half&&!U_all&&isFinite(uFin)&&Math.abs(aFin-uFin)<1e-6);
+  if(isHalf&&!isAll){ if(!numsMatchOne) pushBy('ray_or_full_one_number',{var:varChar}); }
+  else if(!isAll){
+    if(!numsMatchTwo) pushBy('segment_two_numbers');
+  }
+  if(isHalf&&numsMatchOne){
+    var ansRightOrUp=(A.hi===Infinity);
+    if((U.hi===Infinity)!==ansRightOrUp){
+      if(side==='domain') pushBy('inequality_direction_mismatch',{left_or_right:ansRightOrUp?'right':'left'});
+      else pushBy('inequality_direction_mismatch',{up_or_down:ansRightOrUp?'up':'down'});
+    }
+  }
+  if(numsMatchTwo){
+    if(!!A.loInc!==!!U.loInc) pushBy(A.loInc?'endpoint_should_be_included':'endpoint_should_be_excluded',{var:varChar,a:A.lo});
+    if(!!A.hiInc!==!!U.hiInc) pushBy(A.hiInc?'endpoint_should_be_included':'endpoint_should_be_excluded',{var:varChar,a:A.hi});
+  }
+  if(numsMatchOne){
+    var aVal=(A.hi===Infinity?A.lo:A.hi);
+    var needInc=(A.hi===Infinity?A.loInc:A.hiInc);
+    var hasInc=(U.hi===Infinity?U.loInc:U.hiInc);
+    if(!!needInc!==!!hasInc) pushBy(needInc?'endpoint_should_be_included':'endpoint_should_be_excluded',{var:varChar,a:aVal});
+  }
+  if(isAll){ if(!(U.lo===-Infinity&&U.hi===Infinity)) pushBy('answer_is_all_reals'); }
+  else{
+    if(isHalf&&!U_half) pushBy('answer_is_one_sided',{var:varChar});
+    if(!isHalf&&U_half) pushBy('answer_is_two_sided',{var:varChar});
+  }
+  if(isHalf&&!isAll) pushBy(side==='domain'?'extends_left_or_right_infinite':'extends_up_or_down_infinite');
+  if(U.lo>U.hi) pushBy('bounds_reversed',{var:varChar});
+  appendTips();
+}
+
+/* ---------- parse the student's typed notation ---------- */
+function parseField(text){
+  if(!text) return null;
+  var t=text.trim().replace(/\u2013|\u2212/g,'-');
+  if(/all\s+real/i.test(t)||/\u211d/.test(t)) return I.all();
+  var m=t.match(/^([^xy]+?)\s*(\u2264|<)\s*([xy])\s*(\u2264|<)\s*([^xy]+)$/i);
+  if(m){ var out2=I.withEnds(normNum(m[1]),normNum(m[5]),m[2]==='\u2264',m[4]==='\u2264'); out2._var=m[3].toLowerCase(); return out2; }
+  m=t.match(/^([xy])\s*(\u2265|>|\u2264|<)\s*(\S+)$/i);
+  if(m){
+    var varCh=m[1].toLowerCase(), op=m[2], v=normNum(m[3]);
+    var out=(op==='\u2265'||op==='>')? I.half(v,op==='\u2265',Infinity,true) : I.half(-Infinity,true,v,op==='\u2264');
+    out._var=varCh; return out;
+  }
+  return null;
+}
+function normNum(s){
+  s=String(s).trim().replace('\u221e','Infinity');
+  if(/Infinity/i.test(s)) return s.charAt(0)==='-'?-Infinity:Infinity;
+  return parseFloat(s);
+}
+
+/* ---------- lab UI glue ---------- */
+function setChip(slotId,text,kind){
+  var slot=document.getElementById(slotId); if(!slot) return;
+  slot.innerHTML='';
+  if(text==null) return;
+  var d=document.createElement('div'); d.className='drChip';
+  if(kind===true) d.classList.add('ok'); else if(kind===false) d.classList.add('bad');
+  d.textContent=text; slot.appendChild(d);
+}
+function drFieldHTML(axis,withBand){
+  var isDom=(axis==='dom');
+  var id=isDom?'drDom':'drRng';
+  var bandIcon=isDom?'\u2194\ufe0f':'\u2195\ufe0f';
+  var bandBtn=withBand?
+    '<button type="button" id="'+(isDom?'drDomBand':'drRngBand')+'" class="drBandBtn" title="'+(isDom?'Domain':'Range')+' band \u2014 drag the handle(s) on the graph" aria-label="Toggle '+(isDom?'domain':'range')+' band">'+bandIcon+'</button>' : '';
+  return '<div class="drField" aria-label="'+(isDom?'Domain':'Range')+' input group">'+
+    '<div class="drStatus"><div class="drChipSlot" id="'+(isDom?'drDChip':'drRChip')+'" aria-live="polite"></div></div>'+
+    '<div class="drVerbal" id="'+(isDom?'drDomVerbal':'drRngVerbal')+'">Type'+(withBand?' or drag '+bandIcon+' ':' ')+'to see what it means</div>'+
+    '<div class="drIO"><div class="drInWrap">'+
+      '<button type="button" class="drKbdBtn" data-for="'+id+'" title="Math keyboard" aria-label="Open keyboard for '+(isDom?'Domain':'Range')+'">'+labKbdSVG()+'</button>'+
+      '<input id="'+id+'" class="drBig" placeholder="'+(isDom?'Domain (x)':'Range (y)')+'" aria-label="'+(isDom?'Domain':'Range')+'" autocomplete="off"/>'+
+      '<div class="drKbdPop" id="drKbd-'+id+'"><div class="drKbdGrid"></div></div>'+
+    '</div>'+
+    bandBtn+
+    '</div>'+
+  '</div>';
+}
+function labPromptBody(){
+  var levelRow=segWrap('TYPE','drLevel',LAB.level,[['mix','Mixed'],['segment','Segment'],['ray','Ray'],['full','Full'],['equation','Equation Only']]);
+  if(curG.rep==='equation'){
+    return levelRow+'For the exponential function <span class="given">'+expHTML(curG.a,curG.b)+'</span>, find its <b>domain</b> and <b>range</b>.'+
+      '<br><span style="font-size:15px;color:var(--muted)">No graph this time \u2014 reason it out from the equation itself, then type the notation directly in the boxes below.</span>';
+  }
+  var shapeWord = curG.type==='expo-full' ? 'the graphed exponential function'
+                : curG.type==='expo-seg'  ? 'this piece of an exponential curve'
+                :                           'this exponential ray';
+  return levelRow+'Find the <b>domain</b> and <b>range</b> of '+shapeWord+'.'+
+    '<br><span style="font-size:15px;color:var(--muted)">Open the helper bands and drag their handles into place \u2014 tap a handle to switch \u25cf included / \u25cb excluded, or tap the band line to flip direction. Or just type the notation directly in the boxes.</span>';
+}
+function labAnswerHTML(){
+  var withBand=(curG.rep==='graph');
+  var sideContent=drFieldHTML('dom',withBand)+drFieldHTML('rng',withBand)+
+    '<div class="drCoach" id="drCoach"><h4>Try this:</h4><ul id="drCoachList"></ul></div>';
+  if(!withBand) return '<div class="drSide" style="max-width:520px">'+sideContent+'</div>';
+  return '<div class="drWrap"><div class="drCanvasBox"><canvas id="drCanvas"></canvas></div>'+
+    '<div class="drSide">'+sideContent+'</div></div>';
+}
+function labInit(){
+  reveal=false; tool='idle';
+  applyBandShape(); bandDefaults();
+
+  wireLabSeg('drLevel', LAB.level, function(v){ LAB.level=v; newProblem(); });
+  wireKbd('drDom'); wireKbd('drRng');
+  document.getElementById('drDom').addEventListener('input',function(){ updateVerbal('drDom','drDomVerbal','x'); });
+  document.getElementById('drRng').addEventListener('input',function(){ updateVerbal('drRng','drRngVerbal','y'); });
+  updateVerbal('drDom','drDomVerbal','x'); updateVerbal('drRng','drRngVerbal','y');
+
+  if(curG.rep!=='graph'){ canvas=null; c=null; return; } /* Equation Only: no picture, nothing to wire below */
+
+  canvas=document.getElementById('drCanvas'); c=canvas.getContext('2d');
+
+  var db=document.getElementById('drDomBand'), rb=document.getElementById('drRngBand');
+  db.disabled=(domainBand.mode==='none'); rb.disabled=(rangeBand.mode==='none');
+  db.addEventListener('click',function(){
+    if(domainBand.mode==='none') return;
+    domainBand.visible=!domainBand.visible;
+    db.classList.toggle('active',domainBand.visible);
+    if(domainBand.visible){ syncInputsFromBands(); logHintUse(); }
+    draw();
+  });
+  rb.addEventListener('click',function(){
+    if(rangeBand.mode==='none') return;
+    rangeBand.visible=!rangeBand.visible;
+    rb.classList.toggle('active',rangeBand.visible);
+    if(rangeBand.visible){ syncInputsFromBands(); logHintUse(); }
+    draw();
+  });
+
+  canvas.addEventListener('pointerdown',labDown);
+  canvas.addEventListener('pointermove',labMove);
+  canvas.addEventListener('pointerup',labUp);
+  canvas.addEventListener('pointercancel',labUp);
+
+  if(labRO) labRO.disconnect();
+  labRO=new ResizeObserver(function(){ if(ensureCanvasSize()) draw(); });
+  labRO.observe(canvas.parentElement);
+  withCanvasReady(draw);
+}
+function labCheck(){
+  closeKeyboards();
+  var A_dom=curG.domainAnswer, A_rng=curG.rangeAnswer;
+  var uD=parseField(document.getElementById('drDom').value.trim());
+  var uR=parseField(document.getElementById('drRng').value.trim());
+  var dOK=!!uD&&I.same(A_dom,uD), rOK=!!uR&&I.same(A_rng,uR);
+  setChip('drDChip', uD?(dOK?'Domain correct \u2713':'Domain not correct yet \u00d7'):'Enter a valid domain', uD?dOK:null);
+  setChip('drRChip', uR?(rOK?'Range correct \u2713':'Range not correct yet \u00d7'):'Enter a valid range', uR?rOK:null);
+  var list=document.getElementById('drCoachList'); list.innerHTML='';
+  if(!dOK) runCoach('domain',A_dom,uD,list);
+  if(!rOK) runCoach('range',A_rng,uR,list);
+  document.getElementById('drCoach').style.display=list.children.length?'block':'none';
+  return dOK&&rOK;
+}
+
+/* =====================================================================
    A.9A — Domain & Range of Exponential Functions
    ===================================================================== */
 var SE_A9A = {
@@ -299,51 +1244,36 @@ var SE_A9A = {
   title:'Domain &amp; Range of Exponential Functions',
   blurb:'Determine the domain and range of exponential functions of the form f(x) = ab\u02e3 and represent the domain and range using inequalities.',
 
-  gen:function(){
-    var a=rc([-5,-4,-3,-2,-1,1,2,3,4,5]);
-    var b=rc(BASES);
-    var domItems=['All real numbers','x > 0','x \u2265 0','x \u2260 0'];
-    var rngItems = a>0 ? ['y > 0','y < 0','All real numbers','y \u2265 0'] : ['y < 0','y > 0','All real numbers','y \u2264 0'];
-    return {a:a, b:b, q1:makeMC(domItems,0), q2:makeMC(rngItems,0)};
+  gen:function(){ curG=newLabGraph(); return {se:'A.9A', graph:curG}; },
+  prompt:labPromptBody,
+  answerHTML:labAnswerHTML,
+  init:labInit,
+  allowRecheck:true,
+  emptyMsg:'Type the domain and range \u2014 or drag out the helper bands to build them.',
+  read:function(){
+    var d=document.getElementById('drDom').value.trim(), r=document.getElementById('drRng').value.trim();
+    return (d||r)? {d:d, r:r} : null;
   },
-  prompt:function(p){
-    return 'For the exponential function <span class="given">'+expHTML(p.a,p.b)+'</span>, determine its domain and range.'+
-      '<div class="qhead">1) What is the domain?</div>';
+  check:function(){ return labCheck(); },
+  hints:function(){
+    var h=['Domain = the x-values the graph covers (left \u2194 right). Range = the y-values it reaches (bottom \u2195 top).'];
+    h.push(curG.rep==='equation'
+      ? 'There\u2019s no graph this time \u2014 remember: an exponential function is defined for every x, and its outputs never cross the asymptote y = 0.'
+      : 'Tap a helper-band button to open it, then drag its handles to hug the ends of the graph.');
+    h.push('Closed dot \u25cf \u2192 included \u2192 use \u2264 or \u2265. Open dot \u25cb \u2192 not included \u2192 use < or >.');
+    h.push('An arrow means the graph runs forever in that direction \u2014 that side is unbounded (\u221e).');
+    h.push('The curve keeps approaching the asymptote y = 0 but never actually reaches it \u2014 that boundary is always excluded, even if it looks close on screen.');
+    return h;
   },
-  answerHTML:function(p){
-    return mcHTML('q1MC',p.q1)+'<div class="qhead">2) What is the range?</div>'+mcHTML('q2MC',p.q2);
-  },
-  read:function(p){
-    var d=mcSelected('q1MC'), r=mcSelected('q2MC');
-    if(d===null||r===null) return null;
-    return {dom:d,rng:r};
-  },
-  check:function(p,ans){
-    var ok = ans.dom===p.q1.correct && ans.rng===p.q2.correct;
-    markMC('q1MC',p.q1.correct,ans.dom);
-    markMC('q2MC',p.q2.correct,ans.rng);
-    return ok;
-  },
-  hints:function(p){
-    return [
-      'Exponential functions f(x)=ab\u02e3 are defined for every real value of x \u2014 there\u2019s nothing under a root or in a denominator that restricts it.',
-      'The sign of a tells you which side of the x-axis the whole curve stays on: outputs are always positive when a>0, always negative when a<0.',
-      'The curve gets closer and closer to y = 0 but never actually reaches or crosses it \u2014 that boundary is not included in the range.'
-    ];
-  },
-  steps:function(p){
-    var bv=p.b.n/p.b.d;
-    var g=plotExpo({Rg:6, curves:[{a:p.a,b:bv,color:p.a>0?'#36c2a0':'#e5484d'}], hlines:[{y:0,color:'#f4c431',dash:true}], points:[{x:0,y:p.a,color:'#2f6cff'}]});
-    var s='';
-    s+='<span class="st">1. Domain: any real number can be substituted for x in ab\u02e3, so the domain is all real numbers.</span>';
-    s+='<span class="st">2. Range: since a '+(p.a>0?'> 0':'< 0')+', every output f(x) = '+fmtInt(p.a)+'\u00b7b\u02e3 is '+(p.a>0?'positive':'negative')+'.</span>';
-    s+='<span class="st final">Domain: all real numbers. Range: '+(p.a>0?'y > 0':'y < 0')+'.</span>';
-    s+='<div style="margin-top:10px">'+g+'</div>';
-    return s;
-  },
-  emptyMsg:'Choose one option for the domain and one for the range.',
-  init:function(p){ wireMC('q1MC'); wireMC('q2MC'); }
+  steps:function(){
+    reveal=true; draw();
+    var D=curG.domainAnswer, R=curG.rangeAnswer;
+    return '<span class="st"><span class="drAnsChip">Domain: '+I.fmt(D,'x')+'</span>'+
+           '<span class="drAnsChip">Range: '+I.fmt(R,'y')+'</span></span>'+
+           '<span class="st">'+explainWhy(curG)+'</span>';
+  }
 };
+
 
 /* =====================================================================
    A.9B — Interpret the meaning of a and b
@@ -383,11 +1313,17 @@ var SE_A9B = {
       q1:makeMC(q1Items,0), q2:makeMC(q2Items,0)};
   },
   prompt:function(p){
-    return p.ctx.subject+' is modeled by <span class="given">f('+p.ctx.v+') = '+p.a+'('+p.bStr+')<sup>'+p.ctx.v+'</sup></span>, where '+p.ctx.v+' is measured in '+p.ctx.unit+'s.'+
-      '<div class="qhead">1) What does a = '+p.a+' represent in this context?</div>';
+    return p.ctx.subject+' is modeled by <span class="given">f('+p.ctx.v+') = '+p.a+'('+p.bStr+')<sup>'+p.ctx.v+'</sup></span>, where '+p.ctx.v+' is measured in '+p.ctx.unit+'s.';
   },
   answerHTML:function(p){
-    return mcHTML('q1MC',p.q1)+'<div class="qhead">2) What does b = '+p.bStr+' tell you about how it changes each '+p.ctx.unit+'?</div>'+mcHTML('q2MC',p.q2);
+    return '<div class="qPart"><div class="qLabel">1 \u00b7 Meaning of a</div>'+
+        '<div class="qhead">What does a = '+p.a+' represent in this context?</div>'+
+        mcHTML('q1MC',p.q1)+
+      '</div>'+
+      '<div class="qPart"><div class="qLabel">2 \u00b7 Meaning of b</div>'+
+        '<div class="qhead">What does b = '+p.bStr+' tell you about how it changes each '+p.ctx.unit+'?</div>'+
+        mcHTML('q2MC',p.q2)+
+      '</div>';
   },
   read:function(p){
     var d=mcSelected('q1MC'), r=mcSelected('q2MC');
@@ -450,7 +1386,7 @@ var SE_A9C = {
     return p.desc+'<div class="qhead">Write the exponential function f('+p.ctx.v+') = a(b)<sup>'+p.ctx.v+'</sup> that models this situation.</div>';
   },
   answerHTML:function(p){
-    return '<div class="answer"><span>f('+p.ctx.v+') =</span>'+inBox('a')+'<span>(</span>'+inBox('b')+'<span>)</span><sup>'+p.ctx.v+'</sup></div>';
+    return '<div class="answer"><span>f('+p.ctx.v+') =</span>'+inBox('a')+'<span>(</span>'+inBox('b')+'<span>)</span><sup>'+p.ctx.v+'</sup></div>'+sharedKbdHTML();
   },
   read:function(p){
     var a=parseRat(document.getElementById('a').value);
@@ -480,7 +1416,8 @@ var SE_A9C = {
     s+='<span class="st final">Model: '+expHTML(p.a.n,p.b)+'</span>';
     return s;
   },
-  emptyMsg:'Fill in both a and b \u2014 decimals like 1.05 or fractions like 1/2 are fine.'
+  emptyMsg:'Fill in both a and b \u2014 decimals like 1.05 or fractions like 1/2 are fine.',
+  init:function(p){ wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); }
 };
 
 /* =====================================================================
@@ -494,18 +1431,27 @@ var SE_A9D = {
   gen:function(){
     var a=ri(1,8);
     var b=rc(BASES);
+    var k=rc([-4,-3,-2,-1,0,1,2,3,4]);
     var gdItems = (b.n/b.d)>1 ? ['Growth','Decay','Neither','Cannot tell from the graph'] : ['Decay','Growth','Neither','Cannot tell from the graph'];
-    return {a:a, b:b, yInt:R(a,1), asym:R(0,1), q1:makeMC(gdItems,0)};
+    return {a:a, b:b, k:k, yInt:R(a+k,1), asym:R(k,1), q1:makeMC(gdItems,0)};
   },
   prompt:function(p){
     var bv=p.b.n/p.b.d;
-    var g=plotExpo({Rg:8, curves:[{a:p.a,b:bv,color:'#36c2a0'}], hlines:[{y:0,color:'#f4c431',dash:true}], points:[{x:0,y:p.a,color:'#2f6cff'}]});
-    return 'Use the graph below to identify its key features.'+g;
+    var g=plotExpo({Rg:8, curves:[{a:p.a,b:bv,k:p.k,color:'#36c2a0'}], hlines:[{y:p.k,color:'#f4c431',dash:true}], points:[{x:0,y:p.a+p.k,color:'#2f6cff'}]});
+    return 'Use the graph below to identify its key features.'+
+      '<div class="given">'+expHTML(p.a,p.b,p.k)+'</div><br>'+g+
+      '<div class="kbdnote">If the y-intercept (or any other feature) isn\u2019t visible on this grid, graph the equation in Desmos to check it directly.</div>';
   },
   answerHTML:function(p){
-    return '<div class="answer"><span>y-intercept: (0,</span>'+inBox('yint')+'<span>)</span></div>'+
-      '<div class="answer" style="margin-top:10px"><span>Horizontal asymptote: y =</span>'+inBox('asym')+'</div>'+
-      '<div class="qhead">Is this function modeling growth or decay?</div>'+mcHTML('q1MC',p.q1);
+    return '<div class="qPart"><div class="qLabel">1 \u00b7 y-intercept</div>'+
+        '<div class="answer"><span>(0,</span>'+inBox('yint')+'<span>)</span></div>'+
+      '</div>'+
+      '<div class="qPart"><div class="qLabel">2 \u00b7 Horizontal asymptote</div>'+
+        '<div class="answer"><span>y =</span>'+inBox('asym')+'</div>'+
+      '</div>'+sharedKbdHTML()+
+      '<div class="qPart"><div class="qLabel">3 \u00b7 Growth or decay?</div>'+
+        mcHTML('q1MC',p.q1)+
+      '</div>';
   },
   read:function(p){
     var yi=parseRat(document.getElementById('yint').value);
@@ -521,20 +1467,20 @@ var SE_A9D = {
   },
   hints:function(p){
     return [
-      'The y-intercept is the point where the curve crosses the vertical axis \u2014 look at the marked point above x = 0.',
-      'The horizontal asymptote is the dashed line the curve keeps approaching but never touches.',
-      'A curve that climbs faster and faster as x increases is growth; one that flattens toward the asymptote as x increases is decay.'
+      'The y-intercept is the point where the curve crosses the vertical axis \u2014 it\u2019s the marked point above x = 0, if it\u2019s visible on this grid. If not, evaluate the equation at x = 0 (or check it in Desmos).',
+      'The horizontal asymptote is the dashed line the curve keeps approaching but never touches \u2014 it does not have to be y = 0.',
+      'A curve that climbs faster and faster as x increases is growth; one that flattens toward the asymptote as x increases is decay \u2014 that depends only on the base, not on where the asymptote sits.'
     ];
   },
   steps:function(p){
     var s='';
-    s+='<span class="st">1. The marked point sits at x = 0, y = '+p.a+', so the y-intercept is (0, '+p.a+').</span>';
-    s+='<span class="st">2. The dashed line the curve approaches but never crosses is the horizontal asymptote, y = 0.</span>';
-    s+='<span class="st final">y-intercept: (0, '+p.a+'). Asymptote: y = 0. This graph shows '+((p.b.n/p.b.d)>1?'growth':'decay')+'.</span>';
+    s+='<span class="st">1. Evaluate the equation at x = 0: f(0) = '+p.a+'\u00b7'+ratHTML(p.b)+'<sup>0</sup>'+(p.k?sgn(p.k):'')+' = '+p.a+(p.k?sgn(p.k):'')+' = '+fmtInt(p.a+p.k)+', so the y-intercept is (0, '+fmtInt(p.a+p.k)+').</span>';
+    s+='<span class="st">2. The dashed line the curve approaches but never crosses is the horizontal asymptote, y = '+fmtInt(p.k)+'.</span>';
+    s+='<span class="st final">y-intercept: (0, '+fmtInt(p.a+p.k)+'). Asymptote: y = '+fmtInt(p.k)+'. This graph shows '+((p.b.n/p.b.d)>1?'growth':'decay')+'.</span>';
     return s;
   },
   emptyMsg:'Fill in the y-intercept and asymptote, and choose growth or decay.',
-  init:function(p){ wireMC('q1MC'); }
+  init:function(p){ wireMC('q1MC'); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); }
 };
 
 /* =====================================================================
@@ -565,7 +1511,7 @@ var SE_A9E = {
   },
   answerHTML:function(p){
     return '<div class="answer"><span>f(x) =</span>'+inBox('a')+'<span>(</span>'+inBox('b')+'<span>)</span><sup>x</sup></div>'+
-      '<div class="answer" style="margin-top:14px"><span>Predict f('+p.predX+') =</span>'+inBox('py','wide')+'</div>';
+      '<div class="answer" style="margin-top:14px"><span>Predict f('+p.predX+') =</span>'+inBox('py','wide')+'</div>'+sharedKbdHTML();
   },
   read:function(p){
     var a=parseRat(document.getElementById('a').value);
@@ -591,7 +1537,8 @@ var SE_A9E = {
     s+='<span class="st final">Prediction: f('+p.predX+') = '+fmtInt(p.ys[4])+' \u00d7 '+ratHTML(p.b)+' = '+ratHTML(p.predY)+'</span>';
     return s;
   },
-  emptyMsg:'Fill in a, b, and your prediction \u2014 fractions like 1/2 are fine.'
+  emptyMsg:'Fill in a, b, and your prediction \u2014 fractions like 1/2 are fine.',
+  init:function(p){ wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); }
 };
 
 var SES=[SE_A9A, SE_A9B, SE_A9C, SE_A9D, SE_A9E];
@@ -657,18 +1604,21 @@ function onCheck(){
                       :'Not quite \u2717 — open the steps to see the path.');
   renderRail();
 }
+function logHintUse(){
+  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+}
 function onHint(){
   var hints=current.se.hints(current.p);
   var h=hints[Math.min(current.hintIdx, hints.length-1)];
   current.hintIdx++;
   var box=$('#hintBox'); box.classList.add('show');
   box.innerHTML += (box.innerHTML?'<br>':'')+'\u2022 '+h;
-  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+  logHintUse();
 }
 function onSteps(){
   var box=$('#stepsBox'); box.classList.add('show');
   box.innerHTML=current.se.steps(current.p);
-  if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
+  logHintUse();
 }
 $('#checkBtn').addEventListener('click', onCheck);
 $('#hintBtn').addEventListener('click', onHint);
