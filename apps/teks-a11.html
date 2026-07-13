@@ -107,13 +107,75 @@
   .stepsBox .st{display:block; margin:2px 0}
   .stepsBox .final{color:#133a9a}
   .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
-  .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
+  .drSeg,.drTog{display:inline-flex; flex-wrap:wrap; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
   .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
     cursor:pointer; font-family:inherit; color:var(--ink)}
   .drSeg button.active{background:#f1f6ff; color:#133a9a}
   .drTog button.active{background:#eafff7; color:#0c6d54}
   .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
   .qhead{font-weight:900; margin-top:14px}
+  /* ---- shared floating keyboard ---- */
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKeyWide{grid-column:span 4; min-width:0; overflow-wrap:break-word; font-size:10.5px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
+  .btn.tiles{border:0; background:linear-gradient(90deg,#e3ddff,#c3b6ff); color:#2a1a66}
+  /* ---- tile reasoning lab (popup) ---- */
+  .tlOverlay{display:none; position:fixed; inset:0; z-index:2000; background:rgba(15,35,64,.45);
+    align-items:center; justify-content:center; padding:16px}
+  .tlOverlay.show{display:flex}
+  .tlModal{background:var(--panel); border-radius:20px; box-shadow:0 20px 60px rgba(10,20,50,.35);
+    width:min(880px,100%); max-height:92vh; overflow:auto; padding:18px 20px 20px}
+  .tlHead{display:flex; align-items:center; justify-content:space-between; gap:10px; border-bottom:1px dashed #e5e7eb;
+    padding-bottom:10px; margin-bottom:12px}
+  .tlHead h3{margin:0; font-size:18px; font-weight:900}
+  .tlHead .sub{color:var(--muted); font-weight:700; font-size:13px; margin-top:2px}
+  .tlClose{border:1px solid var(--ui); background:#fff; border-radius:10px; width:36px; height:36px; font-size:18px;
+    font-weight:900; cursor:pointer; color:var(--ink); flex:none}
+  .tlRow{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px}
+  .tlKbdWrap{position:relative; display:inline-flex; gap:8px; align-items:center}
+  .tlNumIn{height:44px; width:100px; border:2px solid var(--ui); border-radius:12px; text-align:center;
+    font-weight:900; font-size:19px; font-family:inherit; color:var(--ink)}
+  .tlKbdBtn{height:44px; width:44px; border:2px solid var(--ui); border-radius:12px; background:#fff; font-size:17px; cursor:pointer}
+  .tlKeypadPop{display:none; position:absolute; top:50px; left:0; width:190px; background:#fff; border:1px solid var(--ui);
+    border-radius:14px; box-shadow:0 12px 28px rgba(0,0,0,.14); padding:10px; z-index:10}
+  .tlKeypadPop.show{display:block}
+  .tlKeypad{display:grid; grid-template-columns:repeat(3,1fr); gap:7px}
+  .tlKeypad button{padding:9px 0; border-radius:10px; font-size:15px; font-weight:900; border:1px solid var(--ui); background:#f6f9ff; cursor:pointer}
+  .tlKeypad button.tlBack{grid-column:1 / -1; background:#fff0f0; border-color:#ffcccc}
+  .tlStats{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0}
+  .tlBox{background:#f6f9ff; border:1px solid #e7edff; border-radius:14px; padding:10px 12px}
+  .tlBox .lbl{color:var(--muted); font-size:12px; font-weight:800}
+  .tlBox .val{margin-top:4px; font-size:22px; font-weight:900}
+  .tlPsRow{display:flex; flex-wrap:wrap; gap:8px; margin:10px 0}
+  .tlPsBtn{border:1px solid var(--ui); background:#fff; border-radius:999px; padding:8px 14px; font-weight:900;
+    font-size:14px; cursor:pointer; color:var(--ink)}
+  .tlPsBtn.good{border-color:#7de0a6; background:#eafff2}
+  .tlPsBtn.bad{border-color:#ffb3b3; background:#fff3f3}
+  .tlStatus{border:1px solid var(--ui); border-radius:14px; padding:10px 14px; font-weight:800; font-size:15px;
+    background:#f6f9ff; color:var(--muted); margin:10px 0; line-height:1.5}
+  .tlStatus.good{border-color:#a9c9ff; background:#eaf1ff; color:#133a9a}
+  .tlStatus.bad{border-color:#ffb3b3; background:#fff3f3; color:#a33232}
+  .tlStatus.solution{border-color:#7de0a6; background:#eafff2; color:#0b6b2f; font-size:17px}
+  .tlGridWrap{border:1px solid var(--ui); border-radius:16px; background:#fbfcff; padding:10px; margin:10px 0}
+  .tlGridTitleRow{display:flex; gap:8px; flex-wrap:wrap; align-items:center; justify-content:space-between; margin-bottom:8px}
+  .tlPill{font-size:12px; font-weight:900; color:#133a9a; background:#f1f6ff; border:1px solid var(--ui);
+    border-radius:999px; padding:6px 12px; white-space:nowrap}
+  .tlStage{min-height:220px; max-height:340px; overflow:auto; display:flex; align-items:flex-start; justify-content:center; padding:6px}
+  .tlTileGrid{display:grid; justify-content:center; align-content:start}
+  .tlTile{display:flex; align-items:center; justify-content:center; border-radius:10px; border:1px solid #d9e2ff;
+    background:linear-gradient(180deg,#fff,#f1f6ff); color:var(--ink); font-weight:900; user-select:none}
+  .tlCallout{border:1px dashed #d9d2ff; background:#f8f6ff; border-radius:14px; padding:10px 14px; color:var(--muted);
+    font-size:13px; line-height:1.5; margin-top:6px}
+  .tlCallout .mono{font-weight:900; color:var(--ink)}
 </style>
 </head>
 <body>
@@ -152,6 +214,64 @@
   </div>
 </div>
 
+<div class="tlOverlay" id="tlOverlay" role="dialog" aria-modal="true" aria-label="Tile reasoning lab">
+  <div class="tlModal">
+    <div class="tlHead">
+      <div>
+        <h3>Reason it out with tiles</h3>
+        <div class="sub">Build a square out of tiles to find the largest perfect-square factor.</div>
+      </div>
+      <button type="button" class="tlClose" id="tlCloseBtn" aria-label="Close">&times;</button>
+    </div>
+
+    <div class="tlRow">
+      <label style="font-weight:900;font-size:13px;color:var(--muted)">Number under the root:</label>
+      <div class="tlKbdWrap">
+        <input class="tlNumIn" id="tlNumIn" type="text" inputmode="numeric" autocomplete="off" aria-label="Radicand" />
+        <button type="button" class="tlKbdBtn" id="tlKbdBtn" aria-label="Show keypad">&#9000;</button>
+        <div class="tlKeypadPop" id="tlKeypadPop">
+          <div class="tlKeypad">
+            <button type="button" data-key="1">1</button><button type="button" data-key="2">2</button><button type="button" data-key="3">3</button>
+            <button type="button" data-key="4">4</button><button type="button" data-key="5">5</button><button type="button" data-key="6">6</button>
+            <button type="button" data-key="7">7</button><button type="button" data-key="8">8</button><button type="button" data-key="9">9</button>
+            <button type="button" data-key="0">0</button>
+            <button type="button" class="tlBack" data-key="back">&#9003; Backspace</button>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn" id="tlUseBtn">Use this number</button>
+      <button type="button" class="btn" id="tlResetBtn">Reset to this problem</button>
+      <button type="button" class="btn hint" id="tlHintBtn">Hint / Solution</button>
+    </div>
+
+    <div class="tlStats">
+      <div class="tlBox"><div class="lbl">Area (the number under the root)</div><div class="val" id="tlAreaOut">72</div></div>
+      <div class="tlBox"><div class="lbl">Side length</div><div class="val" id="tlSideOut">&radic;72</div></div>
+    </div>
+
+    <div class="tlStatus solution" id="tlSolBox" style="display:none"></div>
+
+    <div class="tlPsRow" id="tlPsButtons" aria-label="Perfect square factor buttons"></div>
+
+    <div class="tlStatus" id="tlStatus">Try a perfect-square factor of this number.</div>
+
+    <div class="tlGridWrap">
+      <div class="tlGridTitleRow">
+        <div class="tlPill" id="tlGridTitle">Pick a perfect square to tile the area.</div>
+        <div class="tlPill" id="tlBestSquarePill">Big square factor: <span class="mono">&mdash;</span></div>
+      </div>
+      <div class="tlStage" id="tlTileStage">
+        <div id="tlTileGrid" class="tlTileGrid"></div>
+      </div>
+    </div>
+
+    <div class="tlCallout">
+      <strong>Geometry rule:</strong> If area = <span class="mono">k&sup2;&middot;m</span>, then side = <span class="mono">k&radic;m</span>.
+      The tiling shows <span class="mono">k&sup2;</span> equal tiles inside the big square &mdash; that's why the perfect-square factor comes out front of the radical.
+    </div>
+  </div>
+</div>
+
 <script src="../portal.js"></script>
 <script>
 (function(){
@@ -180,6 +300,17 @@ function parseRat(s){
 }
 var MIN='\u2212';
 function fmtInt(x){ return x<0 ? MIN+Math.abs(x) : String(x); }
+/* A blank coefficient box means "1" (standard math notation never writes a literal
+   1 in front of a term) and a bare "-" means "-1" — same convention already used
+   for leading coefficients in the polynomials app. Only use this for boxes whose
+   true answer can legitimately be an implied 1 or -1 coefficient. */
+function parseCoefOrOne(s){
+  if(s===null||s===undefined) return null;
+  var t=String(s).trim().replace(/\u2212/g,'-');
+  if(t==='') return R(1,1);
+  if(t==='-') return R(-1,1);
+  return parseRat(s);
+}
 function ratHTML(r){
   if(r.d===1) return fmtInt(r.n);
   var s = r.n<0 ? MIN : '';
@@ -208,11 +339,41 @@ function ordinal(n){
   return n+(s[(v-20)%10]||s[v]||s[0]);
 }
 
-/* ---- exponent term helper: coef * x^exp (exp may be negative) ---- */
+/* ---- exponent term helper: coef * x^exp (exp may be negative). Standard notation never
+   writes x^1 -- that's always just "x" -- so exp===1 is suppressed to a bare x. exp===0 is
+   left alone (posExp's zeroExp problem type deliberately needs to show x^0). Negative
+   exponents, including -1, are always shown as written -- only positive 1 gets suppressed. ---- */
 function powTermHTML(coef, exp){
   var coefStr = (coef===1?'':(coef===-1?MIN:fmtInt(coef)));
+  if(exp===1) return coefStr+'x';
   var expStr = exp<0 ? MIN+Math.abs(exp) : String(exp);
   return coefStr+'x<sup>'+expStr+'</sup>';
+}
+/* ---- numeric base^exp helper (no coefficient), same exp===1 suppression, for steps() worked lines ---- */
+function baseExpHTML(base, exp){
+  if(exp===1) return String(base);
+  var expStr = exp<0 ? MIN+Math.abs(exp) : String(exp);
+  return base+'<sup>'+expStr+'</sup>';
+}
+/* ---- rational-coefficient * x^exp helper, same suppression rules, for the 'alg' steps() final line ---- */
+function ratPowHTML(coefRat, exp){
+  var coefStr;
+  if(req(coefRat,rint(1))) coefStr='';
+  else if(req(coefRat,rint(-1))) coefStr=MIN;
+  else coefStr=ratHTML(coefRat);
+  if(exp===1) return coefStr+'x';
+  return coefStr+'x<sup>'+exp+'</sup>';
+}
+/* ---- bare x^exp term (no coefficient) for combined-rules chains; suppresses x^1 -> x and x^0 -> 1 ---- */
+function xTerm(exp){
+  if(exp===0) return '1';
+  if(exp===1) return 'x';
+  var expStr = exp<0 ? MIN+Math.abs(exp) : String(exp);
+  return 'x<sup>'+expStr+'</sup>';
+}
+/* ---- stacked-fraction display for a quotient of two HTML snippets (reuses the .vfrac look already used for numeric fractions) ---- */
+function exprFrac(numHTML,denHTML){
+  return '<span class="vfrac"><span>'+numHTML+'</span><span>'+denHTML+'</span></span>';
 }
 
 /* ---- UI helpers ---- */
@@ -227,6 +388,14 @@ function segWrap(label,id,cur,opts){
     '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">'+label+'</span>'+
     seg(id,cur,opts)+'</div>';
 }
+/* demoted secondary selector -- smaller eyebrow, dimmed, slightly scaled down -- for a
+   sub-choice within one TYPE (e.g. which law to practice inside Algebraic Laws).
+   Wiring reuses the same generic wireSeg(id,cur,cb); no separate wiring function needed. */
+function formWrap(label,id,cur,opts){
+  return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;opacity:.75">'+
+    '<span style="font-size:10.5px;font-weight:900;letter-spacing:.4px;color:var(--muted)">'+label+'</span>'+
+    '<div style="transform:scale(.9);transform-origin:left center">'+seg(id,cur,opts)+'</div></div>';
+}
 function wireSeg(id,cur,cb){
   var box=document.getElementById(id); if(!box) return;
   Array.prototype.forEach.call(box.querySelectorAll('button'),function(btn){
@@ -236,6 +405,102 @@ function wireSeg(id,cur,cb){
       btn.classList.add('active'); cb(btn.getAttribute('data-v'));
     });
   });
+}
+
+/* ---------- shared floating keyboard: one button, types into whichever input last had focus ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  var extra=(grid.dataset.extra||'').split(',').filter(Boolean);
+  SHARED_KEYS.concat(extra).forEach(function(k){
+    var b=document.createElement('button'); b.type='button'; b.className='drKey'+(k.length>1?' drKeyWide':''); b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide';
+  bs.textContent='\u232B'; bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){
+      if(s===0) return;
+      input.value=input.value.slice(0,s-1)+input.value.slice(e2);
+      s=s-1;
+    } else {
+      input.value=input.value.slice(0,s)+input.value.slice(e2);
+    }
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT'&&e.target.classList.contains('in')) sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function kbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function sharedKbdHTML(extraKeys){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid" data-extra="'+(extraKeys?extraKeys.join(','):'')+'"></div></div>'+
+  '</div>';
+}
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+var kbdDocWired=false;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
 }
 
 /* =====================================================================
@@ -299,11 +564,19 @@ var SE_A11A = {
     return selector+body;
   },
   answerHTML:function(p){
-    return '<div class="answer"><span class="lbl">Simplified radical:</span>'+inBox('coef')+'<span>\u221a</span>'+inBox('rad')+'</div>';
+    var h='<div class="answer"><span class="lbl">Simplified radical:</span>'+inBox('coef')+'<span>\u221a</span>'+inBox('rad')+'</div>'+
+      '<div class="kbdnote">Leave the coefficient box blank if it\u2019s 1 (e.g. just \u221a11, not 1\u221a11).</div>'+
+      sharedKbdHTML();
+    if(p.kind==='simplify'){
+      h+='<button type="button" class="btn tiles" id="tilesBtn" style="margin-top:12px">\uD83E\uDDE9 Reason it out with tiles</button>';
+    }
+    return h;
   },
   read:function(p){
-    var coef=parseRat(document.getElementById('coef').value);
-    var rad=parseRat(document.getElementById('rad').value);
+    var coefRaw=document.getElementById('coef').value, radRaw=document.getElementById('rad').value;
+    var rad=parseRat(radRaw);
+    if(coefRaw.trim()===''&&rad===null) return null;
+    var coef=parseCoefOrOne(coefRaw);
     if(coef===null||rad===null) return null;
     return {coef:coef, rad:rad};
   },
@@ -339,16 +612,22 @@ var SE_A11A = {
     return s;
   },
   emptyMsg:'Fill in both the coefficient and the number under the radical.',
-  init:function(p){ wireSeg('radSeg',cMode11A,function(v){ cMode11A=v; newProblem(); }); }
+  init:function(p){
+    wireSeg('radSeg',cMode11A,function(v){ cMode11A=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    var tb=document.getElementById('tilesBtn');
+    if(tb) tb.addEventListener('click', function(){ openTileLab(p.n); });
+  }
 };
 
 /* =====================================================================
    A.11B — Simplify Using the Laws of Exponents (integral & rational)
    ===================================================================== */
 var cMode11B='mix';
+var cAlgSub='mix';
 
-function genAlg(){
-  var subop=rc(['mul','div','pow']);
+function genAlg(forceSubop){
+  var subop=(forceSubop && forceSubop!=='mix') ? forceSubop : rc(['mul','div','pow']);
   if(subop==='mul'){
     var coefA=rnz(-6,6), expA=ri(1,5), coefB=rnz(-6,6), expB=ri(1,5);
     return {subop:subop, coefA:coefA,expA:expA,coefB:coefB,expB:expB,
@@ -367,8 +646,34 @@ function genAlg(){
 }
 
 
-function genPosExp(){
-  var subcase=rc(['negExp','zeroExp']);
+function genCombined(){
+  var variant=rc(['prodPow','quotPow1','quotPow2']);
+  if(variant==='prodPow'){
+    // (x^a . x^-b)^c / x^d
+    var a=ri(1,5), b=ri(1,4), c=ri(2,4), d=ri(2,5);
+    var pa=a*c, pb=-b*c;         // step 1: distribute the outer power c
+    var combined=pa+pb;          // step 2: product rule (combine same-base factors)
+    var resExp=combined-d;       // step 3: quotient rule against the denominator
+    return {variant:variant, a:a,b:b,c:c,d:d, pa:pa,pb:pb,combined:combined, resCoef:R(1,1), resExp:resExp};
+  }
+  if(variant==='quotPow1'){
+    // x^a . (x^b / x^c)^d   (a may be 0 -> no leading factor)
+    var a2=ri(0,5), b2=ri(2,5), c2=ri(2,5), d2=ri(2,4);
+    var pb2=b2*d2, pc2=c2*d2;    // step 1: distribute the outer power d2 over the quotient
+    var combined2=pb2-pc2;       // step 2: quotient rule
+    var resExp2=a2+combined2;    // step 3: product rule with the outside factor
+    return {variant:variant, a:a2,b:b2,c:c2,d:d2, pb:pb2,pc:pc2,combined:combined2, resCoef:R(1,1), resExp:resExp2};
+  }
+  // quotPow2: (x^a / x^b)^c . x^d   (d may be 0 -> no trailing factor)
+  var a3=ri(2,6), b3=ri(2,6), c3=ri(2,4), d3=ri(0,5);
+  var pa3=a3*c3, pb3=b3*c3;      // step 1: distribute the outer power c3 over the quotient
+  var combined3=pa3-pb3;         // step 2: quotient rule
+  var resExp3=combined3+d3;      // step 3: product rule with the outside factor
+  return {variant:variant, a:a3,b:b3,c:c3,d:d3, pa:pa3,pb:pb3,combined:combined3, resCoef:R(1,1), resExp:resExp3};
+}
+
+function genPosExp(forceSubcase){
+  var subcase=(forceSubcase && forceSubcase!=='mix') ? forceSubcase : rc(['negExp','zeroExp']);
   if(subcase==='negExp'){
     var coef=rnz(-9,9), n=ri(1,5);
     return {subcase:subcase, coef:coef, n:n};
@@ -376,8 +681,8 @@ function genPosExp(){
   var coef0=rnz(-9,9);
   return {subcase:subcase, coef:coef0};
 }
-function genNumeric(){
-  var subcase=rc(['negInt','rational']);
+function genNumeric(forceSubcase){
+  var subcase=(forceSubcase && forceSubcase!=='mix') ? forceSubcase : rc(['negInt','rational']);
   if(subcase==='negInt'){
     var base=ri(2,9), n=ri(1,3);
     return {subcase:subcase, base:base, n:n, value:R(1,Math.pow(base,n))};
@@ -397,19 +702,61 @@ var SE_A11B = {
   blurb:'Simplify numeric and algebraic expressions using the laws of exponents, including integral and rational exponents.',
 
   gen:function(){
-    var kind=(cMode11B==='mix')?rc(['alg','posExp','numeric']):cMode11B;
-    var p = kind==='alg' ? genAlg() : (kind==='posExp' ? genPosExp() : genNumeric());
+    var kind, p;
+    if(cMode11B==='alg'){
+      var law=(cAlgSub==='mix') ? rc(['mul','div','pow','negExp','rational']) : cAlgSub;
+      if(law==='negExp'){
+        /* the negative-exponent law (a^-n = 1/a^n) already has two generators elsewhere in
+           this file -- an algebraic-rewrite flavor (posExp) and a numeric-evaluate flavor
+           (numeric). Mix both so "Negative Exponent" practice covers the law in both contexts,
+           not just one. zeroExp/negInt-vs-rational are NOT reachable here -- only the specific
+           subcase this law needs. */
+        if(Math.random()<0.5){ kind='posExp'; p=genPosExp('negExp'); }
+        else { kind='numeric'; p=genNumeric('negInt'); }
+      } else if(law==='rational'){
+        kind='numeric'; p=genNumeric('rational');
+      } else {
+        kind='alg'; p=genAlg(law);
+      }
+    } else if(cMode11B==='mix'){
+      kind=rc(['alg','combined','posExp','numeric']);
+      p = kind==='alg' ? genAlg('mix') : (kind==='combined' ? genCombined() : (kind==='posExp' ? genPosExp('mix') : genNumeric('mix')));
+    } else if(cMode11B==='combined'){
+      kind='combined'; p=genCombined();
+    } else if(cMode11B==='posExp'){
+      kind='posExp'; p=genPosExp('mix');
+    } else {
+      kind='numeric'; p=genNumeric('mix');
+    }
     p.kind=kind;
     return p;
   },
   prompt:function(p){
     var selector=segWrap('TYPE','expSeg',cMode11B,
-      [['mix','Mixed'],['alg','Algebraic Laws'],['posExp','Positive Exponents'],['numeric','Numeric Evaluation']]);
+      [['mix','Mixed'],['alg','Algebraic Laws'],['combined','Combined Rules'],['posExp','Positive Exponents'],['numeric','Numeric Evaluation']]);
+    if(cMode11B==='alg'){
+      selector+=formWrap('LAW','algSubSeg',cAlgSub,
+        [['mix','Mixed'],['mul','Product'],['div','Quotient'],['pow','Power'],
+         ['negExp','Negative'],['rational','Rational']]);
+    }
     var body;
     if(p.kind==='alg'){
       if(p.subop==='mul') body='Multiply and simplify:<br><span class="given">('+powTermHTML(p.coefA,p.expA)+')('+powTermHTML(p.coefB,p.expB)+')</span>';
-      else if(p.subop==='div') body='Divide and simplify:<br><span class="given">('+powTermHTML(p.coefA,p.expA)+') \u00f7 ('+powTermHTML(p.coefB,p.expB)+')</span>';
+      else if(p.subop==='div') body='Divide and simplify:<br><span class="given">'+exprFrac(powTermHTML(p.coefA,p.expA),powTermHTML(p.coefB,p.expB))+'</span>';
       else body='Simplify:<br><span class="given">('+powTermHTML(p.coefA,p.expA)+')<sup>'+p.k+'</sup></span>';
+    } else if(p.kind==='combined'){
+      var given;
+      if(p.variant==='prodPow'){
+        var num='('+xTerm(p.a)+' \u00b7 '+xTerm(-p.b)+')<sup>'+p.c+'</sup>';
+        given=exprFrac(num, xTerm(p.d));
+      } else if(p.variant==='quotPow1'){
+        var lead=(p.a===0)?'':(xTerm(p.a)+' \u00b7 ');
+        given=lead+'('+exprFrac(xTerm(p.b),xTerm(p.c))+')<sup>'+p.d+'</sup>';
+      } else {
+        var trail=(p.d===0)?'':(' \u00b7 '+xTerm(p.d));
+        given='('+exprFrac(xTerm(p.a),xTerm(p.b))+')<sup>'+p.c+'</sup>'+trail;
+      }
+      body='Simplify using more than one law of exponents:<br><span class="given">'+given+'</span>';
     } else if(p.kind==='posExp'){
       if(p.subcase==='negExp') body='Rewrite using only positive exponents:<br><span class="given">'+powTermHTML(p.coef,-p.n)+'</span>';
       else body='Simplify:<br><span class="given">'+powTermHTML(p.coef,0)+'</span>';
@@ -420,21 +767,24 @@ var SE_A11B = {
     return selector+body;
   },
   answerHTML:function(p){
-    if(p.kind==='alg'){
-      return '<div class="answer"><span class="lbl">Simplified form:</span>'+inBox('coef')+'<span>x^</span>'+inBox('exp','narrow')+'</div>';
+    if(p.kind==='alg'||p.kind==='combined'){
+      return '<div class="answer"><span class="lbl">Simplified form:</span>'+inBox('coef')+'<span>x^</span>'+inBox('exp','narrow')+'</div>'+
+        '<div class="kbdnote">Leave the coefficient box blank if it\u2019s 1 (e.g. just x\u2077, not 1x\u2077).</div>'+sharedKbdHTML();
     }
     if(p.kind==='posExp'){
       if(p.subcase==='negExp'){
-        return '<div class="answer"><span class="lbl">Rewrite as a fraction:</span>'+inBox('num')+'<span>/ x^</span>'+inBox('den','narrow')+'</div>';
+        return '<div class="answer"><span class="lbl">Rewrite as a fraction:</span>'+inBox('num')+'<span>/ x^</span>'+inBox('den','narrow')+'</div>'+sharedKbdHTML();
       }
-      return '<div class="answer"><span class="lbl">Simplified value:</span>'+inBox('val')+'</div>';
+      return '<div class="answer"><span class="lbl">Simplified value:</span>'+inBox('val')+'</div>'+sharedKbdHTML();
     }
-    return '<div class="answer"><span class="lbl">Value:</span>'+inBox('val','wide')+'</div>';
+    return '<div class="answer"><span class="lbl">Value:</span>'+inBox('val','wide')+'</div>'+sharedKbdHTML();
   },
   read:function(p){
-    if(p.kind==='alg'){
-      var coef=parseRat(document.getElementById('coef').value);
-      var exp=parseRat(document.getElementById('exp').value);
+    if(p.kind==='alg'||p.kind==='combined'){
+      var coefRaw=document.getElementById('coef').value, expRaw=document.getElementById('exp').value;
+      var exp=parseRat(expRaw);
+      if(coefRaw.trim()===''&&exp===null) return null;
+      var coef=parseCoefOrOne(coefRaw);
       if(coef===null||exp===null) return null;
       return {coef:coef, exp:exp};
     }
@@ -454,7 +804,7 @@ var SE_A11B = {
     return {val:val2};
   },
   check:function(p,ans){
-    if(p.kind==='alg') return req(ans.coef,p.resCoef) && req(ans.exp,rint(p.resExp));
+    if(p.kind==='alg'||p.kind==='combined') return req(ans.coef,p.resCoef) && req(ans.exp,rint(p.resExp));
     if(p.kind==='posExp'){
       if(p.subcase==='negExp') return req(ans.num,rint(p.coef)) && req(ans.den,rint(p.n));
       return req(ans.val,rint(p.coef));
@@ -466,6 +816,10 @@ var SE_A11B = {
       if(p.subop==='mul') return ['When multiplying powers with the same base, add the exponents.', 'Multiply the coefficients out front separately.'];
       if(p.subop==='div') return ['When dividing powers with the same base, subtract the exponents (top minus bottom).', 'Divide the coefficients out front separately \u2014 a fraction is fine.'];
       return ['When raising a power to a power, multiply the exponents.', 'Raise the coefficient out front to that same power too.'];
+    }
+    if(p.kind==='combined'){
+      if(p.variant==='prodPow') return ['Work inside-out: apply the power rule to everything inside the parentheses first (multiply each inner exponent by the outer power).', 'Combine the product (add exponents), then finish with the quotient rule against the denominator (subtract).'];
+      return ['Work inside-out: apply the power rule to the quotient inside the parentheses first (multiply each inner exponent by the outer power).', 'Combine that quotient (subtract exponents), then use the product rule with the factor outside the parentheses (add exponents).'];
     }
     if(p.kind==='posExp'){
       if(p.subcase==='negExp') return ['A negative exponent means "reciprocal": x\u207b\u207f = 1/x\u207f.', 'Move the variable to the denominator and make the exponent positive \u2014 the coefficient stays in the numerator.'];
@@ -487,32 +841,220 @@ var SE_A11B = {
         s+='<span class="st">1. Multiply the exponents: '+p.expA+' \u00d7 '+p.k+' = '+p.resExp+'</span>';
         s+='<span class="st">2. Raise the coefficient to the '+p.k+' power: '+fmtInt(p.coefA)+'<sup>'+p.k+'</sup> = '+fmtInt(p.resCoef.n)+'</span>';
       }
-      s+='<span class="st final">Result: '+ratHTML(p.resCoef)+'x<sup>'+p.resExp+'</sup></span>';
+      s+='<span class="st final">Result: '+ratPowHTML(p.resCoef,p.resExp)+'</span>';
+    } else if(p.kind==='combined'){
+      if(p.variant==='prodPow'){
+        s+='<span class="st">1. Power rule on the parentheses \u2014 multiply each inner exponent by '+p.c+': ('+xTerm(p.a)+'\u00b7'+xTerm(-p.b)+')<sup>'+p.c+'</sup> \u2192 '+xTerm(p.pa)+'\u00b7'+xTerm(p.pb)+'</span>';
+        s+='<span class="st">2. Product rule \u2014 add the exponents: '+p.pa+' + ('+p.pb+') = '+p.combined+', giving '+xTerm(p.combined)+'</span>';
+        s+='<span class="st">3. Quotient rule \u2014 subtract the denominator\u2019s exponent: '+p.combined+' \u2212 '+p.d+' = '+p.resExp+'</span>';
+      } else if(p.variant==='quotPow1'){
+        s+='<span class="st">1. Power rule on the quotient in parentheses \u2014 multiply each exponent by '+p.d+': ('+xTerm(p.b)+'/'+xTerm(p.c)+')<sup>'+p.d+'</sup> \u2192 '+xTerm(p.pb)+'/'+xTerm(p.pc)+'</span>';
+        s+='<span class="st">2. Quotient rule \u2014 subtract the exponents: '+p.pb+' \u2212 '+p.pc+' = '+p.combined+', giving '+xTerm(p.combined)+'</span>';
+        s+='<span class="st">3. Product rule \u2014 combine with the outside factor: '+p.a+' + ('+p.combined+') = '+p.resExp+'</span>';
+      } else {
+        s+='<span class="st">1. Power rule on the quotient in parentheses \u2014 multiply each exponent by '+p.c+': ('+xTerm(p.a)+'/'+xTerm(p.b)+')<sup>'+p.c+'</sup> \u2192 '+xTerm(p.pa)+'/'+xTerm(p.pb)+'</span>';
+        s+='<span class="st">2. Quotient rule \u2014 subtract the exponents: '+p.pa+' \u2212 '+p.pb+' = '+p.combined+', giving '+xTerm(p.combined)+'</span>';
+        s+='<span class="st">3. Product rule \u2014 combine with the outside factor: '+p.combined+' + '+p.d+' = '+p.resExp+'</span>';
+      }
+      s+='<span class="st final">Result: '+xTerm(p.resExp)+'</span>';
     } else if(p.kind==='posExp'){
       if(p.subcase==='negExp'){
         s+='<span class="st">1. '+powTermHTML(p.coef,-p.n)+' means '+fmtInt(p.coef)+' \u00d7 x'+MIN+p.n+'.</span>';
-        s+='<span class="st">2. Move x'+MIN+p.n+' to the denominator to make the exponent positive: x'+MIN+p.n+' = 1/x<sup>'+p.n+'</sup></span>';
-        s+='<span class="st final">Result: '+fmtInt(p.coef)+' / x<sup>'+p.n+'</sup></span>';
+        s+='<span class="st">2. Move x'+MIN+p.n+' to the denominator to make the exponent positive: x'+MIN+p.n+' = 1/'+(p.n===1?'x':('x<sup>'+p.n+'</sup>'))+'</span>';
+        s+='<span class="st final">Result: '+fmtInt(p.coef)+' / '+(p.n===1?'x':('x<sup>'+p.n+'</sup>'))+'</span>';
       } else {
         s+='<span class="st">1. x\u2070 = 1 (for any nonzero x), so '+fmtInt(p.coef)+' \u00d7 x\u2070 = '+fmtInt(p.coef)+' \u00d7 1.</span>';
         s+='<span class="st final">Result: '+fmtInt(p.coef)+'</span>';
       }
     } else {
       if(p.subcase==='negInt'){
-        s+='<span class="st">1. '+p.base+'<sup>'+p.n+'</sup> = '+Math.pow(p.base,p.n)+'</span>';
+        s+='<span class="st">1. '+baseExpHTML(p.base,p.n)+' = '+Math.pow(p.base,p.n)+'</span>';
         s+='<span class="st">2. A negative exponent flips it to a reciprocal: '+p.base+'<sup>'+MIN+p.n+'</sup> = 1/'+Math.pow(p.base,p.n)+'</span>';
         s+='<span class="st final">Value: '+ratHTML(p.value)+'</span>';
       } else {
-        s+='<span class="st">1. '+p.base+' = '+Math.round(Math.pow(p.base,1/p.n))+'<sup>'+p.n+'</sup>, so the '+ordinal(p.n)+' root of '+p.base+' is '+Math.round(Math.pow(p.base,1/p.n))+'.</span>';
-        s+='<span class="st">2. Raise that root to the '+ordinal(p.m)+' power: '+Math.round(Math.pow(p.base,1/p.n))+'<sup>'+p.m+'</sup> = '+p.value.n+'</span>';
+        s+='<span class="st">1. '+p.base+' = '+baseExpHTML(Math.round(Math.pow(p.base,1/p.n)),p.n)+', so the '+ordinal(p.n)+' root of '+p.base+' is '+Math.round(Math.pow(p.base,1/p.n))+'.</span>';
+        s+='<span class="st">2. Raise that root to the '+ordinal(p.m)+' power: '+baseExpHTML(Math.round(Math.pow(p.base,1/p.n)),p.m)+' = '+p.value.n+'</span>';
         s+='<span class="st final">Value: '+p.value.n+'</span>';
       }
     }
     return s;
   },
   emptyMsg:'Fill in every box.',
-  init:function(p){ wireSeg('expSeg',cMode11B,function(v){ cMode11B=v; newProblem(); }); }
+  init:function(p){
+    wireSeg('expSeg',cMode11B,function(v){ cMode11B=v; newProblem(); });
+    wireSeg('algSubSeg',cAlgSub,function(v){ cAlgSub=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  }
 };
+
+/* =====================================================================
+   Tile reasoning lab — popup helper for A.11A "simplify" problems.
+   Adapted from the standalone Tiled Radicals Lab app; reuses simplifyRadical().
+   ===================================================================== */
+var tlState={A:72, hintShown:false, current:null, problemN:72};
+function tlClampA(n){ n=Math.floor(Number(n)); if(!isFinite(n)) return 72; return Math.max(2,Math.min(999,n)); }
+function tlIsPerfectSquare(n){ var r=Math.floor(Math.sqrt(n)); return r*r===n; }
+function tlPerfectSquaresUpTo(A){
+  var out=[], kmax=Math.floor(Math.sqrt(A));
+  for(var k=1;k<=kmax;k++) out.push(k*k);
+  return out;
+}
+function tlFormatRewrite(k,m){
+  if(m===1) return String(k);
+  if(k===1) return '\u221a'+m;
+  return k+'\u221a'+m;
+}
+function tlEl(id){ return document.getElementById(id); }
+function tlSetStatus(kind,html){
+  var el=tlEl('tlStatus'); el.className='tlStatus'+(kind?' '+kind:''); el.innerHTML=html;
+}
+function tlClearGrid(){
+  var grid=tlEl('tlTileGrid'); grid.innerHTML=''; grid.style.gridTemplateColumns='none';
+}
+function tlSetProblem(A){
+  tlState.A=tlClampA(A); tlState.hintShown=false; tlState.current=null;
+  tlEl('tlNumIn').value=String(tlState.A);
+  tlEl('tlAreaOut').textContent=String(tlState.A);
+  tlEl('tlSideOut').innerHTML='\u221a'+tlState.A;
+  tlEl('tlSolBox').style.display='none'; tlEl('tlSolBox').innerHTML='';
+  tlEl('tlBestSquarePill').innerHTML='Big square factor: <span class="mono">\u2014</span>';
+  var squares=tlPerfectSquaresUpTo(tlState.A);
+  var wrap=tlEl('tlPsButtons'); wrap.innerHTML='';
+  squares.forEach(function(ps){
+    var k=Math.round(Math.sqrt(ps));
+    var b=document.createElement('button'); b.type='button'; b.className='tlPsBtn';
+    b.textContent=String(ps); b.title=ps+' = '+k+'\u00b2';
+    b.addEventListener('click',function(){ tlOnPickSquare(ps); });
+    wrap.appendChild(b);
+  });
+  tlClearGrid();
+  tlEl('tlGridTitle').textContent='Pick a perfect square to tile the area.';
+  tlSetStatus('', 'Try a perfect-square factor of <span class="mono">'+tlState.A+'</span>.');
+}
+function tlFlashButton(ps,cls){
+  var btns=tlEl('tlPsButtons').querySelectorAll('button');
+  Array.prototype.forEach.call(btns,function(b){
+    if(b.textContent===String(ps)){
+      b.classList.remove('good','bad'); b.classList.add(cls);
+      setTimeout(function(){ b.classList.remove(cls); },650);
+    }
+  });
+}
+function tlBuildGrid(k,perTile){
+  var grid=tlEl('tlTileGrid'), stage=tlEl('tlTileStage');
+  grid.innerHTML='';
+  var gap=(k<=10?10:k<=16?8:6);
+  grid.style.gap=gap+'px';
+  var rect=stage.getBoundingClientRect();
+  var availW=Math.max(160,rect.width-16), availH=Math.max(160,300);
+  var tileSize=Math.floor(Math.min((availW-gap*(k-1))/k,(availH-gap*(k-1))/k));
+  tileSize=Math.max(18,Math.min(120,tileSize));
+  grid.style.gridTemplateColumns='repeat('+k+', '+tileSize+'px)';
+  var font=Math.max(10,Math.floor(tileSize*0.34));
+  for(var i=0;i<k*k;i++){
+    var d=document.createElement('div'); d.className='tlTile';
+    d.style.width=tileSize+'px'; d.style.height=tileSize+'px'; d.style.fontSize=font+'px';
+    d.textContent=String(perTile);
+    grid.appendChild(d);
+  }
+}
+function tlOnPickSquare(ps){
+  var A=tlState.A, k=Math.round(Math.sqrt(ps));
+  if(A % ps !== 0){
+    tlState.current=null; tlClearGrid();
+    var perTileBad=A/ps;
+    tlEl('tlGridTitle').textContent='Not clean: '+A+' \u00f7 '+ps+' = '+perTileBad;
+    tlSetStatus('bad', '<strong>Not clean.</strong> '+ps+' does NOT divide '+A+' evenly \u2014 tile area would be <span class="mono">'+perTileBad+'</span>, not a whole number.');
+    tlFlashButton(ps,'bad');
+    return;
+  }
+  var perTile=A/ps;
+  tlState.current={k:k, perTile:perTile, ps:ps};
+  tlBuildGrid(k,perTile);
+  tlEl('tlGridTitle').textContent=k+'\u00d7'+k+' tiling: '+(k*k)+' tiles, each tile area = '+perTile;
+  tlSetStatus('good', '<strong>Clean tiling!</strong> You found <span class="mono">'+ps+' = '+k+'\u00b2</span>. The number outside the radical is <span class="mono">'+k+'</span>.');
+  tlFlashButton(ps,'good');
+  if(tlState.hintShown) tlShowSolution();
+}
+function tlShowSolution(){
+  var A=tlState.A, sr=simplifyRadical(A), k=sr.coef, m=sr.rad;
+  var ans=tlFormatRewrite(k,m);
+  var box=tlEl('tlSolBox'); box.style.display='block'; box.className='tlStatus solution';
+  box.innerHTML='<strong>Solution:</strong><br>\u221a'+A+' = '+ans;
+  tlEl('tlBestSquarePill').innerHTML='Big square factor: <span class="mono">'+(k*k)+'</span>';
+}
+function tlToggleHint(){
+  tlState.hintShown=!tlState.hintShown;
+  if(tlState.hintShown) tlShowSolution();
+  else {
+    tlEl('tlSolBox').style.display='none'; tlEl('tlSolBox').innerHTML='';
+    tlEl('tlBestSquarePill').innerHTML='Big square factor: <span class="mono">\u2014</span>';
+  }
+}
+function tlSanitizeInput(allowEmpty){
+  var input=tlEl('tlNumIn');
+  var s=input.value.replace(/[^0-9]/g,'');
+  if(s.length===0){
+    if(allowEmpty){ input.value=''; return null; }
+    s='2';
+  }
+  if(s.length>3) s=s.slice(0,3);
+  input.value=s;
+  return Number(s);
+}
+function tlToggleKeypad(force){
+  var pop=tlEl('tlKeypadPop');
+  var show=(force===null||force===undefined)?!pop.classList.contains('show'):force;
+  pop.classList.toggle('show',show);
+}
+function tlOnKeypad(key){
+  var input=tlEl('tlNumIn');
+  var s=input.value.replace(/[^0-9]/g,'');
+  if(key==='back'){ s=s.slice(0,-1); input.value=s; tlSanitizeInput(true); return; }
+  s=(s+key).slice(0,3);
+  input.value=s;
+  tlSanitizeInput(true);
+}
+var tlResizeTimer=null;
+function tlRequestRebuild(){
+  if(tlResizeTimer) clearTimeout(tlResizeTimer);
+  tlResizeTimer=setTimeout(function(){
+    if(tlEl('tlOverlay').classList.contains('show') && tlState.current && tlState.current.k && tlState.current.perTile){
+      tlBuildGrid(tlState.current.k, tlState.current.perTile);
+    }
+  },80);
+}
+function openTileLab(n){
+  tlState.problemN=n;
+  tlEl('tlOverlay').classList.add('show');
+  tlSetProblem(n);
+}
+function closeTileLab(){
+  tlEl('tlOverlay').classList.remove('show');
+  tlToggleKeypad(false);
+}
+(function wireTileLab(){
+  tlEl('tlCloseBtn').addEventListener('click', closeTileLab);
+  tlEl('tlOverlay').addEventListener('click', function(e){ if(e.target===tlEl('tlOverlay')) closeTileLab(); });
+  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && tlEl('tlOverlay').classList.contains('show')) closeTileLab(); });
+  tlEl('tlUseBtn').addEventListener('click', function(){
+    var v=tlSanitizeInput(true);
+    tlSetProblem(tlClampA(v===null?2:v));
+  });
+  tlEl('tlResetBtn').addEventListener('click', function(){ tlSetProblem(tlState.problemN); });
+  tlEl('tlHintBtn').addEventListener('click', tlToggleHint);
+  tlEl('tlNumIn').addEventListener('input', function(){ tlSanitizeInput(true); });
+  tlEl('tlNumIn').addEventListener('blur', function(){ tlSanitizeInput(true); });
+  tlEl('tlKbdBtn').addEventListener('click', function(e){ e.stopPropagation(); tlToggleKeypad(); });
+  document.addEventListener('click', function(e){
+    var pop=tlEl('tlKeypadPop'), wrap=document.querySelector('.tlKbdWrap');
+    if(pop.classList.contains('show') && wrap && !wrap.contains(e.target)) tlToggleKeypad(false);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.tlKeypad button'),function(b){
+    b.addEventListener('click', function(e){ e.stopPropagation(); tlOnKeypad(b.getAttribute('data-key')); });
+  });
+  window.addEventListener('resize', tlRequestRebuild);
+})();
 
 var SES=[SE_A11A, SE_A11B];
 
