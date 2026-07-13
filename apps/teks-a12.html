@@ -113,6 +113,18 @@
   .drTog button.active{background:#eafff7; color:#0c6d54}
   .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
   .qhead{font-weight:900; margin-top:14px}
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKeyWide{grid-column:span 4; min-width:0; overflow-wrap:break-word; font-size:10.5px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
 </style>
 </head>
 <body>
@@ -187,6 +199,27 @@ function ratHTML(r){
   var s = r.n<0 ? MIN : '';
   return s+'<span class="vfrac"><span>'+Math.abs(r.n)+'</span><span>'+r.d+'</span></span>';
 }
+/* ---- decimal-or-fraction display for sequence terms: a rational whose denominator
+   is a power of 10 prints as a clean decimal (133.1), matching how released items
+   show percent-growth sequences; any other denominator falls back to ratHTML's
+   stacked fraction (matches how released items show true-fraction sequences) ---- */
+function isPow10(d){
+  if(d<=0) return false;
+  while(d%10===0) d/=10;
+  return d===1;
+}
+function fmtRatSeq(r){
+  if(r.d===1) return fmtInt(r.n);
+  if(!isPow10(r.d)) return ratHTML(r);
+  var neg=r.n<0, absN=Math.abs(r.n), digits=String(r.d).length-1, s=String(absN);
+  while(s.length<=digits) s='0'+s;
+  var intPart=s.slice(0,s.length-digits), fracPart=s.slice(s.length-digits);
+  return (neg?MIN:'')+intPart+'.'+fracPart;
+}
+/* combines a "+"/"−" sign with a term correctly for inline use (e.g. "... + 5" or
+   "... − 5"), instead of ever printing "... + −5" \u2014 mirrors the existing
+   joinConstRat, but fmtRatSeq-aware so percent-decimal terms display cleanly too */
+function joinRatSeqTerm(r){ return r.n<0 ? ' '+MIN+' '+fmtRatSeq(R(-r.n,r.d)) : ' + '+fmtRatSeq(r); }
 function tableHTML(xs,ys){
   var h='<table class="ttab"><tr><th>x</th>';
   xs.forEach(function(x){ h+='<td>'+fmtInt(x)+'</td>'; });
@@ -211,25 +244,10 @@ function polyHTML(coeffs){
   }
   return first ? '0' : s;
 }
-function polyMul(a,b){
-  var res=new Array(a.length+b.length-1).fill(0);
-  for(var i=0;i<a.length;i++) for(var j=0;j<b.length;j++) res[i+j]+=a[i]*b[j];
-  return res;
-}
 function polyEval(coeffs,x){
   var v=0, p=1;
   for(var i=0;i<coeffs.length;i++){ v+=coeffs[i]*p; p*=x; }
   return v;
-}
-function composeLinearSub(baseCoeffs, subCoeffs){
-  var pow0=[1], pow1=subCoeffs.slice(), pow2=polyMul(subCoeffs,subCoeffs);
-  var powers=[pow0,pow1,pow2];
-  var result=new Array(baseCoeffs.length).fill(0);
-  baseCoeffs.forEach(function(coef,i){
-    var term=powers[i];
-    for(var j=0;j<term.length;j++) result[j]+=coef*term[j];
-  });
-  return result;
 }
 
 function leadTermInt(coef,varLabel){ return (coef===1?'':(coef===-1?MIN:fmtInt(coef)))+varLabel; }
@@ -237,8 +255,8 @@ function leadTermRat(r,varLabel){
   if(r.d===1){ if(r.n===1) return varLabel; if(r.n===-1) return MIN+varLabel; return fmtInt(r.n)+varLabel; }
   return ratHTML(r)+varLabel;
 }
-function joinConstInt(coef){ return coef<0 ? ' '+MIN+' '+Math.abs(coef) : ' + '+coef; }
-function joinConstRat(r){ return r.n<0 ? ' '+MIN+' '+ratHTML(R(-r.n,r.d)) : ' + '+ratHTML(r); }
+function joinConstInt(coef){ if(coef===0) return ''; return coef<0 ? ' '+MIN+' '+Math.abs(coef) : ' + '+coef; }
+function joinConstRat(r){ if(r.n===0) return ''; return r.n<0 ? ' '+MIN+' '+ratHTML(R(-r.n,r.d)) : ' + '+ratHTML(r); }
 function joinVarInt(coef,varLabel){ var ac=Math.abs(coef); var mag=(ac===1?'':String(ac))+varLabel; return coef<0 ? ' '+MIN+' '+mag : ' + '+mag; }
 function joinSignedTerms(parts){
   var s='';
@@ -251,6 +269,104 @@ function joinSignedTerms(parts){
 
 /* ---- UI helpers ---- */
 function inBox(id, wide){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off" />'; }
+
+/* ---------- shared floating keyboard: one button, types into whichever input last had focus ----------
+   Ported verbatim from the cross-module tweaking guide (Part 1/1a, backspace per Part 7.7/11.4). ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  var extra=(grid.dataset.extra||'').split(',').filter(Boolean);
+  SHARED_KEYS.concat(extra).forEach(function(k){
+    var b=document.createElement('button'); b.type='button';
+    b.className='drKey'+(k.length>1?' drKeyWide':''); b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide';
+  bs.textContent='\u232B'; bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){
+      if(s===0) return;
+      input.value=input.value.slice(0,s-1)+input.value.slice(e2);
+      s=s-1;
+    } else {
+      input.value=input.value.slice(0,s)+input.value.slice(e2);
+    }
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT'&&e.target.classList.contains('in')) sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function kbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function sharedKbdHTML(extraKeys){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid" data-extra="'+(extraKeys?extraKeys.join(','):'')+'"></div></div>'+
+  '</div>';
+}
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+var kbdDocWired=false;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
+}
 function seg(id,cur,opts){
   var h='<div class="drSeg" id="'+id+'" role="tablist">';
   opts.forEach(function(o){ h+='<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>'; });
@@ -310,7 +426,26 @@ function markMC(id, correct, chosen){
   });
 }
 
-/* ---- points-only signed grid (for the vertical-line-test graph) ---- */
+/* ---- signed grid: plots discrete points and/or a continuous curve, with an optional
+   red-dashed vertical-line-test overlay (drawn at a given x, with dots at every
+   intersection) ---- */
+function evalContinuousY(x, type){
+  switch(type){
+    case 'linear': return 0.5*x+1;
+    case 'quadratic': return 0.2*x*x-1;
+    case 'cubic': return 0.05*x*x*x-0.3*x;
+    case 'absolute': return Math.abs(x)-2;
+    case 'sqrt': return x>=0 ? Math.sqrt(x)*2-1 : null;
+    case 'rational': return x!==0 ? 3/x : null;
+    default: return null;
+  }
+}
+var NONFUNC_CURVES=['circle','ellipse','sidewaysParabola'];
+function nonFuncXY(type, t){
+  if(type==='circle'){ var a=t*Math.PI*2; return [3*Math.cos(a), 3*Math.sin(a)]; }
+  if(type==='ellipse'){ var a2=t*Math.PI*2; return [3.5*Math.cos(a2), 2*Math.sin(a2)]; }
+  var y=-7+t*14; return [0.25*y*y-2, y];
+}
 function plotPointsGrid(o){
   o=o||{}; var Rg=o.Rg||7, S=Math.round(288/(2*Rg)), W=2*Rg*S, H=W, i;
   function X(x){ return (x+Rg)*S; }
@@ -326,28 +461,111 @@ function plotPointsGrid(o){
     s+='<text x="'+X(i)+'" y="'+(Y(0)+14)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="middle">'+i+'</text>';
     s+='<text x="'+(X(0)-6)+'" y="'+(Y(i)+4)+'" font-size="11" font-weight="700" fill="#5b6f96" text-anchor="end">'+i+'</text>';
   }
+  if(o.curveType){
+    var d='', steps=160, drawing=false, x, y, px, py;
+    if(NONFUNC_CURVES.indexOf(o.curveType)!==-1){
+      for(i=0;i<=steps;i++){
+        var xy=nonFuncXY(o.curveType, i/steps);
+        d += (i===0?'M ':'L ')+X(xy[0])+' '+Y(xy[1])+' ';
+      }
+    } else {
+      for(i=0;i<=steps;i++){
+        x=-Rg+(i/steps)*(2*Rg);
+        y=evalContinuousY(x, o.curveType);
+        if(y===null||isNaN(y)||Math.abs(y)>Rg+1){ drawing=false; continue; }
+        px=X(x); py=Y(y);
+        d += (drawing?'L ':'M ')+px+' '+py+' ';
+        drawing=true;
+      }
+    }
+    s+='<path d="'+d.trim()+'" fill="none" stroke="#2f6cff" stroke-width="3" opacity="0.85"/>';
+  }
   (o.points||[]).forEach(function(Pt){
     s+='<circle cx="'+X(Pt.x)+'" cy="'+Y(Pt.y)+'" r="6" fill="'+(Pt.color||'#2f6cff')+'" stroke="'+(Pt.color||'#2f6cff')+'" stroke-width="2"/>';
+  });
+  if(o.testLine){
+    var tx=X(o.testLine.x);
+    s+='<line x1="'+tx+'" y1="0" x2="'+tx+'" y2="'+H+'" stroke="#e5484d" stroke-width="2.5" stroke-dasharray="8,4"/>';
+    o.testLine.ys.forEach(function(ty){
+      s+='<circle cx="'+tx+'" cy="'+Y(ty)+'" r="9" fill="#e5484d" stroke="#fff" stroke-width="2.5"/>';
+    });
+  }
+  return s+'</svg>';
+}
+
+/* ---- mapping/bubble diagram: every coordinate is computed up front from the data,
+   nothing measured from the rendered DOM after the fact (that post-hoc-measurement
+   approach is what made this fiddly to format correctly before) ---- */
+function bubbleDiagramSVG(pts){
+  var dom=[], ran=[], seenX={}, seenY={};
+  pts.forEach(function(pt){
+    if(seenX[pt.x]===undefined){ seenX[pt.x]=1; dom.push(pt.x); }
+    if(seenY[pt.y]===undefined){ seenY[pt.y]=1; ran.push(pt.y); }
+  });
+  dom.sort(function(a,b){return a-b;});
+  ran.sort(function(a,b){return a-b;});
+  var n=Math.max(dom.length, ran.length, 2);
+  var rowH=34, padY=24, headerGap=26;
+  var pillH=(n-1)*rowH+padY*2;
+  var H=headerGap+pillH, W=300;
+  var leftCX=78, rightCX=W-78, boxW=100, boxTop=headerGap, boxBottom=H;
+  /* anchor points sit inside each pill, a fixed short distance from the (centered) number —
+     never at the pill's outer edge, and never dependent on how many digits the number has */
+  var leftDotX=leftCX+18, rightDotX=rightCX-18;
+  function nodeYs(count){
+    var lh=(count-1)*rowH, sy=boxTop+(pillH-lh)/2, arr=[];
+    for(var k=0;k<count;k++) arr.push(sy+k*rowH);
+    return arr;
+  }
+  var domY=nodeYs(dom.length), ranY=nodeYs(ran.length), domPos={}, ranPos={};
+  dom.forEach(function(x,idx){ domPos[x]=domY[idx]; });
+  ran.forEach(function(y,idx){ ranPos[y]=ranY[idx]; });
+
+  var s='<svg viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'" class="grid" xmlns="http://www.w3.org/2000/svg">';
+  s+='<defs><marker id="mapArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2f6cff"/></marker></defs>';
+  s+='<rect x="'+(leftCX-boxW/2)+'" y="'+boxTop+'" width="'+boxW+'" height="'+(boxBottom-boxTop)+'" rx="'+(boxW/2)+'" fill="#f6f9ff" stroke="#2f6cff" stroke-width="2.2"/>';
+  s+='<rect x="'+(rightCX-boxW/2)+'" y="'+boxTop+'" width="'+boxW+'" height="'+(boxBottom-boxTop)+'" rx="'+(boxW/2)+'" fill="#f6f9ff" stroke="#2f6cff" stroke-width="2.2"/>';
+  s+='<text x="'+leftCX+'" y="'+(headerGap-9)+'" text-anchor="middle" font-size="13" font-weight="900" fill="#2f6cff">X</text>';
+  s+='<text x="'+rightCX+'" y="'+(headerGap-9)+'" text-anchor="middle" font-size="13" font-weight="900" fill="#2f6cff">Y</text>';
+  /* connecting lines run anchor-to-anchor — the same fixed x on both ends every time,
+     only the y (which row) ever changes */
+  pts.forEach(function(pt){
+    s+='<line x1="'+leftDotX+'" y1="'+domPos[pt.x]+'" x2="'+rightDotX+'" y2="'+ranPos[pt.y]+'" stroke="#2f6cff" stroke-width="1.8" opacity="0.9" marker-end="url(#mapArrow)"/>';
+  });
+  /* fixed anchor dot beside every X number — always at leftDotX regardless of how many
+     digits the number has, so the attachment point never shifts problem to problem.
+     The Y side skips drawing a dot at all (the arrowhead is already a clear enough
+     landing marker there; a second dot right next to it just added visual clutter) —
+     ranPos[y]/rightDotX is still the exact fixed coordinate the arrow lands on. */
+  dom.forEach(function(x){
+    s+='<circle cx="'+leftDotX+'" cy="'+domPos[x]+'" r="3.5" fill="#0f2340"/>';
+  });
+  dom.forEach(function(x){
+    s+='<text x="'+leftCX+'" y="'+domPos[x]+'" dominant-baseline="middle" text-anchor="middle" font-size="16" font-weight="900" fill="#0f2340">'+x+'</text>';
+  });
+  ran.forEach(function(y){
+    s+='<text x="'+rightCX+'" y="'+ranPos[y]+'" dominant-baseline="middle" text-anchor="middle" font-size="16" font-weight="900" fill="#0f2340">'+y+'</text>';
   });
   return s+'</svg>';
 }
 
 /* =====================================================================
-   A.12A — Is It a Function? (verbal, table, graph, symbolic)
+   A.12A — Is It a Function? (mapping diagram, table, graph, symbolic)
    ===================================================================== */
 var cMode12A='mix';
-var VERBAL_BANK=[
-  {text:'Each student in the class is assigned exactly one locker number.', isFunc:true, reason:'Every student (input) has exactly one locker (output) \u2014 no student has two lockers.'},
-  {text:'Each locker is assigned to all of the students who have used it over the years.', isFunc:false, reason:'One locker (input) can be linked to many different students (multiple outputs) over time.'},
-  {text:'Each U.S. citizen has exactly one Social Security number.', isFunc:true, reason:'Every citizen (input) maps to exactly one number (output).'},
-  {text:'Each Social Security number is linked to everyone who has ever lived at a shared address.', isFunc:false, reason:'One number (input) could be linked to several different people (multiple outputs).'},
-  {text:'Each item in a store has exactly one price tag.', isFunc:true, reason:'Every item (input) has exactly one price (output).'},
-  {text:'Each price in the store corresponds to every item that costs that much.', isFunc:false, reason:'One price (input) could match many different items (multiple outputs).'},
-  {text:'Each car has exactly one license plate number.', isFunc:true, reason:'Every car (input) has exactly one plate number (output).'},
-  {text:'Each temperature reading is linked to every city that recorded it on a given day.', isFunc:false, reason:'One temperature (input) could be linked to many different cities (multiple outputs).'},
-  {text:'Each student is assigned exactly one student ID number.', isFunc:true, reason:'Every student (input) has exactly one ID (output).'},
-  {text:'Each grade level is linked to every student enrolled in it.', isFunc:false, reason:'One grade level (input) is linked to many students (multiple outputs).'}
-];
+var CONTINUOUS_FUNCS=['linear','quadratic','cubic','absolute','sqrt','rational'];
+var CONTINUOUS_NONFUNCS=['circle','ellipse','sidewaysParabola'];
+var CONTINUOUS_TEST_LINES={
+  linear:{x:3, ys:[2.5]},
+  quadratic:{x:3, ys:[0.8]},
+  cubic:{x:3, ys:[0.45]},
+  absolute:{x:3, ys:[1]},
+  sqrt:{x:4, ys:[3]},
+  rational:{x:3, ys:[1]},
+  circle:{x:0, ys:[3,-3]},
+  ellipse:{x:0, ys:[2,-2]},
+  sidewaysParabola:{x:-1, ys:[2,-2]}
+};
 var SYMBOLIC_BANK=[
   {eq:'y = 2x + 5', isFunc:true, reason:'For every x, this formula gives exactly one y.'},
   {eq:'y = x\u00b2 \u2212 3', isFunc:true, reason:'For every x, squaring gives exactly one result, so there is exactly one y.'},
@@ -374,40 +592,47 @@ function genPoints(n, forceDuplicate){
   return pts;
 }
 function genA12A(kind){
-  if(kind==='verbal'){
-    var v=rc(VERBAL_BANK);
-    return {kind:kind, isFunc:v.isFunc, text:v.text, reason:v.reason, q1:makeMC(['Yes','No'], v.isFunc?0:1)};
-  }
   if(kind==='symbolic'){
     var sB=rc(SYMBOLIC_BANK);
     return {kind:kind, isFunc:sB.isFunc, eq:sB.eq, reason:sB.reason, q1:makeMC(['Yes','No'], sB.isFunc?0:1)};
   }
-  // table or graph
+  if(kind==='graph'){
+    var variant=rc(['points','continuous']);
+    var isFuncG=Math.random()<0.5;
+    if(variant==='continuous'){
+      var graphType = isFuncG ? rc(CONTINUOUS_FUNCS) : rc(CONTINUOUS_NONFUNCS);
+      return {kind:kind, variant:variant, isFunc:isFuncG, graphType:graphType, q1:makeMC(['Yes','No'], isFuncG?0:1)};
+    }
+    var ptsG=genPoints(isFuncG?5:4, !isFuncG);
+    for(var i=ptsG.length-1;i>0;i--){ var j=ri(0,i); var t=ptsG[i]; ptsG[i]=ptsG[j]; ptsG[j]=t; }
+    return {kind:kind, variant:variant, isFunc:isFuncG, pts:ptsG, q1:makeMC(['Yes','No'], isFuncG?0:1)};
+  }
+  // table or map
   var isFunc=Math.random()<0.5;
   var pts=genPoints(isFunc?5:4, !isFunc);
   if(kind==='table'){ pts=pts.slice().sort(function(a,b){return a.x-b.x;}); }
-  else { for(var i=pts.length-1;i>0;i--){ var j=ri(0,i); var t=pts[i]; pts[i]=pts[j]; pts[j]=t; } }
+  else { for(var k=pts.length-1;k>0;k--){ var m=ri(0,k); var t2=pts[k]; pts[k]=pts[m]; pts[m]=t2; } }
   return {kind:kind, isFunc:isFunc, pts:pts, q1:makeMC(['Yes','No'], isFunc?0:1)};
 }
 var SE_A12A = {
   id:'A.12A', letter:'A', short:'Is It a Function?',
   title:'Is It a Function?',
-  blurb:'Decide whether relations represented verbally, tabularly, graphically, and symbolically define a function.',
+  blurb:'Decide whether relations represented as mapping diagrams, tables, graphs, and equations define a function.',
 
   gen:function(){
-    var kind=(cMode12A==='mix')?rc(['table','verbal','graph','symbolic']):cMode12A;
+    var kind=(cMode12A==='mix')?rc(['table','map','graph','symbolic']):cMode12A;
     return genA12A(kind);
   },
   prompt:function(p){
     var selector=segWrap('SHOWN AS','funcSeg',cMode12A,
-      [['mix','Mixed'],['table','Table'],['verbal','Words'],['graph','Graph'],['symbolic','Equation']]);
+      [['mix','Mixed'],['table','Table'],['map','Diagram'],['graph','Graph'],['symbolic','Equation']]);
     var body;
     if(p.kind==='table'){
-      body='Does this table represent a function?'+tableHTML(p.pts.map(function(pt){return pt.x;}), p.pts.map(function(pt){return pt.y;}));
+      body='Does this table represent a function?<br>'+tableHTML(p.pts.map(function(pt){return pt.x;}), p.pts.map(function(pt){return pt.y;}));
+    } else if(p.kind==='map'){
+      body='Does this mapping diagram represent a function?<br>'+bubbleDiagramSVG(p.pts);
     } else if(p.kind==='graph'){
-      body='Does this graph represent a function?'+plotPointsGrid({Rg:7, points:p.pts});
-    } else if(p.kind==='verbal'){
-      body='Does this describe a function?<br><span class="given" style="font-size:18px">'+p.text+'</span>';
+      body='Does this graph represent a function?<br>'+(p.variant==='continuous' ? plotPointsGrid({Rg:7, curveType:p.graphType}) : plotPointsGrid({Rg:7, points:p.pts}));
     } else {
       body='Does this equation represent y as a function of x?<br><span class="given">'+p.eq+'</span>';
     }
@@ -421,13 +646,16 @@ var SE_A12A = {
     return ok;
   },
   hints:function(p){
-    if(p.kind==='table'||p.kind==='graph') return ['A relation is a function only if every input (x-value) is paired with exactly one output (y-value).', 'Look for any x-value that appears twice with two different y-values.'];
-    if(p.kind==='verbal') return ['Think about whether the described input could ever be linked to more than one output.'];
+    if(p.kind==='table'||p.kind==='map') return ['A relation is a function only if every input (x-value) is paired with exactly one output (y-value).', 'Look for any x-value that appears twice with two different y-values.'];
+    if(p.kind==='graph'){
+      if(p.variant==='points') return ['A relation is a function only if every input (x-value) is paired with exactly one output (y-value).', 'Look for any x-value that appears twice with two different y-values.'];
+      return ['Imagine sliding a vertical line across the graph from left to right.', 'If any vertical line crosses the curve more than once, the graph is not a function \u2014 that\u2019s the vertical line test.'];
+    }
     return ['Try picking a number for x and see whether the equation could give more than one possible y \u2014 that\u2019s the algebraic version of the vertical line test.'];
   },
   steps:function(p){
     var s='';
-    if(p.kind==='table'||p.kind==='graph'){
+    if(p.kind==='table'||p.kind==='map'){
       var seen={}, dup=null;
       p.pts.forEach(function(pt){
         if(seen[pt.x]!==undefined && seen[pt.x]!==pt.y) dup={x:pt.x, y1:seen[pt.x], y2:pt.y};
@@ -435,6 +663,24 @@ var SE_A12A = {
       });
       if(dup){ s+='<span class="st">The input x = '+dup.x+' is paired with two different outputs: y = '+dup.y1+' and y = '+dup.y2+'.</span>'; s+='<span class="st final">No \u2014 this is not a function.</span>'; }
       else { s+='<span class="st">Every x-value in this relation is paired with exactly one y-value.</span>'; s+='<span class="st final">Yes \u2014 this is a function.</span>'; }
+    } else if(p.kind==='graph'){
+      s+='<span class="st">Draw a vertical line through the graph and slide it left to right \u2014 the red line test.</span>';
+      if(p.variant==='points'){
+        var seenG={}, dupG=null;
+        p.pts.forEach(function(pt){
+          if(seenG[pt.x]!==undefined && seenG[pt.x]!==pt.y) dupG={x:pt.x, y1:seenG[pt.x], y2:pt.y};
+          seenG[pt.x]=pt.y;
+        });
+        var lineG = dupG ? {x:dupG.x, ys:[dupG.y1,dupG.y2]} : {x:p.pts[0].x, ys:[p.pts[0].y]};
+        s+=plotPointsGrid({Rg:7, points:p.pts, testLine:lineG});
+        if(dupG){ s+='<span class="st">At x = '+dupG.x+', the line crosses two points: y = '+dupG.y1+' and y = '+dupG.y2+'.</span>'; s+='<span class="st final">No \u2014 this is not a function.</span>'; }
+        else { s+='<span class="st">Every vertical line you could draw crosses the graph exactly once.</span>'; s+='<span class="st final">Yes \u2014 this is a function.</span>'; }
+      } else {
+        var demo=CONTINUOUS_TEST_LINES[p.graphType];
+        s+=plotPointsGrid({Rg:7, curveType:p.graphType, testLine:demo});
+        if(p.isFunc){ s+='<span class="st">At x = '+demo.x+', the line crosses the curve exactly once.</span>'; s+='<span class="st final">Yes \u2014 this is a function.</span>'; }
+        else { s+='<span class="st">At x = '+demo.x+', the line crosses the curve twice: y = '+demo.ys[0]+' and y = '+demo.ys[1]+'.</span>'; s+='<span class="st final">No \u2014 this is not a function.</span>'; }
+      }
     } else {
       s+='<span class="st">'+p.reason+'</span>';
       s+='<span class="st final">'+(p.isFunc?'Yes \u2014 this is a function.':'No \u2014 this is not a function.')+'</span>';
@@ -448,21 +694,86 @@ var SE_A12A = {
 /* =====================================================================
    A.12B — Evaluate Functions in Function Notation
    ===================================================================== */
-function genB12B(){
-  var degree=rc([1,2]);
-  var coeffs = degree===2 ? [ri(-6,6), ri(-6,6), rnz(-6,6)] : [ri(-6,6), rnz(-6,6)];
-  var mode=rc(['numeric','symbolic']);
-  if(mode==='numeric'){
-    var k=ri(-6,6);
-    var value=polyEval(coeffs,k);
-    return {mode:mode, coeffs:coeffs, k:k, value:R(value,1)};
-  }
-  var subKind=rc(['negX','xPlus1','2x']);
-  var subCoeffs = subKind==='negX' ? [0,-1] : (subKind==='xPlus1' ? [1,1] : [0,2]);
-  var subLabel = subKind==='negX' ? '\u2212x' : (subKind==='xPlus1' ? 'x + 1' : '2x');
-  var result = composeLinearSub(coeffs, subCoeffs);
-  return {mode:mode, coeffs:coeffs, subKind:subKind, subLabel:subLabel, result:result};
+function genFullCoeffsB(degree){
+  return degree===2 ? [ri(-6,6), ri(-6,6), rnz(-6,6)] : [ri(-6,6), rnz(-6,6)];
 }
+function genNonConstCoeffsB(degree){
+  return degree===2 ? [0, ri(-4,4), rnz(-3,3)] : [0, rnz(-5,5)];
+}
+function genNumericB(){
+  var variant=rc(['plain','factored','shifted']);
+  if(variant==='factored'){
+    /* unexpanded distributed form, e.g. "6(2x + 7)" \u2014 matches how these actually
+       appear on released items; still just a single-number evaluation underneath */
+    var a=rc([2,3,4,-2,-3,-4]);
+    var innerSlope=rnz(-5,5), innerConst=ri(-6,6);
+    var coeffs=[a*innerConst, a*innerSlope];
+    var k=ri(-6,6);
+    return {mode:'numeric', variant:'factored', coeffs:coeffs, k:k, value:R(polyEval(coeffs,k),1),
+      factorA:a, innerSlope:innerSlope, innerConst:innerConst};
+  }
+  if(variant==='shifted'){
+    /* "If f(x + 3) = 2x, what is f(7)?" \u2014 the function is defined in terms of a
+       shifted input, so the student must first solve x + c = k for x, then substitute
+       that x into the right-hand side. Still a single-number answer throughout. */
+    var c=rnz(-6,6);
+    var rDegree=rc([1,2]);
+    var rhsCoeffs = rDegree===2 ? [ri(-6,6), ri(-6,6), rnz(-6,6)] : [ri(-6,6), rnz(-6,6)];
+    var xVal=ri(-6,6), kk=xVal+c;
+    return {mode:'numeric', variant:'shifted', shiftC:c, rhsCoeffs:rhsCoeffs, k:kk, xVal:xVal,
+      value:R(polyEval(rhsCoeffs,xVal),1)};
+  }
+  var degree=rc([1,2]);
+  var coeffs = genFullCoeffsB(degree);
+  var k=ri(-6,6);
+  return {mode:'numeric', variant:'plain', coeffs:coeffs, k:k, value:R(polyEval(coeffs,k),1)};
+}
+function genCompareB(){
+  /* "more than one element in the domain" \u2014 per the actual released items, this
+     means evaluating (possibly two different functions) at more than one specific
+     number and comparing the results, never substituting a variable expression for
+     x. Every statement below is "f(a) = g(b)" for specific integers a and b \u2014
+     exactly one is arithmetically true. */
+  for(var tries=0; tries<40; tries++){
+    var fDegree=rc([1,2]), fCoeffs=genFullCoeffsB(fDegree);
+    var a0=ri(-6,6), target=polyEval(fCoeffs,a0);
+
+    var gDegree=rc([1,2]), gNonConst=genNonConstCoeffsB(gDegree);
+    var b0=ri(-6,6), gPartial=polyEval(gNonConst,b0);
+    var gConst=target-gPartial;
+    if(Math.abs(gConst)>35) continue;   /* keep g's back-solved constant from ballooning */
+    var gCoeffs=gNonConst.slice(); gCoeffs[0]=gConst;
+
+    var pairs=[{a:a0,b:b0,isTrue:true}], attempts=0;
+    while(pairs.length<4 && attempts<300){
+      attempts++;
+      var ai=ri(-6,6), bi=ri(-6,6), dup=false;
+      for(var di=0; di<pairs.length; di++){ if(pairs[di].a===ai && pairs[di].b===bi){ dup=true; break; } }
+      if(dup) continue;
+      if(polyEval(fCoeffs,ai)===polyEval(gCoeffs,bi)) continue;   /* would create a second true statement */
+      pairs.push({a:ai,b:bi,isTrue:false});
+    }
+    if(pairs.length<4) continue;
+
+    for(var s1=pairs.length-1; s1>0; s1--){ var s2=ri(0,s1); var tmp=pairs[s1]; pairs[s1]=pairs[s2]; pairs[s2]=tmp; }
+    var correctIdx=0;
+    for(var ci=0; ci<pairs.length; ci++){ if(pairs[ci].isTrue){ correctIdx=ci; break; } }
+    var labels=pairs.map(function(pr){ return 'f('+fmtInt(pr.a)+') = g('+fmtInt(pr.b)+')'; });
+    return {mode:'compare', fCoeffs:fCoeffs, gCoeffs:gCoeffs, pairs:pairs, q1:{opts:labels, correct:correctIdx}};
+  }
+  /* fallback (essentially never reached): small linear-only case that trivially satisfies every constraint */
+  var a0f=ri(-4,4), m1=rnz(-3,3), c1=ri(-4,4);
+  var fCoeffsFB=[c1,m1], targetFB=polyEval(fCoeffsFB,a0f);
+  var b0f=ri(-4,4), m2=rnz(-3,3), gCoeffsFB=[targetFB-m2*b0f, m2];
+  var pairsFB=[{a:a0f,b:b0f,isTrue:true},{a:a0f+1,b:b0f,isTrue:false},{a:a0f,b:b0f+1,isTrue:false},{a:a0f-2,b:b0f-2,isTrue:false}];
+  var labelsFB=pairsFB.map(function(pr){ return 'f('+fmtInt(pr.a)+') = g('+fmtInt(pr.b)+')'; });
+  return {mode:'compare', fCoeffs:fCoeffsFB, gCoeffs:gCoeffsFB, pairs:pairsFB, q1:{opts:labelsFB, correct:0}};
+}
+function genB12B(){
+  var mode=(cMode12B==='mix') ? rc(['numeric','compare']) : cMode12B;
+  return mode==='numeric' ? genNumericB() : genCompareB();
+}
+var cMode12B='mix';
 var SE_A12B = {
   id:'A.12B', letter:'B', short:'Evaluate Functions',
   title:'Evaluate Functions',
@@ -470,18 +781,24 @@ var SE_A12B = {
 
   gen:function(){ return genB12B(); },
   prompt:function(p){
-    var body = p.mode==='numeric' ? 'f('+fmtInt(p.k)+')' : 'f('+p.subLabel+')';
-    return 'Given <span class="given">f(x) = '+polyHTML(p.coeffs)+'</span>, find '+body+
-      (p.mode==='numeric' ? '.' : ' and write it in simplified form.');
+    var selector=segWrap('TYPE','b12bSeg',cMode12B,
+      [['mix','Mixed'],['numeric','Evaluate'],['compare','Compare']]);
+    if(p.mode==='numeric'){
+      if(p.variant==='shifted'){
+        var shiftStr = p.shiftC>=0 ? ('x + '+p.shiftC) : ('x '+MIN+' '+Math.abs(p.shiftC));
+        return selector+'If <span class="given">f('+shiftStr+') = '+polyHTML(p.rhsCoeffs)+'</span>, what is f('+fmtInt(p.k)+')?';
+      }
+      var body='f('+fmtInt(p.k)+')';
+      var fDef = p.variant==='factored' ? (fmtInt(p.factorA)+'('+leadTermInt(p.innerSlope,'x')+joinConstInt(p.innerConst)+')') : polyHTML(p.coeffs);
+      return selector+'Given <span class="given">f(x) = '+fDef+'</span>, find '+body+'.';
+    }
+    return selector+'Two functions are shown.<br><span class="given">f(x) = '+polyHTML(p.fCoeffs)+'</span><br><span class="given">g(x) = '+polyHTML(p.gCoeffs)+'</span><div class="qhead">Which statement is true?</div>';
   },
   answerHTML:function(p){
     if(p.mode==='numeric'){
-      return '<div class="answer"><span class="lbl">Value:</span>'+inBox('val','wide')+'</div>';
+      return '<div class="answer"><span class="lbl">Value:</span>'+inBox('val','wide')+'</div>'+sharedKbdHTML();
     }
-    if(p.coeffs.length===3){
-      return '<div class="answer"><span class="lbl">Simplified form:</span>'+inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
-    }
-    return '<div class="answer"><span class="lbl">Simplified form:</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+    return mcHTML('cmp', p.q1);
   },
   read:function(p){
     if(p.mode==='numeric'){
@@ -489,47 +806,62 @@ var SE_A12B = {
       if(val===null) return null;
       return {val:val};
     }
-    var c1=parseRat(document.getElementById('c1').value);
-    var c0=parseRat(document.getElementById('c0').value);
-    if(p.coeffs.length===3){
-      var c2=parseRat(document.getElementById('c2').value);
-      if(c2===null||c1===null||c0===null) return null;
-      return {c2:c2,c1:c1,c0:c0};
-    }
-    if(c1===null||c0===null) return null;
-    return {c1:c1,c0:c0};
+    var i=mcSelected('cmp'); if(i===null) return null; return {mcIndex:i};
   },
   check:function(p,ans){
     if(p.mode==='numeric') return req(ans.val, p.value);
-    var ok = req(ans.c1,rint(p.result[1])) && req(ans.c0,rint(p.result[0]));
-    if(p.coeffs.length===3) ok = ok && req(ans.c2,rint(p.result[2]));
+    var ok = ans.mcIndex===p.q1.correct;
+    markMC('cmp', p.q1.correct, ans.mcIndex);
     return ok;
   },
   hints:function(p){
-    if(p.mode==='numeric') return ['Substitute the given number in for every x in the function, then compute using order of operations.'];
-    return ['Substitute the expression in for every x in the function \u2014 use parentheses around it.', 'Expand and combine like terms to reach a simplified polynomial.'];
+    if(p.mode==='numeric'){
+      if(p.variant==='shifted') return ['First figure out what x must be so that the expression inside f( ) matches the number you\u2019re evaluating at.', 'Once you know that x, substitute it into the right-hand side to get the value.'];
+      return ['Substitute the given number in for every x in the function, then compute using order of operations.'];
+    }
+    return ['Evaluate each side of every statement on its own \u2014 f at its input, g at its input \u2014 then compare the two results.', 'Only one pair of inputs will produce the same number on both sides.'];
   },
   steps:function(p){
     var s='';
     if(p.mode==='numeric'){
-      s+='<span class="st">1. Substitute x = '+fmtInt(p.k)+' into f(x) = '+polyHTML(p.coeffs)+'.</span>';
-      var parts=[];
-      for(var i=p.coeffs.length-1;i>=0;i--){
-        var c=p.coeffs[i];
-        if(c===0) continue;
-        var mag = i===0 ? String(Math.abs(c)) : Math.abs(c)+'\u00d7('+fmtInt(p.k)+')'+(i>1?'<sup>'+i+'</sup>':'');
-        parts.push({coef:c, mag:mag});
+      if(p.variant==='shifted'){
+        var shiftStr = p.shiftC>=0 ? ('x + '+p.shiftC) : ('x '+MIN+' '+Math.abs(p.shiftC));
+        s+='<span class="st">1. Set '+shiftStr+' = '+fmtInt(p.k)+' so the left side matches f('+fmtInt(p.k)+').</span>';
+        s+='<span class="st">2. Solve for x: x = '+fmtInt(p.xVal)+'</span>';
+        s+='<span class="st">3. Substitute x = '+fmtInt(p.xVal)+' into '+polyHTML(p.rhsCoeffs)+'.</span>';
+        s+='<span class="st final">f('+fmtInt(p.k)+') = '+ratHTML(p.value)+'</span>';
+      } else if(p.variant==='factored'){
+        var innerVal=p.innerSlope*p.k+p.innerConst;
+        s+='<span class="st">1. Substitute x = '+fmtInt(p.k)+' into f(x) = '+fmtInt(p.factorA)+'('+leadTermInt(p.innerSlope,'x')+joinConstInt(p.innerConst)+').</span>';
+        s+='<span class="st">2. f('+fmtInt(p.k)+') = '+fmtInt(p.factorA)+'('+fmtInt(innerVal)+') = '+ratHTML(p.value)+'</span>';
+        s+='<span class="st final">f('+fmtInt(p.k)+') = '+ratHTML(p.value)+'</span>';
+      } else {
+        s+='<span class="st">1. Substitute x = '+fmtInt(p.k)+' into f(x) = '+polyHTML(p.coeffs)+'.</span>';
+        var parts=[];
+        for(var i=p.coeffs.length-1;i>=0;i--){
+          var c=p.coeffs[i];
+          if(c===0) continue;
+          var mag = i===0 ? String(Math.abs(c)) : Math.abs(c)+'\u00d7('+fmtInt(p.k)+')'+(i>1?'<sup>'+i+'</sup>':'');
+          parts.push({coef:c, mag:mag});
+        }
+        s+='<span class="st">2. '+joinSignedTerms(parts)+' = '+ratHTML(p.value)+'</span>';
+        s+='<span class="st final">f('+fmtInt(p.k)+') = '+ratHTML(p.value)+'</span>';
       }
-      s+='<span class="st">2. '+joinSignedTerms(parts)+' = '+ratHTML(p.value)+'</span>';
-      s+='<span class="st final">f('+fmtInt(p.k)+') = '+ratHTML(p.value)+'</span>';
     } else {
-      s+='<span class="st">1. Replace every x with ('+p.subLabel+') in f(x) = '+polyHTML(p.coeffs)+'.</span>';
-      s+='<span class="st">2. Expand and combine like terms.</span>';
-      s+='<span class="st final">f('+p.subLabel+') = '+polyHTML(p.result)+'</span>';
+      var correctPair=p.pairs[p.q1.correct];
+      var fVal=polyEval(p.fCoeffs,correctPair.a), gVal=polyEval(p.gCoeffs,correctPair.b);
+      s+='<span class="st">1. f('+fmtInt(correctPair.a)+') = '+fmtInt(fVal)+'</span>';
+      s+='<span class="st">2. g('+fmtInt(correctPair.b)+') = '+fmtInt(gVal)+'</span>';
+      s+='<span class="st final">f('+fmtInt(correctPair.a)+') = g('+fmtInt(correctPair.b)+') \u2014 both equal '+fmtInt(fVal)+', so this statement is true.</span>';
     }
     return s;
   },
-  emptyMsg:'Fill in every box.'
+  emptyMsg:'Answer the question above before checking.',
+  init:function(p){
+    wireSeg('b12bSeg',cMode12B,function(v){ cMode12B=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+    wireMC('cmp');
+  }
 };
 
 /* =====================================================================
@@ -541,17 +873,60 @@ function seqTerm(type, a1, param, n){
   for(var i=1;i<n;i++) val=rmul(val,param);
   return val;
 }
+var GEOM_RATIOS_C=[R(2,1),R(3,1),R(4,1),R(-2,1),R(-3,1),R(-4,1),R(1,2),R(1,3),R(-1,2)];
+var PERCENT_RATIOS_C=[R(11,10),R(12,10),R(9,10),R(8,10),R(21,20),R(23,20),R(19,20),R(17,20)]; /* 1.1,1.2,.9,.8,1.05,1.15,.95,.85 */
+function seqTerms4(type,a1,param){
+  return [seqTerm(type,a1,param,1), seqTerm(type,a1,param,2), seqTerm(type,a1,param,3), seqTerm(type,a1,param,4)];
+}
+function termsEqual4(t1,t2){
+  for(var i=0;i<4;i++){ if(!req(t1[i],t2[i])) return false; }
+  return true;
+}
+function termsTooBig(terms){
+  for(var i=0;i<terms.length;i++){ if(Math.abs(terms[i].n/terms[i].d)>4000) return true; }
+  return false;
+}
 function genC12C(){
+  var noteStyle=rc(['sub','func']);
   var type=rc(['arith','geom']);
-  var a1,param,k;
-  if(type==='arith'){
-    a1=R(ri(-10,10),1); param=R(rnz(-6,6),1); k=ri(4,7);
-  } else {
-    a1=R(rc([1,2,3,4,-1,-2,-3,-4]),1);
-    param=rc([R(2,1),R(3,1),R(-2,1),R(-3,1),R(1,2),R(1,3),R(-1,2)]);
-    k = (Math.abs(param.n/param.d)>=3) ? ri(3,4) : ri(3,6);
+  for(var tries=0; tries<40; tries++){
+    var a1, param;
+    if(type==='arith'){
+      a1=R(ri(-10,10),1); param=R(rnz(-9,9),1);
+    } else {
+      var usePercent = Math.random()<0.4;
+      if(usePercent){
+        a1=R(rc([10,20,40,50,80,100,200])*rc([1,-1]),1);
+        param=rc(PERCENT_RATIOS_C);
+      } else {
+        a1=R(rc([1,2,3,4,-1,-2,-3,-4]),1);
+        param=rc(GEOM_RATIOS_C);
+      }
+    }
+    var correct=seqTerms4(type,a1,param);
+    var oppType=(type==='arith')?'geom':'arith';
+    var d1=seqTerms4(oppType,a1,param);            /* flipped operation, same a1/param */
+    var d2=seqTerms4(type,param,a1);                /* swapped roles, same operation */
+    var d3=seqTerms4(type,a1,R(-param.n,param.d));  /* sign-flipped parameter, same operation */
+    var all=[correct,d1,d2,d3];
+    var bad=false;
+    for(var x=0;x<4 && !bad;x++){
+      if(termsTooBig(all[x])) bad=true;
+      for(var y=x+1;y<4 && !bad;y++){ if(termsEqual4(all[x],all[y])) bad=true; }
+    }
+    if(bad) continue;
+    var opts=[{terms:correct,isTrue:true},{terms:d1,isTrue:false},{terms:d2,isTrue:false},{terms:d3,isTrue:false}];
+    for(var s1=opts.length-1; s1>0; s1--){ var s2=ri(0,s1); var tmp=opts[s1]; opts[s1]=opts[s2]; opts[s2]=tmp; }
+    var correctIdx=0;
+    for(var ci=0; ci<opts.length; ci++){ if(opts[ci].isTrue){ correctIdx=ci; break; } }
+    return {type:type, noteStyle:noteStyle, a1:a1, param:param, opts:opts, correctIdx:correctIdx};
   }
-  return {type:type, a1:a1, param:param, k:k, value:seqTerm(type,a1,param,k)};
+  /* fallback (essentially never reached): small, safe arithmetic case */
+  var a1f=R(5,1), paramf=R(-3,1);
+  var correctF=seqTerms4('arith',a1f,paramf), d1f=seqTerms4('geom',a1f,paramf),
+      d2f=seqTerms4('arith',paramf,a1f), d3f=seqTerms4('arith',a1f,R(3,1));
+  var optsF=[{terms:correctF,isTrue:true},{terms:d1f,isTrue:false},{terms:d2f,isTrue:false},{terms:d3f,isTrue:false}];
+  return {type:'arith', noteStyle:'sub', a1:a1f, param:paramf, opts:optsF, correctIdx:0};
 }
 var SE_A12C = {
   id:'A.12C', letter:'C', short:'Sequence Terms',
@@ -560,61 +935,81 @@ var SE_A12C = {
 
   gen:function(){ return genC12C(); },
   prompt:function(p){
-    var rule = p.type==='arith'
-      ? 'a(1) = '+ratHTML(p.a1)+'; a(n) = a(n \u2212 1) + ('+ratHTML(p.param)+') for n &gt; 1'
-      : 'a(1) = '+ratHTML(p.a1)+'; a(n) = a(n \u2212 1) \u00d7 ('+ratHTML(p.param)+') for n &gt; 1';
-    return 'A sequence is defined recursively:<br><span class="given" style="font-size:18px">'+rule+'</span><br><br>Find a('+p.k+').';
+    var a1Str=fmtRatSeq(p.a1);
+    if(p.noteStyle==='sub'){
+      var rule = p.type==='arith'
+        ? 'a<sub>n</sub> = '+fmtRatSeq(p.param)+' + a<sub>n\u22121</sub>'
+        : 'a<sub>n</sub> = '+fmtRatSeq(p.param)+'a<sub>n\u22121</sub>';
+      return 'A sequence can be generated by using the equation shown, where a<sub>1</sub> = '+a1Str+' and <i>n</i> is a whole number greater than 1.<br>'+
+        '<span class="given" style="display:block; width:fit-content; margin:14px auto; font-size:22px">'+rule+'</span>'+
+        'What are the first four terms of the sequence?';
+    }
+    var ruleFunc = p.type==='arith'
+      ? 'f(n) = f(n \u2212 1)'+joinRatSeqTerm(p.param)
+      : 'f(n) = ('+fmtRatSeq(p.param)+')f(n \u2212 1)';
+    return 'A sequence is defined by f(1) = '+a1Str+' and '+ruleFunc+' for each whole number <i>n</i>, where <i>n</i> &gt; 1.<br>What are the first four terms of the sequence?';
   },
-  answerHTML:function(p){ return '<div class="answer"><span>a('+p.k+') =</span>'+inBox('val','wide')+'</div>'; },
-  read:function(p){ var v=parseRat(document.getElementById('val').value); if(v===null) return null; return {val:v}; },
-  check:function(p,ans){ return req(ans.val, p.value); },
+  answerHTML:function(p){
+    var opts=p.opts.map(function(o){ return o.terms.map(function(t){return fmtRatSeq(t);}).join(', &nbsp; '); });
+    return mcHTML('seqmc', {opts:opts, correct:p.correctIdx});
+  },
+  read:function(p){ var i=mcSelected('seqmc'); if(i===null) return null; return {mcIndex:i}; },
+  check:function(p,ans){
+    var ok = ans.mcIndex===p.correctIdx;
+    markMC('seqmc', p.correctIdx, ans.mcIndex);
+    return ok;
+  },
   hints:function(p){
-    if(p.type==='arith') return ['Start at a(1) and repeatedly add the common difference to build up to a('+p.k+').'];
-    return ['Start at a(1) and repeatedly multiply by the common ratio to build up to a('+p.k+').'];
+    if(p.type==='arith') return ['Start at the first term and repeatedly add the constant in the rule to get each next term.'];
+    return ['Start at the first term and repeatedly multiply by the constant in the rule to get each next term.'];
   },
   steps:function(p){
-    var s='<span class="st">1. a(1) = '+ratHTML(p.a1)+'</span>';
-    var cur=p.a1;
-    for(var n=2;n<=p.k;n++){
-      cur = p.type==='arith' ? radd(cur,p.param) : rmul(cur,p.param);
-      s+='<span class="st">a('+n+') = '+ratHTML(cur)+'</span>';
+    var terms=p.opts[p.correctIdx].terms;
+    var s='<span class="st">1. a<sub>1</sub> = '+fmtRatSeq(terms[0])+'</span>';
+    for(var i=1;i<4;i++){
+      var opWord = p.type==='arith' ? joinRatSeqTerm(p.param) : (' \u00d7 '+fmtRatSeq(p.param));
+      s+='<span class="st">a<sub>'+(i+1)+'</sub> = '+fmtRatSeq(terms[i-1])+opWord+' = '+fmtRatSeq(terms[i])+'</span>';
     }
-    s+='<span class="st final">a('+p.k+') = '+ratHTML(p.value)+'</span>';
+    s+='<span class="st final">First four terms: '+terms.map(function(t){return fmtRatSeq(t);}).join(', ')+'</span>';
     return s;
   },
-  emptyMsg:'Enter the value of the requested term.'
+  emptyMsg:'Choose the option with the correct first four terms.',
+  init:function(p){ wireMC('seqmc'); }
 };
 
 /* =====================================================================
    A.12D — Write the nth-Term Formula (arithmetic & geometric)
    ===================================================================== */
+var cMode12D='mix';
+var NUM_WORDS_D={4:'four',5:'five',6:'six',7:'seven'};
+function seqLabelList(startN, terms){
+  var parts=[];
+  for(var i=0;i<terms.length;i++){ parts.push('a<sub>'+(startN+i)+'</sub> = '+fmtRatSeq(terms[i])); }
+  if(parts.length===1) return parts[0];
+  return parts.slice(0,-1).join(', ')+', and '+parts[parts.length-1];
+}
 function genD12D(){
-  var type=rc(['arith','geom']);
-  var flavor=rc(['consecutive','nonconsecutive']);
+  var type=(cMode12D==='mix') ? rc(['arith','geom']) : cMode12D;
   var a1,param;
   if(type==='arith'){
     a1=R(ri(-10,10),1); param=R(rnz(-6,6),1);
   } else {
     a1=R(rc([1,2,3,4,-1,-2,-3,-4]),1);
-    var rChoices = flavor==='consecutive' ? [R(2,1),R(3,1),R(-2,1),R(-3,1),R(1,2),R(1,3),R(-1,2)] : [R(2,1),R(3,1),R(1,2),R(1,3)];
-    param=rc(rChoices);
+    param=rc([R(2,1),R(3,1),R(4,1),R(-2,1),R(-3,1),R(-4,1),R(1,2),R(1,3),R(-1,2)]);
   }
-  var n1,n2;
-  if(flavor==='nonconsecutive'){
-    n1=ri(2,4);
-    var gap = type==='geom' ? rc([1,2]) : rc([2,3,4]);
-    n2=n1+gap;
-  }
-  var terms={};
-  if(flavor==='consecutive'){
-    terms.t1=seqTerm(type,a1,param,1);
-    terms.t2=seqTerm(type,a1,param,2);
-    terms.t3=seqTerm(type,a1,param,3);
-  } else {
-    terms.tn1=seqTerm(type,a1,param,n1);
-    terms.tn2=seqTerm(type,a1,param,n2);
-  }
-  return {type:type, flavor:flavor, a1:a1, param:param, n1:n1, n2:n2, terms:terms};
+  /* released items consistently show a good run of terms (five or six) before
+     asking for the formula \u2014 sometimes starting at a(1), sometimes starting
+     partway through the sequence \u2014 rather than just 2-3 sparse values.
+     Offset starts are arithmetic-only: for geometric sequences the closed form
+     is a1*r^(n-1), so starting later pushes the exponent (and the displayed
+     numbers) up fast when |r| is large \u2014 the released offset-start example
+     was itself arithmetic, not geometric, so this matches the evidence too. */
+  var displayStyle=rc(['labeled','listNamed','pattern']);
+  var startN = (displayStyle==='labeled' && type==='arith') ? rc([1,1,1,2,3]) : 1;
+  var count = rc([5,6]);
+  var terms=[];
+  for(var i=0;i<count;i++){ terms.push(seqTerm(type,a1,param,startN+i)); }
+  return {type:type, a1:a1, param:param, startN:startN, count:count, terms:terms, displayStyle:displayStyle};
 }
 var SE_A12D = {
   id:'A.12D', letter:'D', short:'nth-Term Formula',
@@ -623,19 +1018,30 @@ var SE_A12D = {
 
   gen:function(){ return genD12D(); },
   prompt:function(p){
+    var selector=segWrap('TYPE','d12dSeg',cMode12D,
+      [['mix','Mixed'],['arith','Arithmetic'],['geom','Geometric']]);
+    var word=NUM_WORDS_D[p.count]||String(p.count);
     var body;
-    if(p.flavor==='consecutive'){
-      body='The sequence begins:<br><span class="given">'+ratHTML(p.terms.t1)+', '+ratHTML(p.terms.t2)+', '+ratHTML(p.terms.t3)+', ...</span>';
+    if(p.displayStyle==='labeled'){
+      var listStr=seqLabelList(p.startN,p.terms);
+      body = (p.startN===1)
+        ? 'The first '+word+' terms of a sequence are '+listStr+'.'
+        : 'In a sequence of numbers, '+listStr+'.';
+    } else if(p.displayStyle==='listNamed'){
+      var kindWord = p.type==='geom' ? 'a geometric' : 'an arithmetic';
+      body = 'The first '+word+' terms in '+kindWord+' sequence are shown, where a<sub>1</sub> = '+fmtRatSeq(p.terms[0])+'.<br>'+
+        '<span class="given" style="display:block; width:fit-content; margin:14px auto; font-size:20px">'+p.terms.map(function(t){return fmtRatSeq(t);}).join(', &nbsp; ')+', . . .</span>';
     } else {
-      body='Two terms of the sequence are given:<br><span class="given">a('+p.n1+') = '+ratHTML(p.terms.tn1)+', &nbsp; a('+p.n2+') = '+ratHTML(p.terms.tn2)+'</span>';
+      body = 'The first '+word+' terms in a pattern are shown below.<br>'+
+        '<span class="given" style="display:block; width:fit-content; margin:14px auto; font-size:20px">'+p.terms.map(function(t){return fmtRatSeq(t);}).join(', &nbsp; ')+', . . .</span>';
     }
-    return body+'<div class="qhead">Write a formula for the nth term.</div>';
+    return selector+body+'<div class="qhead">Write a formula for the n<sup>th</sup> term, a<sub>n</sub>.</div>';
   },
   answerHTML:function(p){
     if(p.type==='arith'){
-      return '<div class="answer"><span>a(n) =</span>'+inBox('a1')+'<span>+ (n \u2212 1)(</span>'+inBox('param')+'<span>)</span></div>';
+      return '<div class="answer"><span>a(n) =</span>'+inBox('a1')+'<span>+ (n \u2212 1)(</span>'+inBox('param')+'<span>)</span></div>'+sharedKbdHTML();
     }
-    return '<div class="answer"><span>a(n) =</span>'+inBox('a1')+'<span>\u00d7 (</span>'+inBox('param')+'<span>)</span><sup>n \u2212 1</sup></div>';
+    return '<div class="answer"><span>a(n) =</span>'+inBox('a1')+'<span>\u00d7 (</span>'+inBox('param')+'<span>)</span><sup>n \u2212 1</sup></div>'+sharedKbdHTML();
   },
   read:function(p){
     var a1=parseRat(document.getElementById('a1').value);
@@ -645,28 +1051,24 @@ var SE_A12D = {
   },
   check:function(p,ans){ return req(ans.a1,p.a1) && req(ans.param,p.param); },
   hints:function(p){
-    if(p.type==='arith'){
-      if(p.flavor==='consecutive') return ['Find the common difference by subtracting consecutive terms.', 'Once you know d, use the first term as a(1) in a(n) = a(1) + (n \u2212 1)d.'];
-      return ['Set up two equations using a(n) = a(1) + (n \u2212 1)d for each given term, then subtract to solve for d.', 'Once you know d, substitute back into either equation to find a(1).'];
-    }
-    if(p.flavor==='consecutive') return ['Find the common ratio by dividing a term by the one before it.', 'Once you know r, use the first term as a(1) in a(n) = a(1) \u00d7 r^(n \u2212 1).'];
-    return ['Divide the two given terms to get a power of r, then solve for r.', 'Once you know r, substitute back into either equation to find a(1).'];
+    if(p.type==='arith') return ['Find the common difference by subtracting any two consecutive terms shown.', 'Once you know d, work back (or forward) to a(1), then use a(n) = a(1) + (n \u2212 1)d.'];
+    return ['Find the common ratio by dividing any term by the one right before it.', 'Once you know r, work back (or forward) to a(1), then use a(n) = a(1) \u00d7 r^(n \u2212 1).'];
   },
   steps:function(p){
-    var s='';
-    if(p.flavor==='consecutive'){
-      if(p.type==='arith') s+='<span class="st">1. Common difference: '+ratHTML(p.terms.t2)+' \u2212 '+ratHTML(p.terms.t1)+' = '+ratHTML(p.param)+'</span>';
-      else s+='<span class="st">1. Common ratio: '+ratHTML(p.terms.t2)+' \u00f7 '+ratHTML(p.terms.t1)+' = '+ratHTML(p.param)+'</span>';
-      s+='<span class="st">2. First term: a(1) = '+ratHTML(p.a1)+'</span>';
-    } else {
-      s+='<span class="st">1. Using a('+p.n1+') = '+ratHTML(p.terms.tn1)+' and a('+p.n2+') = '+ratHTML(p.terms.tn2)+', solve for the common '+(p.type==='arith'?'difference':'ratio')+'.</span>';
-      s+='<span class="st">2. '+(p.type==='arith'?'d':'r')+' = '+ratHTML(p.param)+', and a(1) = '+ratHTML(p.a1)+'</span>';
-    }
-    if(p.type==='arith') s+='<span class="st final">a(n) = '+ratHTML(p.a1)+' + (n \u2212 1)('+ratHTML(p.param)+')</span>';
-    else s+='<span class="st final">a(n) = '+ratHTML(p.a1)+' \u00d7 ('+ratHTML(p.param)+')<sup>n\u22121</sup></span>';
+    var s='', t0=p.terms[0], t1=p.terms[1];
+    if(p.type==='arith') s+='<span class="st">1. Common difference: '+fmtRatSeq(t1)+' \u2212 '+fmtRatSeq(t0)+' = '+fmtRatSeq(p.param)+'</span>';
+    else s+='<span class="st">1. Common ratio: '+fmtRatSeq(t1)+' \u00f7 '+fmtRatSeq(t0)+' = '+fmtRatSeq(p.param)+'</span>';
+    if(p.startN===1) s+='<span class="st">2. First term: a(1) = '+fmtRatSeq(p.a1)+'</span>';
+    else s+='<span class="st">2. Working back from a('+p.startN+') = '+fmtRatSeq(t0)+' to a(1): a(1) = '+fmtRatSeq(p.a1)+'</span>';
+    if(p.type==='arith') s+='<span class="st final">a(n) = '+fmtRatSeq(p.a1)+' + (n \u2212 1)('+fmtRatSeq(p.param)+')</span>';
+    else s+='<span class="st final">a(n) = '+fmtRatSeq(p.a1)+' \u00d7 ('+fmtRatSeq(p.param)+')<sup>n\u22121</sup></span>';
     return s;
   },
-  emptyMsg:'Fill in both boxes.'
+  emptyMsg:'Fill in both boxes.',
+  init:function(p){
+    wireSeg('d12dSeg',cMode12D,function(v){ cMode12D=v; newProblem(); });
+    wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
+  }
 };
 
 /* =====================================================================
@@ -726,12 +1128,12 @@ var SE_A12E = {
   answerHTML:function(p){
     if(p.shape==='oneVarNumeric'){
       var parts=p.entry.template.split('___');
-      return '<div class="answer">'+'<span>'+parts[0]+'</span>'+inBox('coef')+'<span>'+parts[1]+'</span></div>';
+      return '<div class="answer">'+'<span>'+parts[0]+'</span>'+inBox('coef')+'<span>'+parts[1]+'</span></div>'+sharedKbdHTML();
     }
     if(p.shape==='twoTermStandardForm'){
-      return '<div class="answer"><span>y =</span>'+inBox('M')+'<span>x +</span>'+inBox('K')+'</div>';
+      return '<div class="answer"><span>y =</span>'+inBox('M')+'<span>x +</span>'+inBox('K')+'</div>'+sharedKbdHTML();
     }
-    return '<div class="answer"><span>x =</span>'+inBox('P')+'<span>y +</span>'+inBox('Q')+'</div>';
+    return '<div class="answer"><span>x =</span>'+inBox('P')+'<span>y +</span>'+inBox('Q')+'</div>'+sharedKbdHTML();
   },
   read:function(p){
     if(p.shape==='oneVarNumeric'){
@@ -779,7 +1181,7 @@ var SE_A12E = {
     return s;
   },
   emptyMsg:'Fill in every box.',
-  init:function(p){ wireSeg('litSeg',cMode12E,function(v){ cMode12E=v; newProblem(); }); }
+  init:function(p){ wireSeg('litSeg',cMode12E,function(v){ cMode12E=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); }
 };
 
 var SES=[SE_A12A, SE_A12B, SE_A12C, SE_A12D, SE_A12E];
