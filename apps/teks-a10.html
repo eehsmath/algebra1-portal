@@ -106,14 +106,28 @@
   .stepsBox .st{display:block; margin:2px 0}
   .stepsBox .final{color:#133a9a}
   .kbdnote{color:var(--muted); font-size:12px; font-weight:800; margin-top:10px}
+  .fmtNote{color:var(--muted); font-size:12px; font-weight:800; margin-top:8px; margin-bottom:2px}
   .drSeg,.drTog{display:inline-flex; border:1px solid var(--ui); border-radius:12px; overflow:hidden}
   .drSeg button,.drTog button{background:#fff; border:none; padding:7px 10px; font-size:12.5px; font-weight:800;
     cursor:pointer; font-family:inherit; color:var(--ink)}
   .drSeg button.active{background:#f1f6ff; color:#133a9a}
   .drTog button.active{background:#eafff7; color:#0c6d54}
   .grid{max-width:100%;height:auto;border:1px solid #e7edff;border-radius:12px;background:#fff;margin-top:10px}
-  .qhead{font-weight:900; margin-top:14px}
-  .pqBox{display:none; margin-top:14px}
+  .pqBox{display:none}
+  .qPart{padding-top:10px; margin-top:10px; border-top:1px dashed #e5e7eb}
+  .qPart:first-child{padding-top:0; margin-top:0; border-top:none}
+  .qLabel{font-size:11px; font-weight:900; letter-spacing:.8px; color:var(--muted); text-transform:uppercase; margin-bottom:6px}
+  .drKbdPop{display:none; position:fixed; z-index:1500; background:#fff; border:1px solid var(--ui);
+    border-radius:12px; box-shadow:0 12px 28px rgba(0,0,0,.12); padding:10px}
+  .drKbdGrid{display:grid; grid-template-columns:repeat(10,minmax(0,1fr)); gap:7px}
+  .drKey{padding:7px 2px; text-align:center; border:1px solid var(--ui); border-radius:10px; background:#fff;
+    font-weight:900; cursor:pointer; user-select:none; font-family:inherit; font-size:13px}
+  .drKey.wide{grid-column:1 / -1; background:#f7f5ff}
+  .miniKbdBtn{display:inline-flex; align-items:center; gap:7px; height:40px; padding:0 14px; border:1px solid var(--ui);
+    border-radius:12px; background:#fff; font-weight:900; font-size:13.5px; color:var(--ink); cursor:pointer;
+    font-family:inherit; margin-top:10px}
+  .miniKbdBtn svg{width:17px; height:17px}
+  .miniKbdBtn.active{background:#eaf1ff; border-color:#a7bbff}
 </style>
 </head>
 <body>
@@ -179,6 +193,14 @@ function parseRat(s){
     return R(neg?-num:num, den); }
   return null;
 }
+function parseCoefOrBlank(s){ // blank box = coefficient 0 (missing term); explicit 0 also fine; garbage still invalid
+  if(s===null||s===undefined||String(s).trim()==='') return R(0,1);
+  return parseRat(s);
+}
+function parseCoefOr1(s){ // blank box = coefficient 1 (the "invisible 1" convention, e.g. "x" not "1x"); explicit 1 also fine
+  if(s===null||s===undefined||String(s).trim()==='') return R(1,1);
+  return parseRat(s);
+}
 var MIN='\u2212';
 function fmtInt(x){ return x<0 ? MIN+Math.abs(x) : String(x); }
 function ratHTML(r){
@@ -216,7 +238,7 @@ function genQuadNZ(topRange){ // [c0,c1,c2], c2 nonzero
 }
 
 /* ---- UI helpers ---- */
-function inBox(id, wide){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off" />'; }
+function inBox(id, wide, placeholder){ return '<input class="in'+(wide?' wide':'')+'" id="'+id+'" inputmode="text" autocomplete="off"'+(placeholder?' placeholder="'+placeholder+'"':'')+' />'; }
 
 /* ---- multiple-choice helpers ---- */
 function makeMC(items, correctIdx){
@@ -256,6 +278,98 @@ function markMC(id, correct, chosen){
   });
 }
 
+/* ---------- floating keyboard: one button, types into whichever input last had focus ----------
+   Reusable across any SE with free-entry number/fraction boxes. Tap the button to show it;
+   it types into the last-focused box in its scope; tap the button again to hide it. ---------- */
+var SHARED_KEYS=['0','1','2','3','4','5','6','7','8','9','/','\u2212','.'];
+var sharedActiveInput=null;
+function buildSharedKbdGrid(pop){
+  var grid=pop.querySelector('.drKbdGrid'); grid.innerHTML='';
+  SHARED_KEYS.forEach(function(k){
+    var b=document.createElement('button'); b.type='button'; b.className='drKey'; b.textContent=k;
+    b.addEventListener('click',function(){
+      var input=sharedActiveInput; if(!input) return;
+      input.focus();
+      var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+      var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+      input.value=input.value.slice(0,s)+k+input.value.slice(e2);
+      var pos=s+k.length; input.setSelectionRange(pos,pos);
+      input.dispatchEvent(new Event('input',{bubbles:true}));
+    });
+    grid.appendChild(b);
+  });
+  var bs=document.createElement('button'); bs.type='button'; bs.className='drKey wide'; bs.textContent='\u232B';
+  bs.setAttribute('aria-label','Backspace');
+  bs.addEventListener('click',function(){
+    var input=sharedActiveInput; if(!input) return;
+    input.focus();
+    var s=(input.selectionStart!=null)?input.selectionStart:input.value.length;
+    var e2=(input.selectionEnd!=null)?input.selectionEnd:input.value.length;
+    if(s===e2){ if(s===0) return; s=s-1; }
+    input.value=input.value.slice(0,s)+input.value.slice(e2);
+    input.setSelectionRange(s,s);
+    input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  grid.appendChild(bs);
+}
+function wireSharedKbd(scopeEl,btnId,popId){
+  var btn=document.getElementById(btnId), pop=document.getElementById(popId);
+  if(!btn||!pop||!scopeEl) return;
+  buildSharedKbdGrid(pop);
+  sharedActiveInput=scopeEl.querySelector('input.in');
+  if(!scopeEl._sharedKbdWired){
+    scopeEl._sharedKbdWired=true;
+    scopeEl.addEventListener('focusin',function(e){
+      if(e.target&&e.target.tagName==='INPUT'&&e.target.classList.contains('in')) sharedActiveInput=e.target;
+    });
+  }
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var show=pop.style.display!=='block';
+    closeKeyboards();
+    if(show){
+      pop.style.display='block'; placeKbd(pop,btn); btn.classList.add('active');
+      if(sharedActiveInput) sharedActiveInput.focus();
+    }
+  });
+  ensureKbdDocWiring();
+}
+function kbdSVG(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'+
+    '<rect x="3" y="6" width="18" height="12" rx="2"></rect>'+
+    '<path d="M7 10h2M11 10h2M15 10h2M5 14h14"></path></svg>';
+}
+function sharedKbdHTML(){
+  return '<div>'+
+    '<button type="button" class="miniKbdBtn" id="sharedKbdBtn" aria-label="Open keyboard">'+kbdSVG()+'<span>Keyboard</span></button>'+
+    '<div class="drKbdPop" id="sharedKbdPop"><div class="drKbdGrid"></div></div>'+
+  '</div>';
+}
+function closeKeyboards(){
+  document.querySelectorAll('.drKbdPop').forEach(function(p){ p.style.display='none'; });
+  document.querySelectorAll('.miniKbdBtn.active').forEach(function(b){ b.classList.remove('active'); });
+}
+var kbdDocWired=false;
+function ensureKbdDocWiring(){
+  if(kbdDocWired) return;
+  kbdDocWired=true;
+  document.addEventListener('click',function(e){
+    if(e.target.closest('.drKbdPop')||e.target.closest('.drKbdBtn')||e.target.closest('.miniKbdBtn')) return;
+    closeKeyboards();
+  });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeKeyboards(); });
+  window.addEventListener('resize',closeKeyboards);
+}
+function placeKbd(pop,anchor){
+  var r=anchor.getBoundingClientRect(), margin=8;
+  var vw=document.documentElement.clientWidth, vh=window.innerHeight;
+  pop.style.width=Math.min(Math.max(r.width,240),420)+'px';
+  var left=r.left, top=r.bottom+margin;
+  if(left+pop.offsetWidth>vw-10) left=vw-10-pop.offsetWidth;
+  if(top+pop.offsetHeight>vh-10) top=r.top-pop.offsetHeight-margin;
+  pop.style.left=Math.max(6,left)+'px'; pop.style.top=Math.max(6,top)+'px';
+}
+
 /* =====================================================================
    A.10A — Add and Subtract Polynomials (degree 1 and 2)
    ===================================================================== */
@@ -276,13 +390,16 @@ var SE_A10A = {
     return 'Simplify:<br><span class="given">('+polyHTML(p.a)+') '+p.op+' ('+polyHTML(p.b)+')</span>';
   },
   answerHTML:function(p){
-    return '<div class="answer"><span class="lbl">Enter each coefficient (use 0 if a term is missing):</span>'+
-      inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+    return '<div class="answer"><span class="lbl">Enter each coefficient &mdash; leave a box blank or type 0 if a term is missing:</span>'+
+      inBox('c2',false,'0')+'<span>x<sup>2</sup> +</span>'+inBox('c1',false,'0')+'<span>x +</span>'+inBox('c0',false,'0')+'</div>'+
+      sharedKbdHTML();
   },
   read:function(p){
-    var c2=parseRat(document.getElementById('c2').value);
-    var c1=parseRat(document.getElementById('c1').value);
-    var c0=parseRat(document.getElementById('c0').value);
+    var s2=document.getElementById('c2').value, s1=document.getElementById('c1').value, s0=document.getElementById('c0').value;
+    var allBlank = !s2.trim() && !s1.trim() && !s0.trim();
+    var trueAnswerIsZero = (p.res[2]===0 && p.res[1]===0 && p.res[0]===0);
+    if(allBlank && !trueAnswerIsZero) return null; // nothing entered yet
+    var c2=parseCoefOrBlank(s2), c1=parseCoefOrBlank(s1), c0=parseCoefOrBlank(s0);
     if(c2===null||c1===null||c0===null) return null;
     return {c2:c2,c1:c1,c0:c0};
   },
@@ -309,7 +426,7 @@ var SE_A10A = {
     s+='<span class="st final">Result: '+polyHTML(p.res)+'</span>';
     return s;
   },
-  emptyMsg:'Fill in all three coefficients \u2014 use 0 for any missing term.'
+  emptyMsg:'Enter at least one coefficient \u2014 you can leave any missing term blank instead of typing 0.'
 };
 
 /* =====================================================================
@@ -333,10 +450,10 @@ var SE_A10B = {
   answerHTML:function(p){
     if(p.mode==='ll'){
       return '<div class="answer"><span class="lbl">Enter each coefficient:</span>'+
-        inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+        inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>'+sharedKbdHTML();
     }
     return '<div class="answer"><span class="lbl">Enter each coefficient:</span>'+
-      inBox('c3')+'<span>x<sup>3</sup> +</span>'+inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+      inBox('c3')+'<span>x<sup>3</sup> +</span>'+inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>'+sharedKbdHTML();
   },
   read:function(p){
     var c0=parseRat(document.getElementById('c0').value);
@@ -380,40 +497,60 @@ var SE_A10B = {
 /* =====================================================================
    A.10C — Divide Polynomials (divisor degree \u2264 dividend degree)
    ===================================================================== */
-function genC10C(){
-  var mode = rc(['linbylin','quadbylin','quadbyquad']);
-  if(mode==='linbylin'){
+var cModeC='mix';
+function genC10C(kind){
+  if(kind==='synthetic'){
+    var divisorL=[rnz(-6,6),1]; // monic linear: x + c0 \u2014 the shape synthetic division is built for
+    var quotient=genLinear(5);
+    var dividendQ=polyMul(divisorL,quotient);
+    return {mode:'quadbylin', divisor:divisorL, dividend:dividendQ, qType:'linear', quotient:quotient};
+  }
+  if(kind==='long'){
+    var a2=ri(2,6); // non-monic leading coefficient \u2014 no constant-multiplier shortcut, forces real long division
+    var c0=rnz(-6,6);
+    var divisorNM=[c0,a2];
+    var quotientL=genLinear(5);
+    var dividendNM=polyMul(divisorNM,quotientL);
+    return {mode:'long', divisor:divisorNM, dividend:dividendNM, qType:'linear', quotient:quotientL};
+  }
+  // 'simple' (default/fallback): the constant-multiplier shapes
+  var sub=rc(['linbylin','quadbyquad']);
+  if(sub==='linbylin'){
     var divisor=genLinear(6);
     var k=rnz(-6,6);
     var dividend=[divisor[0]*k, divisor[1]*k];
-    return {mode:mode, divisor:divisor, dividend:dividend, qType:'const', k:k};
+    return {mode:'linbylin', divisor:divisor, dividend:dividend, qType:'const', k:k};
   }
-  if(mode==='quadbylin'){
-    var divisorL=[rnz(-6,6),1]; // monic linear: x + c0
-    var quotient=genLinear(5);
-    var dividendQ=polyMul(divisorL,quotient);
-    return {mode:mode, divisor:divisorL, dividend:dividendQ, qType:'linear', quotient:quotient};
-  }
-  // quadbyquad
   var divisorQ=genQuadNZ(5);
   var kk=rnz(-6,6);
   var dividendQQ=[divisorQ[0]*kk, divisorQ[1]*kk, divisorQ[2]*kk];
-  return {mode:mode, divisor:divisorQ, dividend:dividendQQ, qType:'const', k:kk};
+  return {mode:'quadbyquad', divisor:divisorQ, dividend:dividendQQ, qType:'const', k:kk};
 }
 var SE_A10C = {
   id:'A.10C', letter:'C', short:'Divide',
   title:'Divide Polynomials',
   blurb:'Determine the quotient of a polynomial of degree one and a polynomial of degree two when divided by a polynomial of degree one or degree two, where the divisor\u2019s degree does not exceed the dividend\u2019s.',
 
-  gen:function(){ return genC10C(); },
+  gen:function(){
+    var kind = (cModeC==='mix') ? rc(['simple','synthetic','long']) : cModeC;
+    return genC10C(kind);
+  },
   prompt:function(p){
-    return 'Divide:<br><span class="given">('+polyHTML(p.dividend)+') \u00f7 ('+polyHTML(p.divisor)+')</span>';
+    var selector = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">TYPE</span>'+
+      '<div class="drSeg" id="typeSegC" role="tablist">'+
+        '<button type="button" data-v="mix">Mixed</button>'+
+        '<button type="button" data-v="simple">Simple Divisor</button>'+
+        '<button type="button" data-v="synthetic">Synthetic Division</button>'+
+        '<button type="button" data-v="long">Long Division</button>'+
+      '</div></div>';
+    return selector+'Divide:<br><span class="given">('+polyHTML(p.dividend)+') \u00f7 ('+polyHTML(p.divisor)+')</span>';
   },
   answerHTML:function(p){
     if(p.qType==='const'){
-      return '<div class="answer"><span>Quotient =</span>'+inBox('k')+'</div>';
+      return '<div class="answer"><span>Quotient =</span>'+inBox('k')+'</div>'+sharedKbdHTML();
     }
-    return '<div class="answer"><span>Quotient =</span>'+inBox('q1')+'<span>x +</span>'+inBox('q0')+'</div>';
+    return '<div class="answer"><span>Quotient =</span>'+inBox('q1')+'<span>x +</span>'+inBox('q0')+'</div>'+sharedKbdHTML();
   },
   read:function(p){
     if(p.qType==='const'){
@@ -432,9 +569,9 @@ var SE_A10C = {
   },
   hints:function(p){
     var h=[];
-    if(p.mode==='linbylin') h.push('Every coefficient of the dividend is the same multiple of the matching coefficient in the divisor \u2014 find that constant multiplier.');
-    else if(p.mode==='quadbylin') h.push('The divisor is x plus a number. Think of the dividend as (divisor) \u00d7 (a linear quotient), and figure out which linear expression makes that product work.');
-    else h.push('Every coefficient of the dividend is the same multiple of the matching coefficient in the divisor \u2014 find that constant multiplier.');
+    if(p.mode==='linbylin'||p.mode==='quadbyquad') h.push('Every coefficient of the dividend is the same multiple of the matching coefficient in the divisor \u2014 find that constant multiplier.');
+    else if(p.mode==='quadbylin') h.push('The divisor is x plus a number \u2014 exactly the shape synthetic division is built for. Bring down the leading coefficient, multiply by the root, add, and repeat.');
+    else h.push('The divisor\u2019s leading coefficient isn\u2019t 1 here, so there\u2019s no shortcut \u2014 use long division: divide the leading terms, multiply that term back through the whole divisor, subtract, then bring down the next term.');
     h.push('Check your answer by multiplying the divisor by your quotient \u2014 it should rebuild the dividend exactly.');
     return h;
   },
@@ -444,15 +581,46 @@ var SE_A10C = {
       s+='<span class="st">1. Every term of the dividend is the corresponding divisor term times the same constant.</span>';
       s+='<span class="st">2. Compare leading terms to find that constant: '+fmtInt(p.dividend[p.dividend.length-1])+' \u00f7 '+fmtInt(p.divisor[p.divisor.length-1])+' = '+fmtInt(p.k)+'</span>';
       s+='<span class="st final">Quotient = '+fmtInt(p.k)+'</span>';
-    } else {
-      s+='<span class="st">1. The divisor is ('+polyHTML(p.divisor)+'). Look for a linear quotient (qx + r) so that (divisor)(quotient) rebuilds the dividend.</span>';
-      s+='<span class="st">2. Multiplying ('+polyHTML(p.divisor)+')('+polyHTML(p.quotient)+') gives ('+polyHTML(p.dividend)+'), confirming the quotient.</span>';
+    } else if(p.mode==='quadbylin'){
+      var d2=p.dividend[2], d1=p.dividend[1], d0=p.dividend[0];
+      var c0=p.divisor[0], r=-c0;
+      var afterFirst=d2*r+d1;
+      s+='<span class="st">1. Synthetic division root: the divisor is ('+polyHTML(p.divisor)+'), so the root is r = '+fmtInt(r)+'.</span>';
+      s+='<span class="st">2. Bring down the leading coefficient: '+fmtInt(d2)+'.</span>';
+      s+='<span class="st">3. Multiply '+fmtInt(d2)+' \u00d7 '+fmtInt(r)+' = '+fmtInt(d2*r)+', add to '+fmtInt(d1)+' \u2192 '+fmtInt(afterFirst)+'.</span>';
+      s+='<span class="st">4. Multiply '+fmtInt(afterFirst)+' \u00d7 '+fmtInt(r)+' = '+fmtInt(afterFirst*r)+', add to '+fmtInt(d0)+' \u2192 '+fmtInt(afterFirst*r+d0)+' (remainder 0, confirming an even division).</span>';
+      s+='<span class="st final">Quotient = '+polyHTML(p.quotient)+'</span>';
+    } else if(p.mode==='long'){
+      var d2=p.dividend[2], d1=p.dividend[1], d0=p.dividend[0];
+      var a2=p.divisor[1];
+      var q1=p.quotient[1], q0=p.quotient[0];
+      var mid=p.divisor[0]*q1;
+      s+='<span class="st">1. Divide the leading terms: '+fmtInt(d2)+'x\u00b2 \u00f7 '+coefX(a2)+' = '+coefX(q1)+' \u2014 first quotient term.</span>';
+      s+='<span class="st">2. Multiply the divisor by '+coefX(q1)+': ('+polyHTML(p.divisor)+')('+coefX(q1)+') = '+fmtInt(d2)+'x\u00b2 + '+fmtInt(mid)+'x.</span>';
+      s+='<span class="st">3. Subtract and bring down the next term: ('+fmtInt(d1)+' \u2212 '+fmtInt(mid)+')x + '+fmtInt(d0)+' = '+fmtInt(d1-mid)+'x + '+fmtInt(d0)+'.</span>';
+      s+='<span class="st">4. Divide again: '+fmtInt(d1-mid)+'x \u00f7 '+coefX(a2)+' = '+fmtInt(q0)+' \u2014 second quotient term.</span>';
+      s+='<span class="st">5. Multiply and subtract once more \u2014 the remainder comes out to 0, confirming an even division.</span>';
       s+='<span class="st final">Quotient = '+polyHTML(p.quotient)+'</span>';
     }
     return s;
   },
-  emptyMsg:'Fill in the quotient box(es).'
+  emptyMsg:'Fill in the quotient box(es).',
+  init:function(p){
+    var host=document.getElementById('typeSegC');
+    if(host){
+      Array.prototype.forEach.call(host.querySelectorAll('button'), function(btn){
+        if(btn.getAttribute('data-v')===cModeC) btn.classList.add('active');
+        btn.addEventListener('click', function(){
+          Array.prototype.forEach.call(host.querySelectorAll('button'), function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          cModeC = btn.getAttribute('data-v');
+          newProblem();
+        });
+      });
+    }
+  }
 };
+
 
 /* =====================================================================
    A.10D — Rewrite Polynomials Using the Distributive Property
@@ -493,14 +661,14 @@ var SE_A10D = {
   answerHTML:function(p){
     if(p.mode==='expand'){
       if(p.deg===2){
-        return '<div class="answer"><span class="lbl">Expanded form:</span>'+inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+        return '<div class="answer"><span class="lbl">Expanded form:</span>'+inBox('c2')+'<span>x<sup>2</sup> +</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>'+sharedKbdHTML();
       }
-      return '<div class="answer"><span class="lbl">Expanded form:</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>';
+      return '<div class="answer"><span class="lbl">Expanded form:</span>'+inBox('c1')+'<span>x +</span>'+inBox('c0')+'</div>'+sharedKbdHTML();
     }
     if(p.deg===2){
-      return '<div class="answer"><span class="lbl">Factored form: GCF ( ... )</span>'+inBox('g')+'<span>(</span>'+inBox('i2')+'<span>x<sup>2</sup> +</span>'+inBox('i1')+'<span>x +</span>'+inBox('i0')+'<span>)</span></div>';
+      return '<div class="answer"><span class="lbl">Factored form: GCF ( ... )</span>'+inBox('g')+'<span>(</span>'+inBox('i2')+'<span>x<sup>2</sup> +</span>'+inBox('i1')+'<span>x +</span>'+inBox('i0')+'<span>)</span></div>'+sharedKbdHTML();
     }
-    return '<div class="answer"><span class="lbl">Factored form: GCF ( ... )</span>'+inBox('g')+'<span>(</span>'+inBox('i1')+'<span>x +</span>'+inBox('i0')+'<span>)</span></div>';
+    return '<div class="answer"><span class="lbl">Factored form: GCF ( ... )</span>'+inBox('g')+'<span>(</span>'+inBox('i1')+'<span>x +</span>'+inBox('i0')+'<span>)</span></div>'+sharedKbdHTML();
   },
   read:function(p){
     if(p.mode==='expand'){
@@ -608,7 +776,7 @@ var SE_A10E = {
   },
   answerHTML:function(p){
     return '<div class="answer"><span class="lbl">Enter the two binomial factors:</span>'+
-      '<span>(</span>'+inBox('p1')+'<span>x +</span>'+inBox('m1')+'<span>)(</span>'+inBox('p2')+'<span>x +</span>'+inBox('m2')+'<span>)</span></div>';
+      '<span>(</span>'+inBox('p1')+'<span>x +</span>'+inBox('m1')+'<span>)(</span>'+inBox('p2')+'<span>x +</span>'+inBox('m2')+'<span>)</span></div>'+sharedKbdHTML();
   },
   read:function(p){
     var p1=parseRat(document.getElementById('p1').value);
@@ -667,13 +835,20 @@ var SE_A10E = {
 /* =====================================================================
    A.10F — Difference of Two Squares
    ===================================================================== */
-function genF10F(){
+var fModeF='mix';
+function genF10F(kind){
+  // 'basic': leading coefficient stays 1 (x\u00b2 \u2212 n\u00b2, and its addition/non-square variants)
+  //          so the factored form never needs a coefficient other than 1 \u2014 the concept comes first.
+  // 'intermediate': m is forced away from 1, so the factored form always needs a real coefficient.
+  // 'mix' (default): m ranges over the full original 1..9 span, same as before this selector existed.
+  var mLo = (kind==='basic') ? 1 : (kind==='intermediate') ? 2 : 1;
+  var mHi = (kind==='basic') ? 1 : 9;
   var isDiff = Math.random()<0.5;
   var m,n,a,c,form;
   if(isDiff){
-    m=ri(1,9); n=ri(1,9); a=m*m; c=n*n; form='diff';
+    m=ri(mLo,mHi); n=ri(1,9); a=m*m; c=n*n; form='diff';
   } else if(Math.random()<0.5){
-    m=ri(1,9); n=ri(1,9); a=m*m; c=n*n; form='sum';
+    m=ri(mLo,mHi); n=ri(1,9); a=m*m; c=n*n; form='sum';
   } else {
     var nonSquares=[2,3,5,6,7,8,10,11,12,13,14,15];
     a=rc(nonSquares); c=ri(1,9)*ri(1,9); m=null; n=null; form='diffNotSquare';
@@ -685,16 +860,27 @@ var SE_A10F = {
   title:'Difference of Two Squares',
   blurb:'Decide if a binomial can be written as the difference of two squares and, if possible, use that structure to rewrite the binomial.',
 
-  gen:function(){ return genF10F(); },
+  gen:function(){ return genF10F(fModeF); },
   prompt:function(p){
+    var selector = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">TYPE</span>'+
+      '<div class="drSeg" id="typeSegF" role="tablist">'+
+        '<button type="button" data-v="mix">Mixed</button>'+
+        '<button type="button" data-v="basic">Basic</button>'+
+        '<button type="button" data-v="intermediate">Intermediate</button>'+
+      '</div></div>';
     var coeffs = p.form==='sum' ? [p.c,0,p.a] : [-p.c,0,p.a];
-    return 'Can this binomial be written as the difference of two squares?<br><span class="given">'+polyHTML(coeffs)+'</span>';
+    return selector+'Can this binomial be written as the difference of two squares?<br><span class="given">'+polyHTML(coeffs)+'</span>';
   },
   answerHTML:function(p){
-    return mcHTML('yn', p.q1)+
-      '<div class="pqBox" id="pqBox">'+
-      '<div class="qhead">Enter p and q so the factored form is (px \u2212 q)(px + q):</div>'+
-      '<div class="answer"><span>p =</span>'+inBox('pBox')+'<span>q =</span>'+inBox('qBox')+'</div>'+
+    return '<div class="qPart"><div class="qLabel">1 \u00b7 Difference of squares?</div>'+
+        mcHTML('yn', p.q1)+
+      '</div>'+
+      '<div class="qPart pqBox" id="pqBox">'+
+      '<div class="qLabel">2 \u00b7 Write the factored equation</div>'+
+      '<div class="answer"><span>(</span>'+inBox('a1')+'<span>x \u2212</span>'+inBox('b1')+'<span>)(</span>'+inBox('a2')+'<span>x +</span>'+inBox('b2')+'<span>)</span></div>'+
+      '<div class="fmtNote">If the coefficient in front of x is 1, you can leave that box blank instead of typing 1.</div>'+
+      sharedKbdHTML()+
       '</div>';
   },
   read:function(p){
@@ -702,10 +888,12 @@ var SE_A10F = {
     if(mcIndex===null) return null;
     var label = p.q1.opts[mcIndex];
     if(label==='No') return {mcIndex:mcIndex, label:label};
-    var pv=parseRat(document.getElementById('pBox').value);
-    var qv=parseRat(document.getElementById('qBox').value);
-    if(pv===null||qv===null) return null;
-    return {mcIndex:mcIndex, label:label, p:pv, q:qv};
+    var a1=parseCoefOr1(document.getElementById('a1').value);
+    var b1=parseRat(document.getElementById('b1').value);
+    var a2=parseCoefOr1(document.getElementById('a2').value);
+    var b2=parseRat(document.getElementById('b2').value);
+    if(a1===null||b1===null||a2===null||b2===null) return null;
+    return {mcIndex:mcIndex, label:label, a1:a1, b1:b1, a2:a2, b2:b2};
   },
   check:function(p,ans){
     var correctLabel = p.isDiff ? 'Yes' : 'No';
@@ -713,13 +901,16 @@ var SE_A10F = {
     markMC('yn', p.q1.correct, ans.mcIndex);
     if(!mcOk) return false;
     if(!p.isDiff) return true;
-    return req(ans.p, rint(p.m)) && req(ans.q, rint(p.n));
+    return req(ans.a1,rint(p.m)) && req(ans.b1,rint(p.n)) && req(ans.a2,rint(p.m)) && req(ans.b2,rint(p.n));
   },
   hints:function(p){
     var h=['A difference of squares looks like (something)\u00b2 \u2212 (something else)\u00b2 \u2014 both terms must be perfect squares AND connected by subtraction, not addition.'];
     if(p.form==='sum') h.push('This expression is a SUM of two squares, not a difference \u2014 sums like this don\u2019t factor this way over the reals.');
     else if(p.form==='diffNotSquare') h.push('The leading coefficient here isn\u2019t a perfect square, so this can\u2019t be written as a difference of two squares using whole numbers.');
-    else h.push('Since a = m\u00b2 and c = n\u00b2, this factors as (mx \u2212 n)(mx + n).');
+    else{
+      h.push('Since a = m\u00b2 and c = n\u00b2, this factors as (mx \u2212 n)(mx + n).');
+      if(p.m===1) h.push('Here m = 1, so the x-coefficient boxes can just be left blank \u2014 you don\u2019t need to type 1.');
+    }
     return h;
   },
   steps:function(p){
@@ -737,7 +928,7 @@ var SE_A10F = {
     }
     return s;
   },
-  emptyMsg:'Choose Yes or No. If Yes, also fill in p and q.',
+  emptyMsg:'Choose Yes or No. If Yes, also write out the factored equation.',
   init:function(p){
     var host=document.getElementById('yn');
     if(host){
@@ -747,6 +938,18 @@ var SE_A10F = {
           btn.classList.add('sel');
           var box=document.getElementById('pqBox');
           if(box) box.style.display = (btn.textContent.trim()==='Yes') ? 'block' : 'none';
+        });
+      });
+    }
+    var typeHost=document.getElementById('typeSegF');
+    if(typeHost){
+      Array.prototype.forEach.call(typeHost.querySelectorAll('button'), function(btn){
+        if(btn.getAttribute('data-v')===fModeF) btn.classList.add('active');
+        btn.addEventListener('click', function(){
+          Array.prototype.forEach.call(typeHost.querySelectorAll('button'), function(b){ b.classList.remove('active'); });
+          btn.classList.add('active');
+          fModeF = btn.getAttribute('data-v');
+          newProblem();
         });
       });
     }
@@ -790,6 +993,7 @@ function newProblem(){
   $('#stepsBox').className='stepsBox'; $('#stepsBox').innerHTML='';
   $('#checkBtn').disabled=false;
   if(se.init) se.init(current.p);
+  wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop');
   renderRail();
   var first=$('#answerArea input'); if(first) first.focus();
 }
