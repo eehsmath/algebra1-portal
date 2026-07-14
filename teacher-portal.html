@@ -79,6 +79,23 @@
   .mbar{height:6px; border-radius:999px; background:#edf2ff; overflow:hidden; width:70px; flex:none}
   .mbar i{display:block; height:100%; border-radius:999px; background:var(--blue)}
 
+  /* ---------- per-row expand/collapse (Summary view only) ---------- */
+  th.expandHead{cursor:default}
+  td.expandCell{text-align:center; padding:6px 10px}
+  .expandBtn{
+    width:26px; height:26px; border-radius:8px; border:1px solid var(--ui); background:#fff;
+    font-family:inherit; font-weight:900; font-size:15px; line-height:1; color:var(--blue); cursor:pointer;
+  }
+  .expandBtn:hover{background:#eef4ff; border-color:#c3d0ff}
+  .expandBtn.is-open{background:var(--blue); border-color:var(--blue); color:#fff}
+  tr.expandRow td{background:#f7f9ff; border-bottom:1px solid #e5edff; padding:10px 14px 14px}
+  .miniDetailTable{width:100%; border-collapse:collapse; font-size:12.5px; margin-top:4px}
+  .miniDetailTable th{
+    font-size:10px; padding:6px 8px; border-bottom:1px solid #dfe6ff; cursor:default; white-space:nowrap;
+  }
+  .miniDetailTable td{padding:6px 8px; border-bottom:1px solid #eef2ff; font-weight:800}
+  .miniDetailEmpty{color:var(--muted); font-weight:700; font-size:12.5px; padding:4px 2px}
+
   .chip-ok{color:var(--ok); background:#eafff2; border:1px solid #bfeacc; border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
   .chip-prog{color:#7a5a00; background:#fff9d6; border:1px solid #ffe38a; border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
   .chip-none{color:var(--muted); background:#f2f5fc; border:1px solid var(--ui); border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
@@ -171,22 +188,22 @@
 
   /* =====================================================================
      CONFIG — this is the SAME Apps Script URL as SYNC_URL in portal.js
-     (the report is a new ?report=all branch added to that existing
-     doGet, not a separate deployment — see TeacherReport_addition.gs).
-     Paste the same /exec URL here. This page must sit next to portal.js
-     (same folder as index.html) so the <script src="portal.js"> tag
-     below resolves.
+     (the report is a ?report=all branch added directly into Code.gs's
+     existing doGet, not a separate deployment). Paste the same /exec URL
+     here. This page must sit next to portal.js (same folder as
+     index.html) so the <script src="portal.js"> tag below resolves.
      ===================================================================== */
-  var REPORT_URL = 'https://script.google.com/macros/s/AKfycbwvP9DR8ZfNloUR0Mn1IogfjyPB1kZKTP_ss1o8-sivIY2EYCIR9WBOoY5aX8qHRLnrCQ/exec';
+  var REPORT_URL = 'PASTE_SAME_URL_AS_SYNC_URL_IN_PORTAL_JS_HERE';
 
   var READY = Portal.REGISTRY.filter(function(r){ return r.status === 'ready'; });
+  var expandedIds = {};   // student id -> true while its Summary row is expanded inline
 
   var raw = [];               // every student, with rollups already attached
   var view = 'summary';       // 'summary' | 'detail'
   var sortState = { summary: {key:'name', dir:1}, detail: {key:'name', dir:1} };
 
   var VIEW_CAPTIONS = {
-    summary: 'One row per student — overall roll-up across every standard.',
+    summary: 'One row per student — overall roll-up across every standard. Click the <b>+</b> at the end of a row to spot-check that one student\u2019s per-standard detail without leaving Summary; click it again to collapse. Switch to Detail to see every student\u2019s breakdown at once instead.',
     detail:  'One row per student per standard they\u2019ve started \u2014 sort by \u201cStandard\u201d to compare the whole filtered group on one topic at a time.'
   };
 
@@ -325,19 +342,44 @@
     return '<div class="mbarWrap"><div class="mbar"><i style="width:'+Math.round(p*100)+'%"></i></div>'+pct(p)+'</div>';
   }
 
-  function renderHead(cols, activeKey, dir){
+  function renderHead(cols, activeKey, dir, extraCellHTML){
     return '<tr>' + cols.map(function(c){
       var isActive = c.key === activeKey;
       return '<th data-key="'+c.key+'" class="'+(isActive?'active':'')+'">'+esc(c.label)+
         (isActive ? '<span class="arrow">'+(dir===1?'\u25B2':'\u25BC')+'</span>' : '') + '</th>';
-    }).join('') + '</tr>';
+    }).join('') + (extraCellHTML || '') + '</tr>';
+  }
+
+  /* Compact per-standard breakdown for ONE student, reusing flattenDetail
+     scoped to a single-element array — same rollup, no separate math. */
+  function miniDetailHTML(s){
+    var rows = flattenDetail([s]);
+    if (!rows.length) return '<div class="miniDetailEmpty">No practice recorded yet for this student.</div>';
+    var body = rows.map(function(r){
+      return '<tr>'+
+        '<td><b>'+esc(r.stdCode)+'</b></td>'+
+        '<td>'+barCell(r.st.progress)+'</td>'+
+        '<td>'+statusChip(r.st.mastered, r.st.attempts)+'</td>'+
+        '<td class="num">'+r.st.attempts+'</td>'+
+        '<td class="num">'+r.st.correct+'</td>'+
+        '<td class="num">'+(r.st.attempts ? pct(r.st.recentAcc) : '\u2014')+'</td>'+
+        '<td class="num">'+r.st.hints+'</td>'+
+        '<td class="num muted">'+fmtDate(r.st.last)+'</td>'+
+      '</tr>';
+    }).join('');
+    return '<table class="miniDetailTable"><thead><tr>'+
+      '<th>Standard</th><th>Progress</th><th>Mastered</th><th>Attempts</th>'+
+      '<th>Correct</th><th>Recent 10</th><th>Hints</th><th>Last Active</th>'+
+      '</tr></thead><tbody>'+body+'</tbody></table>';
   }
 
   function renderSummaryRows(rows){
-    if (!rows.length) return '<tr><td colspan="'+SUMMARY_COLS.length+'" style="color:var(--muted)">No students match these filters.</td></tr>';
+    if (!rows.length) return '<tr><td colspan="'+(SUMMARY_COLS.length+1)+'" style="color:var(--muted)">No students match these filters.</td></tr>';
     return rows.map(function(s){
       var warn = s.parseError ? '<span class="warnDot" title="Could not read this student\u2019s saved progress data \u2014 shown as zero"></span>' : '';
-      return '<tr class="rosterRow">'+
+      var isOpen = !!expandedIds[s.id];
+      var who = esc(s.name || 'this student');
+      var mainRow = '<tr class="rosterRow">'+
         '<td>'+esc(s.name || '(no name)')+warn+'</td>'+
         '<td class="num muted">'+esc(s.id)+'</td>'+
         '<td>'+esc(s.teacher || '\u2014')+'</td>'+
@@ -348,7 +390,13 @@
         '<td class="num">'+(s.overall.attempts ? pct(s.overall.accuracy) : '\u2014')+'</td>'+
         '<td class="num">'+s.overall.hints+'</td>'+
         '<td class="num muted">'+fmtDate(s.overall.last)+'</td>'+
+        '<td class="expandCell"><button type="button" class="expandBtn'+(isOpen?' is-open':'')+'" '+
+          'data-id="'+esc(s.id)+'" aria-expanded="'+(isOpen?'true':'false')+'" '+
+          'title="'+(isOpen?'Collapse':'Show')+' '+who+'\u2019s per-standard detail">'+(isOpen?'\u2212':'+')+'</button></td>'+
       '</tr>';
+      if (!isOpen) return mainRow;
+      return mainRow + '<tr class="expandRow" data-expand-for="'+esc(s.id)+'">'+
+        '<td colspan="'+(SUMMARY_COLS.length+1)+'">'+miniDetailHTML(s)+'</td></tr>';
     }).join('');
   }
   function renderDetailRows(rows){
@@ -389,7 +437,7 @@
   function render(){
     var students = filteredStudents();
     renderStats(students);
-    $('#viewCaption').textContent = VIEW_CAPTIONS[view];
+    $('#viewCaption').innerHTML = VIEW_CAPTIONS[view];
 
     var badCount = students.filter(function(s){ return s.parseError; }).length;
     $('#warnBanner').innerHTML = badCount
@@ -400,7 +448,7 @@
     var st = sortState[view];
     var colDef = cols.filter(function(c){ return c.key === st.key; })[0] || cols[0];
 
-    $('#repHead').innerHTML = renderHead(cols, st.key, st.dir);
+    $('#repHead').innerHTML = renderHead(cols, st.key, st.dir, view==='summary' ? '<th class="expandHead"></th>' : '');
     if (view === 'summary'){
       var rows = sortRows(students.slice(), st.dir, colDef.get);
       $('#repRows').innerHTML = renderSummaryRows(rows);
@@ -460,7 +508,7 @@
   }
   function fetchReport(){
     if (!REPORT_URL || REPORT_URL.indexOf('PASTE_') === 0){
-      showState('<h3>Not connected yet</h3>Paste the same Apps Script URL used for SYNC_URL in portal.js into the REPORT_URL constant near the top of this page\u2019s script \u2014 the report reuses that deployment\u2019s doGet with a ?report=all param, per TeacherReport_addition.gs.', true);
+      showState('<h3>Not connected yet</h3>Paste the same Apps Script URL used for SYNC_URL in portal.js into the REPORT_URL constant near the top of this page\u2019s script \u2014 the report reuses that deployment\u2019s doGet with a ?report=all param (see Code.gs).', true);
       return;
     }
     showState('Loading report\u2026');
@@ -491,6 +539,13 @@
     });
   });
   document.addEventListener('click', function(e){
+    var expandBtn = e.target.closest('.expandBtn');
+    if (expandBtn){
+      var sid = expandBtn.getAttribute('data-id');
+      if (expandedIds[sid]) delete expandedIds[sid]; else expandedIds[sid] = true;
+      render();
+      return;
+    }
     var th = e.target.closest('th[data-key]'); if (!th) return;
     var key = th.getAttribute('data-key');
     var st = sortState[view];
