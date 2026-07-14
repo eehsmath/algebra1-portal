@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Teacher Progress Report — EEHS Math</title>
+<style>
+  :root{
+    --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
+    --blue:#2f6cff; --vio:#8e78ff; --teal:#36c2a0; --gold:#f4a531;
+    --ok:#0b6b2f; --shadow:0 8px 20px rgba(25,40,80,.06);
+  }
+  *{box-sizing:border-box}
+  html,body{min-height:100dvh}
+  body{
+    margin:0; background:var(--bg); color:var(--ink); overflow:auto;
+    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  }
+  .wrap{width:min(1320px,100%); margin:18px auto; padding:0 12px;}
+
+  /* ---------- header (same shape as the student hub) ---------- */
+  .hdr{background:var(--panel); border:1px solid var(--ui); border-radius:18px; box-shadow:var(--shadow); padding:18px 20px; margin-bottom:14px;}
+  .hdr .toprow{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap}
+  .hdr h1{margin:0; font-size:clamp(22px,3.4vw,30px); font-weight:900; letter-spacing:.2px}
+  .hdr .sub{color:var(--muted); font-weight:700; font-size:14px; margin-top:4px}
+  .pills{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; align-items:center}
+  .pill{display:inline-block; padding:7px 14px; border-radius:999px; border:1px solid var(--ui); background:#fff; font-weight:900; font-size:14px}
+  .pill b{color:var(--blue)}
+  .btn{height:40px; border-radius:12px; border:1px solid var(--ui); background:#fff; font-weight:900; padding:0 14px; cursor:pointer; font-family:inherit; font-size:14px; color:var(--ink)}
+  .btn.primary{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635}
+  .btn.info{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible, select:focus-visible, input:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
+
+  .card{background:var(--panel); border:1px solid var(--ui); border-radius:18px; box-shadow:var(--shadow); padding:16px; margin-bottom:14px}
+
+  /* ---------- filter bar ---------- */
+  .filterBar{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
+  .field{display:flex; flex-direction:column; gap:5px}
+  .field label{font-size:11px; font-weight:900; letter-spacing:.6px; color:var(--muted); text-transform:uppercase}
+  .field input, .field select{
+    height:40px; border:2px solid var(--ui); border-radius:10px; padding:0 12px;
+    font:800 13.5px/1 inherit; color:var(--ink); background:#fff; min-width:170px;
+  }
+  .field input{min-width:200px}
+  .viewSwitch{display:inline-flex; gap:4px; padding:4px; background:#eef3ff; border:1px solid var(--ui); border-radius:12px}
+  .viewBtn{border:0; background:transparent; font-family:inherit; font-weight:900; font-size:13px; color:var(--muted); padding:9px 16px; border-radius:8px; cursor:pointer}
+  .viewBtn:hover{color:var(--ink)}
+  .viewBtn.is-active{background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(25,40,80,.1)}
+  .viewCaption{color:var(--muted); font-size:12.5px; font-weight:700; margin:10px 0 0}
+
+  /* ---------- quick stat cards ---------- */
+  .statRow{display:flex; gap:10px; flex-wrap:wrap}
+  .statCard{flex:1; min-width:150px; background:#f7f9ff; border:1px solid var(--ui); border-radius:14px; padding:12px 14px}
+  .statCard .n{font-size:22px; font-weight:900; color:var(--ink); font-variant-numeric:tabular-nums}
+  .statCard .l{font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-top:2px}
+
+  /* ---------- table ---------- */
+  .warnBanner{
+    background:#fff8e8; border:1px solid #ffe38a; color:#7a5a00; font-weight:800; font-size:12.5px;
+    border-radius:10px; padding:8px 12px; margin-bottom:12px;
+  }
+  .tableWrap{overflow-x:auto}
+  table{width:100%; border-collapse:collapse; font-size:13.5px; min-width:820px}
+  th{
+    text-align:left; font-size:11px; letter-spacing:.6px; text-transform:uppercase; color:var(--muted);
+    padding:9px 10px; border-bottom:2px solid #edf2ff; white-space:nowrap; cursor:pointer; user-select:none;
+  }
+  th:hover{color:var(--ink)}
+  th.active{color:var(--blue)}
+  th .arrow{font-size:9px; margin-left:3px}
+  td{padding:9px 10px; border-bottom:1px solid #f1f5ff; font-weight:800}
+  td.num{font-variant-numeric:tabular-nums}
+  td.muted{color:var(--muted); font-weight:700}
+  tr.rosterRow:hover td{background:#f8faff}
+  tr.stdRow td:first-child{border-left:3px solid var(--vio)}
+
+  .mbarWrap{display:flex; align-items:center; gap:8px}
+  .mbar{height:6px; border-radius:999px; background:#edf2ff; overflow:hidden; width:70px; flex:none}
+  .mbar i{display:block; height:100%; border-radius:999px; background:var(--blue)}
+
+  .chip-ok{color:var(--ok); background:#eafff2; border:1px solid #bfeacc; border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
+  .chip-prog{color:#7a5a00; background:#fff9d6; border:1px solid #ffe38a; border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
+  .chip-none{color:var(--muted); background:#f2f5fc; border:1px solid var(--ui); border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
+  .warnDot{display:inline-block; width:7px; height:7px; border-radius:50%; background:#e5484d; margin-left:6px; vertical-align:2px; cursor:help}
+
+  .state{padding:46px 20px; text-align:center; color:var(--muted); font-weight:700}
+  .state.err{color:#b21f2d}
+  .state h3{color:var(--ink); margin:0 0 6px; font-size:17px}
+
+  .foot{color:var(--muted); font-size:12px; font-weight:700; margin-top:8px; text-align:center}
+
+  @media (max-width:700px){
+    .filterBar{flex-direction:column; align-items:stretch}
+    .field select, .field input{min-width:0; width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hdr">
+    <div class="toprow">
+      <div>
+        <h1>Teacher Progress Report</h1>
+        <div class="sub">Whole-roster view, read live from the student sync sheet — no login, everyone with this link can see it.</div>
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <button class="btn" id="refreshBtn">&#8635; Refresh</button>
+        <button class="btn info" id="csvBtn">Download CSV</button>
+      </div>
+    </div>
+    <div class="pills" id="pillsRow"></div>
+  </div>
+
+  <div class="card" id="filterCard" style="display:none">
+    <div class="filterBar">
+      <div class="field">
+        <label for="qInput">Search</label>
+        <input id="qInput" placeholder="Student name or ID…" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="teacherSel">Teacher</label>
+        <select id="teacherSel"></select>
+      </div>
+      <div class="field">
+        <label for="classSel">Class period</label>
+        <select id="classSel"></select>
+      </div>
+      <div style="flex:1"></div>
+      <div class="viewSwitch" role="tablist" aria-label="Report view">
+        <button class="viewBtn is-active" data-view="summary" role="tab">Summary</button>
+        <button class="viewBtn" data-view="detail" role="tab">Detail</button>
+      </div>
+    </div>
+    <div class="viewCaption" id="viewCaption"></div>
+  </div>
+
+  <div class="card" id="statCardWrap" style="display:none">
+    <div class="statRow" id="statRow"></div>
+  </div>
+
+  <div class="card" id="tableCard">
+    <div id="stateArea"></div>
+    <div id="warnBanner"></div>
+    <div class="tableWrap" id="tableWrap" style="display:none">
+      <table>
+        <thead id="repHead"></thead>
+        <tbody id="repRows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="foot">Click any column header to sort by it. Standards with zero attempts are left out of the Detail view, same as the student-side report.</div>
+</div>
+
+<script src="portal.js"></script>
+<script>
+(function(){
+  'use strict';
+  var $ = function(s){ return document.querySelector(s); };
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  function pct(x){ return Math.round((x||0)*100)+'%'; }
+  function fmtDate(ms){
+    if (!ms) return '—';
+    var d = new Date(ms), y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'),
+        day = String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+day;
+  }
+
+  /* =====================================================================
+     CONFIG — this is the SAME Apps Script URL as SYNC_URL in portal.js
+     (the report is a new ?report=all branch added to that existing
+     doGet, not a separate deployment — see TeacherReport_addition.gs).
+     Paste the same /exec URL here. This page must sit next to portal.js
+     (same folder as index.html) so the <script src="portal.js"> tag
+     below resolves.
+     ===================================================================== */
+  var REPORT_URL = 'PASTE_SAME_URL_AS_SYNC_URL_IN_PORTAL_JS_HERE';
+
+  var READY = Portal.REGISTRY.filter(function(r){ return r.status === 'ready'; });
+
+  var raw = [];               // every student, with rollups already attached
+  var view = 'summary';       // 'summary' | 'detail'
+  var sortState = { summary: {key:'name', dir:1}, detail: {key:'name', dir:1} };
+
+  var VIEW_CAPTIONS = {
+    summary: 'One row per student — overall roll-up across every standard.',
+    detail:  'One row per student per standard they\u2019ve started \u2014 sort by \u201cStandard\u201d to compare the whole filtered group on one topic at a time.'
+  };
+
+  /* ---------------- data shaping ---------------- */
+
+  function normalizeData(d){
+    if (!d || typeof d !== 'object') return {skills:{}};
+    if (!d.skills || typeof d.skills !== 'object') d.skills = {};
+    return d;
+  }
+
+  /* One student's roll-up across every READY standard — same math as the
+     student-side report (Portal.totals()), just parameterized over an
+     explicit data blob instead of always reading this device's own. */
+  function overallFor(d){
+    var a=0, c=0, mastered=0, progSum=0, hints=0, last=0;
+    READY.forEach(function(r){
+      var st = Portal.statsForD(d, r);
+      a += st.attempts; c += st.correct;
+      if (st.mastered) mastered += 1;
+      progSum += st.progress; hints += st.hints;
+      if (st.last > last) last = st.last;
+    });
+    return {
+      attempts:a, correct:c, mastered:mastered, total:READY.length,
+      progress: READY.length ? progSum/READY.length : 0,
+      hints:hints, last:last, accuracy: a ? c/a : 0
+    };
+  }
+
+  function loadStudents(list){
+    raw = list.map(function(s){
+      var d = normalizeData(s.data);
+      return {
+        id: s.id, name: s.name || '', teacher: s.teacher || '',
+        klass: (s['class'] != null ? s['class'] : '') || '',
+        updated: s.updated || '', parseError: !!s.parseError,
+        d: d, overall: overallFor(d)
+      };
+    });
+    buildFilterOptions();
+    renderAll();
+  }
+
+  /* ---------------- filters ---------------- */
+
+  function optionCounts(field){
+    var m = {};
+    raw.forEach(function(s){ var v = s[field] || '(unassigned)'; m[v] = (m[v]||0) + 1; });
+    return m;
+  }
+  function buildFilterOptions(){
+    [['teacherSel','teacher','All teachers'], ['classSel','klass','All periods']].forEach(function(spec){
+      var sel = $('#'+spec[0]), field = spec[1], allLabel = spec[2];
+      var counts = optionCounts(field);
+      var keys = Object.keys(counts).sort();
+      var cur = sel.value;
+      sel.innerHTML = '<option value="">'+allLabel+' ('+raw.length+')</option>' +
+        keys.map(function(k){ return '<option value="'+esc(k)+'">'+esc(k)+' ('+counts[k]+')</option>'; }).join('');
+      if (keys.indexOf(cur) !== -1) sel.value = cur;
+    });
+  }
+  function filteredStudents(){
+    var q = ($('#qInput').value || '').trim().toLowerCase();
+    var t = $('#teacherSel').value, c = $('#classSel').value;
+    return raw.filter(function(s){
+      if (t && s.teacher !== t) return false;
+      if (c && s.klass !== c) return false;
+      if (q && s.name.toLowerCase().indexOf(q) === -1 && String(s.id).indexOf(q) === -1) return false;
+      return true;
+    });
+  }
+
+  /* ---------------- sorting ---------------- */
+
+  function sortRows(rows, dir, get){
+    rows.sort(function(a,b){
+      var va = get(a), vb = get(b);
+      if (typeof va === 'string'){ va = va.toLowerCase(); vb = vb.toLowerCase(); }
+      if (va < vb) return -1*dir;
+      if (va > vb) return 1*dir;
+      return 0;
+    });
+    return rows;
+  }
+
+  /* ---------------- column models ---------------- */
+
+  var SUMMARY_COLS = [
+    {key:'name',     label:'Student',     get:function(s){ return s.name || '(no name)'; }},
+    {key:'id',       label:'ID',          get:function(s){ return s.id; }},
+    {key:'teacher',  label:'Teacher',     get:function(s){ return s.teacher || '\u2014'; }},
+    {key:'klass',    label:'Period',      get:function(s){ return s.klass || '\u2014'; }},
+    {key:'mastered', label:'Mastered',    get:function(s){ return s.overall.mastered; }},
+    {key:'progress', label:'Progress',    get:function(s){ return s.overall.progress; }},
+    {key:'attempts', label:'Attempts',    get:function(s){ return s.overall.attempts; }},
+    {key:'accuracy', label:'Accuracy',    get:function(s){ return s.overall.accuracy; }},
+    {key:'hints',    label:'Hints',       get:function(s){ return s.overall.hints; }},
+    {key:'last',     label:'Last Active', get:function(s){ return s.overall.last; }}
+  ];
+  var DETAIL_COLS = [
+    {key:'name',      label:'Student',     get:function(r){ return r.name || '(no name)'; }},
+    {key:'teacher',   label:'Teacher',     get:function(r){ return r.teacher || '\u2014'; }},
+    {key:'klass',     label:'Period',      get:function(r){ return r.klass || '\u2014'; }},
+    {key:'std',       label:'Standard',    get:function(r){ return r.stdCode; }},
+    {key:'progress',  label:'Progress',    get:function(r){ return r.st.progress; }},
+    {key:'mastered',  label:'Mastered',    get:function(r){ return r.st.mastered ? 1 : 0; }},
+    {key:'attempts',  label:'Attempts',    get:function(r){ return r.st.attempts; }},
+    {key:'correct',   label:'Correct',     get:function(r){ return r.st.correct; }},
+    {key:'recentAcc', label:'Recent 10',   get:function(r){ return r.st.recentAcc; }},
+    {key:'hints',     label:'Hints',       get:function(r){ return r.st.hints; }},
+    {key:'last',      label:'Last Active', get:function(r){ return r.st.last; }}
+  ];
+
+  function flattenDetail(students){
+    var out = [];
+    students.forEach(function(s){
+      READY.forEach(function(r){
+        var st = Portal.statsForD(s.d, r);
+        if (!st.attempts) return;   // matches the student-side report's own "skip untouched standards" rule
+        out.push({name:s.name, id:s.id, teacher:s.teacher, klass:s.klass,
+          stdCode:(r.code||r.id), stdName:r.name, st:st});
+      });
+    });
+    return out;
+  }
+
+  /* ---------------- rendering ---------------- */
+
+  function statusChip(mastered, attempts){
+    if (!attempts) return '<span class="chip-none">Not started</span>';
+    if (mastered) return '<span class="chip-ok">Mastered \u2713</span>';
+    return '<span class="chip-prog">In progress</span>';
+  }
+  function barCell(p){
+    return '<div class="mbarWrap"><div class="mbar"><i style="width:'+Math.round(p*100)+'%"></i></div>'+pct(p)+'</div>';
+  }
+
+  function renderHead(cols, activeKey, dir){
+    return '<tr>' + cols.map(function(c){
+      var isActive = c.key === activeKey;
+      return '<th data-key="'+c.key+'" class="'+(isActive?'active':'')+'">'+esc(c.label)+
+        (isActive ? '<span class="arrow">'+(dir===1?'\u25B2':'\u25BC')+'</span>' : '') + '</th>';
+    }).join('') + '</tr>';
+  }
+
+  function renderSummaryRows(rows){
+    if (!rows.length) return '<tr><td colspan="'+SUMMARY_COLS.length+'" style="color:var(--muted)">No students match these filters.</td></tr>';
+    return rows.map(function(s){
+      var warn = s.parseError ? '<span class="warnDot" title="Could not read this student\u2019s saved progress data \u2014 shown as zero"></span>' : '';
+      return '<tr class="rosterRow">'+
+        '<td>'+esc(s.name || '(no name)')+warn+'</td>'+
+        '<td class="num muted">'+esc(s.id)+'</td>'+
+        '<td>'+esc(s.teacher || '\u2014')+'</td>'+
+        '<td>'+esc(s.klass || '\u2014')+'</td>'+
+        '<td class="num">'+s.overall.mastered+' / '+s.overall.total+'</td>'+
+        '<td class="num">'+barCell(s.overall.progress)+'</td>'+
+        '<td class="num">'+s.overall.attempts+'</td>'+
+        '<td class="num">'+(s.overall.attempts ? pct(s.overall.accuracy) : '\u2014')+'</td>'+
+        '<td class="num">'+s.overall.hints+'</td>'+
+        '<td class="num muted">'+fmtDate(s.overall.last)+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+  function renderDetailRows(rows){
+    if (!rows.length) return '<tr><td colspan="'+DETAIL_COLS.length+'" style="color:var(--muted)">No practice recorded yet for these filters.</td></tr>';
+    return rows.map(function(r){
+      return '<tr class="rosterRow stdRow">'+
+        '<td>'+esc(r.name || '(no name)')+'</td>'+
+        '<td>'+esc(r.teacher || '\u2014')+'</td>'+
+        '<td>'+esc(r.klass || '\u2014')+'</td>'+
+        '<td><b>'+esc(r.stdCode)+'</b></td>'+
+        '<td class="num">'+barCell(r.st.progress)+'</td>'+
+        '<td>'+statusChip(r.st.mastered, r.st.attempts)+'</td>'+
+        '<td class="num">'+r.st.attempts+'</td>'+
+        '<td class="num">'+r.st.correct+'</td>'+
+        '<td class="num">'+(r.st.attempts ? pct(r.st.recentAcc) : '\u2014')+'</td>'+
+        '<td class="num">'+r.st.hints+'</td>'+
+        '<td class="num muted">'+fmtDate(r.st.last)+'</td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  function renderStats(students){
+    var n = students.length, totalAttempts = 0, progSum = 0, masteredSum = 0;
+    students.forEach(function(s){
+      totalAttempts += s.overall.attempts; progSum += s.overall.progress; masteredSum += s.overall.mastered;
+    });
+    var cards = [
+      {n:n, l:'Students shown'},
+      {n:n ? Math.round(progSum/n*100)+'%' : '\u2014', l:'Avg. progress'},
+      {n:masteredSum, l:'Standards mastered (total)'},
+      {n:totalAttempts, l:'Total attempts'}
+    ];
+    $('#statRow').innerHTML = cards.map(function(c){
+      return '<div class="statCard"><div class="n">'+c.n+'</div><div class="l">'+c.l+'</div></div>';
+    }).join('');
+  }
+
+  function render(){
+    var students = filteredStudents();
+    renderStats(students);
+    $('#viewCaption').textContent = VIEW_CAPTIONS[view];
+
+    var badCount = students.filter(function(s){ return s.parseError; }).length;
+    $('#warnBanner').innerHTML = badCount
+      ? '<div class="warnBanner">'+badCount+' student record'+(badCount===1?'':'s')+' couldn\u2019t be read (corrupted saved data) \u2014 showing as zero progress until re-synced.</div>'
+      : '';
+
+    var cols = view === 'summary' ? SUMMARY_COLS : DETAIL_COLS;
+    var st = sortState[view];
+    var colDef = cols.filter(function(c){ return c.key === st.key; })[0] || cols[0];
+
+    $('#repHead').innerHTML = renderHead(cols, st.key, st.dir);
+    if (view === 'summary'){
+      var rows = sortRows(students.slice(), st.dir, colDef.get);
+      $('#repRows').innerHTML = renderSummaryRows(rows);
+    } else {
+      var drows = sortRows(flattenDetail(students), st.dir, colDef.get);
+      $('#repRows').innerHTML = renderDetailRows(drows);
+    }
+  }
+
+  function renderAll(){
+    $('#filterCard').style.display = '';
+    $('#statCardWrap').style.display = '';
+    $('#tableWrap').style.display = '';
+    $('#stateArea').innerHTML = '';
+    var teacherCount = Object.keys(optionCounts('teacher')).length;
+    var classCount = Object.keys(optionCounts('klass')).length;
+    $('#pillsRow').innerHTML =
+      '<span class="pill">Students <b>'+raw.length+'</b></span>'+
+      '<span class="pill">Teachers <b>'+teacherCount+'</b></span>'+
+      '<span class="pill">Class periods <b>'+classCount+'</b></span>';
+    render();
+  }
+
+  /* ---------------- CSV export (Detail grain, respects current filters) ---------------- */
+
+  function csvEscape(v){ var s = (v==null) ? '' : String(v); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+  function downloadCSV(){
+    var rows = flattenDetail(filteredStudents());
+    var headers = ['student_name','student_id','teacher','class_period','standard','standard_name',
+      'attempts','correct','overall_accuracy','recent_10_accuracy','hints','level','last_active','status'];
+    var lines = [headers.map(csvEscape).join(',')];
+    rows.forEach(function(r){
+      lines.push([
+        r.name, r.id, r.teacher, r.klass, r.stdCode, r.stdName,
+        r.st.attempts, r.st.correct,
+        r.st.attempts ? (r.st.correct/r.st.attempts).toFixed(4) : '',
+        r.st.attempts ? r.st.recentAcc.toFixed(4) : '',
+        r.st.hints, r.st.level||1, fmtDate(r.st.last),
+        r.st.mastered ? 'Mastered' : 'In progress'
+      ].map(csvEscape).join(','));
+    });
+    var blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url; a.download = 'teacher_report_'+fmtDate(Date.now())+'.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 500);
+  }
+
+  /* ---------------- fetch / states ---------------- */
+
+  function showState(html, isErr){
+    $('#filterCard').style.display = 'none';
+    $('#statCardWrap').style.display = 'none';
+    $('#tableWrap').style.display = 'none';
+    $('#warnBanner').innerHTML = '';
+    $('#stateArea').innerHTML = '<div class="state'+(isErr?' err':'')+'">'+html+'</div>';
+  }
+  function fetchReport(){
+    if (!REPORT_URL || REPORT_URL.indexOf('PASTE_') === 0){
+      showState('<h3>Not connected yet</h3>Paste the same Apps Script URL used for SYNC_URL in portal.js into the REPORT_URL constant near the top of this page\u2019s script \u2014 the report reuses that deployment\u2019s doGet with a ?report=all param, per TeacherReport_addition.gs.', true);
+      return;
+    }
+    showState('Loading report\u2026');
+    fetch(REPORT_URL + (REPORT_URL.indexOf('?')===-1 ? '?' : '&') + 'report=all')
+      .then(function(r){ return r.json(); }).then(function(res){
+      if (!res || !res.ok){
+        showState('<h3>Couldn\u2019t load the report</h3>'+esc((res && res.error) || 'Unknown error')+'. Check the Apps Script has the report=all addition and was redeployed as a new version.', true);
+        return;
+      }
+      loadStudents(res.students || []);
+    }).catch(function(err){
+      showState('<h3>Couldn\u2019t reach the report</h3>Check the URL matches SYNC_URL and the Apps Script was redeployed after adding the report branch.<br>('+esc(err)+')', true);
+    });
+  }
+
+  /* ---------------- wiring ---------------- */
+
+  $('#refreshBtn').addEventListener('click', fetchReport);
+  $('#csvBtn').addEventListener('click', downloadCSV);
+  $('#qInput').addEventListener('input', render);
+  $('#teacherSel').addEventListener('change', render);
+  $('#classSel').addEventListener('change', render);
+  document.querySelectorAll('.viewBtn').forEach(function(b){
+    b.addEventListener('click', function(){
+      view = b.getAttribute('data-view');
+      document.querySelectorAll('.viewBtn').forEach(function(x){ x.classList.toggle('is-active', x===b); });
+      render();
+    });
+  });
+  document.addEventListener('click', function(e){
+    var th = e.target.closest('th[data-key]'); if (!th) return;
+    var key = th.getAttribute('data-key');
+    var st = sortState[view];
+    if (st.key === key) st.dir = -st.dir; else { st.key = key; st.dir = 1; }
+    render();
+  });
+
+  fetchReport();
+})();
+</script>
+</body>
+</html>
