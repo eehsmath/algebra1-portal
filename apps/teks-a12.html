@@ -1090,7 +1090,7 @@ function genOneVarNumeric(){
   return {shape:'oneVarNumeric', entry:entry, vals:vals, coef:coef};
 }
 function genTwoTermStandard(){
-  var a=ri(-9,9), b=rnz(-9,9), c=ri(-9,9);
+  var a=rnz(-9,9), b=rnz(-9,9), c=ri(-9,9);
   var M=R(-a,b), K=R(c,b);
   return {shape:'twoTermStandardForm', a:a, b:b, c:c, M:M, K:K};
 }
