@@ -536,6 +536,16 @@
     totals: totals,
     nextOnPath: nextOnPath,
 
+    /* Lower-level rollup math, exposed so anything holding a data blob that
+       ISN'T this device's own (e.g. a teacher report reading many students'
+       synced records) can reuse the exact same mastery/aggregation logic
+       instead of re-implementing it. `d` is a full {v,student,skills,sessions}
+       object; `reg` is one Portal.REGISTRY entry (or {id:'A.2A'} for a bare
+       module id with no roll-up). */
+    computeStats: computeStats,
+    aggregateModules: aggregateModules,
+    statsForD: statsForD,
+
     /* identity + sync */
     mode: mode,
     validId: validId,
