@@ -53,7 +53,7 @@
   }
   .btn.primary{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635}
   .btn.info{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
-  .btn.link{display:inline-flex; align-items:center; justify-content:center; text-decoration:none}
+  .btn.gold{border:0; background:linear-gradient(90deg,#ffe6a8,#ffcf70); color:#081635}
   .btn:active{transform:translateY(1px)}
   .btn[disabled]{opacity:.55; cursor:default}
   .btn:focus-visible, input:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
@@ -255,8 +255,7 @@
       <span class="pill">Accuracy <b id="tAcc">—</b></span>
       <span class="pill">Standards polished <b id="tMastered">0</b></span>
       <span style="flex:1"></span>
-      <a class="btn link" href="https://www.desmos.com/testing/texas/graphing" target="_blank" rel="noopener">Desmos Calculator ↗</a>
-      <a class="btn link" href="https://tea.texas.gov/data-reports/staar/staar-algebra-1-reference-materials.pdf" target="_blank" rel="noopener">Formula Sheet ↗</a>
+      <button class="btn gold" id="resourcesBtn">Resources</button>
       <button class="btn primary" id="continueBtn">Continue my path →</button>
       <button class="btn info" id="reportBtn">My report</button>
       <button class="btn" id="moreBtn">More practice</button>
@@ -351,6 +350,22 @@
   </div>
 </div>
 
+<!-- ============ resources modal ============ -->
+<div class="modal" id="resourcesModal" role="dialog" aria-modal="true" aria-label="Resources">
+  <div class="modalCard moreCard">
+    <div class="modalHead">
+      <h3>Resources</h3>
+      <div class="noprint"><button class="btn" id="closeResources">Close</button></div>
+    </div>
+    <div class="modalBody">
+      <p class="lead" style="margin:0 0 14px; color:var(--muted); font-weight:700; font-size:14px">
+        Quick links for class calculator, reference sheet, and anything else you need.
+      </p>
+      <ul class="moreList" id="resourcesList"></ul>
+    </div>
+  </div>
+</div>
+
 <script src="portal.js"></script>
 <script>
 (function(){
@@ -358,6 +373,20 @@
   var $ = function(s){ return document.querySelector(s); };
   function esc(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
     return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+
+  /* ---------- RESOURCES ----------
+     Quick-link list shown in the "Resources" modal (calculator, formula
+     sheet, and anything else students need during practice). Capped in
+     practice around 5 items add or remove entries here, same shape:
+       { name: 'Label shown in the list',
+         desc: 'One short line of context',
+         url:  'https://...' }
+     These always open in a new tab so nobody loses their place mid-problem. */
+  var RESOURCES = [
+    { name: 'Desmos Calculator', desc: ' Texas STAAR testing calculator', url: 'https://www.desmos.com/testing/texas/graphing' },
+    { name: 'Formula Sheet', desc: ' Official TEA Algebra I reference materials (PDF)', url: 'https://tea.texas.gov/data-reports/staar/staar-algebra-1-reference-materials.pdf' },
+    // Add more resources here, same shape up to about 5 reads best in the list.
+  ];
 
   /* ---------- LEGACY APPS ----------
      Last year's standalone practice apps, linked from the "More practice"
@@ -756,6 +785,31 @@
   });
   $('#closeMore').addEventListener('click', function(){ $('#moreModal').classList.remove('show'); });
   $('#moreModal').addEventListener('click', function(e){ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
+
+  /* ---------- resources ---------- */
+  function resourceItemHTML(r, i){
+    return '<li><a class="moreItem" href="'+esc(r.url)+'" target="_blank" rel="noopener">'+
+      '<span class="glyph">'+(i+1)+'</span>'+
+      '<span class="info"><span class="nm">'+esc(r.name)+'</span>'+
+        '<span class="ds">'+esc(r.desc||'')+'</span></span>'+
+      '<span class="go">Open →</span>'+
+    '</a></li>';
+  }
+  function renderResources(){
+    var host = $('#resourcesList');
+    if (!RESOURCES.length){
+      host.innerHTML = '<li style="color:var(--muted); font-weight:700; font-size:13.5px">'+
+        'No resources added yet \u2014 add entries to RESOURCES in index.html.</li>';
+      return;
+    }
+    host.innerHTML = RESOURCES.map(resourceItemHTML).join('');
+  }
+  $('#resourcesBtn').addEventListener('click', function(){
+    renderResources();
+    $('#resourcesModal').classList.add('show');
+  });
+  $('#closeResources').addEventListener('click', function(){ $('#resourcesModal').classList.remove('show'); });
+  $('#resourcesModal').addEventListener('click', function(e){ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
   $('#copyCode').addEventListener('click', function(){
     var ta = $('#repCode'); ta.select();
     try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
