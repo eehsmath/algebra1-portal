@@ -53,6 +53,7 @@
   }
   .btn.primary{border:0; background:linear-gradient(90deg,var(--blue),var(--teal)); color:#081635}
   .btn.info{border:0; background:linear-gradient(90deg,#cfe0ff,#9bb9ff); color:#081635}
+  .btn.link{display:inline-flex; align-items:center; justify-content:center; text-decoration:none}
   .btn:active{transform:translateY(1px)}
   .btn[disabled]{opacity:.55; cursor:default}
   .btn:focus-visible, input:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
@@ -254,6 +255,8 @@
       <span class="pill">Accuracy <b id="tAcc">—</b></span>
       <span class="pill">Standards polished <b id="tMastered">0</b></span>
       <span style="flex:1"></span>
+      <a class="btn link" href="https://www.desmos.com/testing/texas/graphing" target="_blank" rel="noopener">Desmos Calculator ↗</a>
+      <a class="btn link" href="https://tea.texas.gov/data-reports/staar/staar-algebra-1-reference-materials.pdf" target="_blank" rel="noopener">Formula Sheet ↗</a>
       <button class="btn primary" id="continueBtn">Continue my path →</button>
       <button class="btn info" id="reportBtn">My report</button>
       <button class="btn" id="moreBtn">More practice</button>
