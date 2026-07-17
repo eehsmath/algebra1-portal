@@ -1059,7 +1059,7 @@ function closeTileLab(){
 var SES=[SE_A11A, SE_A11B];
 
 /* ===== THE FIXED CONTROLLER (unchanged between modules) ===== */
-var current={se:SES[0], p:null, done:false, recorded:false, hintIdx:0, hintLogged:false};
+var current={se:SES[0], p:null, done:false, recorded:false, hintIdx:0, hintLogged:false, stepsShown:false};
 var session={a:0,c:0};
 var $=function(s){return document.querySelector(s);};
 
@@ -1082,7 +1082,7 @@ function renderRail(){
 }
 function newProblem(){
   var se=current.se;
-  current.p=se.gen(); current.done=false; current.recorded=false; current.hintIdx=0; current.hintLogged=false;
+  current.p=se.gen(); current.done=false; current.recorded=false; current.hintIdx=0; current.hintLogged=false; current.stepsShown=false;
   $('#seTitle').innerHTML=se.title;
   $('#seBlurb').textContent=se.blurb;
   $('#seTag').textContent='TEKS '+se.id;
@@ -1109,14 +1109,17 @@ function onCheck(){
   else { current.done=true; $('#checkBtn').disabled=true; if(se.reveal) se.reveal(current.p); }
   if(!current.recorded){
     current.recorded=true;
-    session.a++; if(ok) session.c++;
-    $('#sesScore').textContent=session.c+' / '+session.a;
-    if(window.Portal && Portal.record) Portal.record(se.id, ok);
+    if(!current.stepsShown){
+      session.a++; if(ok) session.c++;
+      $('#sesScore').textContent=session.c+' / '+session.a;
+      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+    }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');
-  $('#fb').textContent= ok?'Correct \u2713'
+  $('#fb').textContent= (ok?'Correct \u2713'
     : (se.allowRecheck?'Not quite \u2717 — read the tips, adjust, and check again.'
-                      :'Not quite \u2717 — open the steps to see the path.');
+                      :'Not quite \u2717 — open the steps to see the path.'))
+    + (current.stepsShown ? ' (steps were shown — this attempt wasn\u2019t recorded)' : '');
   renderRail();
 }
 function onHint(){
@@ -1130,6 +1133,7 @@ function onHint(){
 function onSteps(){
   var box=$('#stepsBox'); box.classList.add('show');
   box.innerHTML=current.se.steps(current.p);
+  current.stepsShown=true;
   if(!current.hintLogged && window.Portal && Portal.hint){ Portal.hint(current.se.id); current.hintLogged=true; }
 }
 $('#checkBtn').addEventListener('click', onCheck);
