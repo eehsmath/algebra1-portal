@@ -128,6 +128,10 @@
       </div>
     </div>
     <div class="pills" id="pillsRow"></div>
+    <div class="viewSwitch" id="subjectSwitch" role="tablist" aria-label="Subject" style="margin-top:10px">
+      <button class="viewBtn is-active" data-subject="algebra" role="tab">Algebra 1</button>
+      <button class="viewBtn" data-subject="tsi" role="tab">TSI</button>
+    </div>
   </div>
 
   <div class="card" id="filterCard" style="display:none">
@@ -172,6 +176,7 @@
 </div>
 
 <script src="portal.js"></script>
+<script src="portal-tsi.js"></script>
 <script>
 (function(){
   'use strict';
@@ -195,10 +200,19 @@
      ===================================================================== */
   var REPORT_URL = 'https://script.google.com/macros/s/AKfycbwvP9DR8ZfNloUR0Mn1IogfjyPB1kZKTP_ss1o8-sivIY2EYCIR9WBOoY5aX8qHRLnrCQ/exec';
 
-  var READY = Portal.REGISTRY.filter(function(r){ return r.status === 'ready'; });
+  var PORTALS = {
+    algebra: { key: 'algebra', label: 'Algebra 1', api: Portal,
+               ready: Portal.REGISTRY.filter(function(r){ return r.status === 'ready'; }) },
+    tsi:     { key: 'tsi',     label: 'TSI',       api: TSIPortal,
+               ready: TSIPortal.REGISTRY.filter(function(r){ return r.status === 'ready'; }) }
+  };
+  var subject = 'algebra';          // 'algebra' | 'tsi' — which registry/API drives every rollup below
+  function activePortal(){ return PORTALS[subject]; }
+
   var expandedIds = {};   // student id -> true while its Summary row is expanded inline
 
-  var raw = [];               // every student, with rollups already attached
+  var studentsBySubject = { algebra: null, tsi: null };  // cache: null = not fetched yet for that tab
+  var raw = [];               // current subject's students, with rollups already attached
   var view = 'summary';       // 'summary' | 'detail'
   var sortState = { summary: {key:'name', dir:1}, detail: {key:'name', dir:1} };
 
@@ -219,31 +233,43 @@
      student-side report (Portal.totals()), just parameterized over an
      explicit data blob instead of always reading this device's own. */
   function overallFor(d){
+    var p = activePortal();
     var a=0, c=0, mastered=0, progSum=0, hints=0, last=0;
-    READY.forEach(function(r){
-      var st = Portal.statsForD(d, r);
+    p.ready.forEach(function(r){
+      var st = p.api.statsForD(d, r);
       a += st.attempts; c += st.correct;
       if (st.mastered) mastered += 1;
       progSum += st.progress; hints += st.hints;
       if (st.last > last) last = st.last;
     });
     return {
-      attempts:a, correct:c, mastered:mastered, total:READY.length,
-      progress: READY.length ? progSum/READY.length : 0,
+      attempts:a, correct:c, mastered:mastered, total:p.ready.length,
+      progress: p.ready.length ? progSum/p.ready.length : 0,
       hints:hints, last:last, accuracy: a ? c/a : 0
     };
   }
 
-  function loadStudents(list){
-    raw = list.map(function(s){
+  /* Recompute every loaded student's rollup for whichever subject is active.
+     Cheap (pure in-memory math over already-fetched data), so this runs on
+     every subject-toggle click with no refetch. */
+  function recomputeOverall(){
+    raw.forEach(function(s){ s.overall = overallFor(s.d); });
+  }
+
+  function loadStudents(portalKey, list){
+    var processed = list.map(function(s){
       var d = normalizeData(s.data);
       return {
         id: s.id, name: s.name || '', teacher: s.teacher || '',
         klass: (s['class'] != null ? s['class'] : '') || '',
         updated: s.updated || '', parseError: !!s.parseError,
-        d: d, overall: overallFor(d)
+        d: d
       };
     });
+    studentsBySubject[portalKey] = processed;
+    if (subject !== portalKey) return;   // user switched away before this fetch landed — cache it, don't render it
+    raw = processed;
+    recomputeOverall();
     buildFilterOptions();
     renderAll();
   }
@@ -319,10 +345,11 @@
   ];
 
   function flattenDetail(students){
+    var p = activePortal();
     var out = [];
     students.forEach(function(s){
-      READY.forEach(function(r){
-        var st = Portal.statsForD(s.d, r);
+      p.ready.forEach(function(r){
+        var st = p.api.statsForD(s.d, r);
         if (!st.attempts) return;   // matches the student-side report's own "skip untouched standards" rule
         out.push({name:s.name, id:s.id, teacher:s.teacher, klass:s.klass,
           stdCode:(r.code||r.id), stdName:r.name, st:st});
@@ -492,7 +519,7 @@
     });
     var blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
     var url = URL.createObjectURL(blob);
-    var a = document.createElement('a'); a.href = url; a.download = 'teacher_report_'+fmtDate(Date.now())+'.csv';
+    var a = document.createElement('a'); a.href = url; a.download = 'teacher_report_'+subject+'_'+fmtDate(Date.now())+'.csv';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     setTimeout(function(){ URL.revokeObjectURL(url); }, 500);
   }
@@ -506,19 +533,21 @@
     $('#warnBanner').innerHTML = '';
     $('#stateArea').innerHTML = '<div class="state'+(isErr?' err':'')+'">'+html+'</div>';
   }
-  function fetchReport(){
+  function fetchReport(portalKey){
+    portalKey = portalKey || subject;
     if (!REPORT_URL || REPORT_URL.indexOf('PASTE_') === 0){
       showState('<h3>Not connected yet</h3>Paste the same Apps Script URL used for SYNC_URL in portal.js into the REPORT_URL constant near the top of this page\u2019s script \u2014 the report reuses that deployment\u2019s doGet with a ?report=all param (see Code.gs).', true);
       return;
     }
-    showState('Loading report\u2026');
-    fetch(REPORT_URL + (REPORT_URL.indexOf('?')===-1 ? '?' : '&') + 'report=all')
+    showState('Loading ' + PORTALS[portalKey].label + ' report\u2026');
+    var url = REPORT_URL + (REPORT_URL.indexOf('?')===-1 ? '?' : '&') + 'report=all&portal=' + encodeURIComponent(portalKey);
+    fetch(url)
       .then(function(r){ return r.json(); }).then(function(res){
       if (!res || !res.ok){
-        showState('<h3>Couldn\u2019t load the report</h3>'+esc((res && res.error) || 'Unknown error')+'. Check the Apps Script has the report=all addition and was redeployed as a new version.', true);
+        showState('<h3>Couldn\u2019t load the report</h3>'+esc((res && res.error) || 'Unknown error')+'. Check the Apps Script has the report=all addition (and the '+esc(PORTALS[portalKey].label)+' tab exists) and was redeployed as a new version.', true);
         return;
       }
-      loadStudents(res.students || []);
+      loadStudents(portalKey, res.students || []);
     }).catch(function(err){
       showState('<h3>Couldn\u2019t reach the report</h3>Check the URL matches SYNC_URL and the Apps Script was redeployed after adding the report branch.<br>('+esc(err)+')', true);
     });
@@ -526,15 +555,33 @@
 
   /* ---------------- wiring ---------------- */
 
-  $('#refreshBtn').addEventListener('click', fetchReport);
+  $('#refreshBtn').addEventListener('click', function(){ fetchReport(subject); });
   $('#csvBtn').addEventListener('click', downloadCSV);
   $('#qInput').addEventListener('input', render);
   $('#teacherSel').addEventListener('change', render);
   $('#classSel').addEventListener('change', render);
-  document.querySelectorAll('.viewBtn').forEach(function(b){
+  document.querySelectorAll('#subjectSwitch .viewBtn').forEach(function(b){
+    b.addEventListener('click', function(){
+      var next = b.getAttribute('data-subject');
+      if (next === subject) return;
+      subject = next;
+      document.querySelectorAll('#subjectSwitch .viewBtn').forEach(function(x){ x.classList.toggle('is-active', x===b); });
+      expandedIds = {};   // per-standard ids differ across subjects; collapse any open detail rows
+      if (studentsBySubject[subject]){
+        // Already fetched this tab this session — swap in the cache, no network round trip.
+        raw = studentsBySubject[subject];
+        recomputeOverall();
+        buildFilterOptions();
+        renderAll();
+      } else {
+        fetchReport(subject);
+      }
+    });
+  });
+  document.querySelectorAll('.viewBtn[data-view]').forEach(function(b){
     b.addEventListener('click', function(){
       view = b.getAttribute('data-view');
-      document.querySelectorAll('.viewBtn').forEach(function(x){ x.classList.toggle('is-active', x===b); });
+      document.querySelectorAll('.viewBtn[data-view]').forEach(function(x){ x.classList.toggle('is-active', x===b); });
       render();
     });
   });
