@@ -152,6 +152,7 @@
       <div class="viewSwitch" role="tablist" aria-label="Report view">
         <button class="viewBtn is-active" data-view="summary" role="tab">Summary</button>
         <button class="viewBtn" data-view="detail" role="tab">Detail</button>
+        <button class="viewBtn" data-view="crc" role="tab" id="crcTab" style="display:none">Practice tests</button>
       </div>
     </div>
     <div class="viewCaption" id="viewCaption"></div>
@@ -213,12 +214,13 @@
 
   var studentsBySubject = { algebra: null, tsi: null };  // cache: null = not fetched yet for that tab
   var raw = [];               // current subject's students, with rollups already attached
-  var view = 'summary';       // 'summary' | 'detail'
-  var sortState = { summary: {key:'name', dir:1}, detail: {key:'name', dir:1} };
+  var view = 'summary';       // 'summary' | 'detail' | 'crc'  (crc is TSI-only)
+  var sortState = { summary: {key:'name', dir:1}, detail: {key:'name', dir:1}, crc: {key:'score', dir:1} };
 
   var VIEW_CAPTIONS = {
     summary: 'One row per student — overall roll-up across every standard. Click the <b>+</b> at the end of a row to spot-check that one student\u2019s per-standard detail without leaving Summary; click it again to collapse. Switch to Detail to see every student\u2019s breakdown at once instead.',
-    detail:  'One row per student per standard they\u2019ve started \u2014 sort by \u201cStandard\u201d to compare the whole filtered group on one topic at a time.'
+    detail:  'One row per student per standard they\u2019ve started \u2014 sort by \u201cStandard\u201d to compare the whole filtered group on one topic at a time.',
+    crc:     'One row per student who has taken the 20-question adaptive practice test. These numbers are kept separate from Mastered/Progress on purpose \u2014 the test targets roughly 50% difficulty, so mixing it into standards mastery would understate what students actually know. Sort by <b>Weakest</b> or a strand column to group students who need the same reteach.'
   };
 
   /* ---------------- data shaping ---------------- */
@@ -253,7 +255,11 @@
      Cheap (pure in-memory math over already-fetched data), so this runs on
      every subject-toggle click with no refetch. */
   function recomputeOverall(){
-    raw.forEach(function(s){ s.overall = overallFor(s.d); });
+    raw.forEach(function(s){
+      s.overall = overallFor(s.d);
+      /* TSI only — the Algebra 1 portal has no adaptive practice test. */
+      s.crc = (subject === 'tsi') ? crcFor(s.d) : null;
+    });
   }
 
   function loadStudents(portalKey, list){
@@ -317,6 +323,122 @@
   }
 
   /* ---------------- column models ---------------- */
+
+  /* ===================================================================
+     ADAPTIVE PRACTICE TEST (TSI only)
+     -------------------------------------------------------------------
+     These results deliberately live OUTSIDE the registry: the test targets
+     roughly 50% difficulty by design, so folding it into mastery would drag
+     every standard's recent-accuracy down. That is why nothing below ever
+     touches overallFor() — the two sets of numbers stay separate on purpose.
+
+     Two sources, because older records only have the first:
+       skills['CRC.TEST']  — tests taken, tests passed, and `lv`, a 1-5 score
+                             BAND. Always present once a test is finished.
+       data.tests[]        — the full per-attempt log with exact scores and
+                             dates. Only present for tests synced after the
+                             Apps Script mergeData_ fix; earlier attempts had
+                             this stripped at the server, so we fall back to
+                             the band and report a range instead of a number.
+     =================================================================== */
+  var CRC_STRANDS = [
+    { key:'AR',  id:'CRC.AR'  }, { key:'QR',  id:'CRC.QR'  },
+    { key:'PSR', id:'CRC.PSR' }, { key:'GSR', id:'CRC.GSR' }
+  ];
+
+  function crcFor(d){
+    d = d || {};
+    var skills = d.skills || {};
+    var t = skills['CRC.TEST'];
+    var log = Array.isArray(d.tests) ? d.tests.slice().sort(function(x,y){ return (x.t||0)-(y.t||0); }) : [];
+
+    var strands = {}, items = 0, correct = 0, weakest = null, last = 0;
+    CRC_STRANDS.forEach(function(c){
+      var s = skills[c.id];
+      if (!s || !s.a) { strands[c.key] = null; return; }
+      strands[c.key] = { c: s.c, n: s.a, acc: s.c / s.a };
+      items += s.a; correct += s.c;
+      if (s.t > last) last = s.t;
+      if (!weakest || (s.c/s.a) < weakest.acc) weakest = { key: c.key, acc: s.c/s.a };
+    });
+
+    if (!t && !items) return null;                 // no practice-test activity at all
+    if (t && t.t > last) last = t.t;
+
+    var taken  = t ? t.a : 0;
+    var passed = t ? t.c : 0;
+    var exact  = log.length ? log[log.length-1].score : null;
+    var best   = log.length ? Math.max.apply(null, log.map(function(e){ return e.score; })) : null;
+    var first  = log.length ? log[0].score : null;
+    var band   = t ? (t.lv || 1) : null;
+
+    return {
+      taken: taken, passed: passed, log: log,
+      exact: exact, best: best,
+      gain: (log.length > 1) ? (exact - first) : null,
+      band: band,
+      lo: band ? Math.max(910, Math.round(910 + (band-1.5)*20)) : null,
+      hi: band ? Math.min(990, Math.round(910 + (band-0.5)*20)) : null,
+      strands: strands, items: items, correct: correct,
+      unfinished: (!t && items > 0) ? items : 0,
+      weakest: weakest, last: last
+    };
+  }
+
+  /* Score cell: an exact number when we have the log, otherwise the band range
+     with a marker, so a teacher can tell a measurement from an estimate. */
+  function crcScoreCell(x){
+    if (x.exact != null){
+      return '<b>'+x.exact+'</b>' + (x.best != null && x.best !== x.exact ? ' <span class="muted">(best '+x.best+')</span>' : '');
+    }
+    if (x.lo != null) return '<span title="Exact score was lost before the sync fix — this is the stored 1-5 band">'+x.lo+'\u2013'+x.hi+' <span class="muted">est.</span></span>';
+    return '\u2014';
+  }
+
+  function crcStrandCell(v){
+    if (!v) return '<td class="num muted">\u2014</td>';
+    var tone = v.acc >= 0.8 ? 'var(--ok)' : (v.acc < 0.5 ? 'var(--err)' : 'inherit');
+    return '<td class="num" style="color:'+tone+'">'+v.c+'/'+v.n+'</td>';
+  }
+
+  var CRC_COLS = [
+    {key:'name',    label:'Student',   get:function(s){ return s.name || '(no name)'; }},
+    {key:'teacher', label:'Teacher',   get:function(s){ return s.teacher || '\u2014'; }},
+    {key:'klass',   label:'Period',    get:function(s){ return s.klass || '\u2014'; }},
+    {key:'taken',   label:'Tests',     get:function(s){ return s.crc ? s.crc.taken : -1; }},
+    {key:'passed',  label:'\u2265950',get:function(s){ return s.crc ? s.crc.passed : -1; }},
+    {key:'score',   label:'Score',     get:function(s){ return s.crc ? (s.crc.exact != null ? s.crc.exact : (s.crc.lo || 0)) : -1; }},
+    {key:'raw',     label:'Raw',       get:function(s){ return s.crc && s.crc.items ? s.crc.correct/s.crc.items : -1; }},
+    {key:'ar',      label:'AR',        get:function(s){ return s.crc && s.crc.strands.AR  ? s.crc.strands.AR.acc  : -1; }},
+    {key:'qr',      label:'QR',        get:function(s){ return s.crc && s.crc.strands.QR  ? s.crc.strands.QR.acc  : -1; }},
+    {key:'psr',     label:'PSR',       get:function(s){ return s.crc && s.crc.strands.PSR ? s.crc.strands.PSR.acc : -1; }},
+    {key:'gsr',     label:'GSR',       get:function(s){ return s.crc && s.crc.strands.GSR ? s.crc.strands.GSR.acc : -1; }},
+    {key:'weak',    label:'Weakest',   get:function(s){ return s.crc && s.crc.weakest ? s.crc.weakest.key : ''; }},
+    {key:'last',    label:'Last Test', get:function(s){ return s.crc ? s.crc.last : 0; }}
+  ];
+
+  function renderCrcRows(rows){
+    rows = rows.filter(function(s){ return !!s.crc; });
+    if (!rows.length) return '<tr><td colspan="'+CRC_COLS.length+'" style="color:var(--muted)">'+
+      'No practice-test activity for these filters yet.</td></tr>';
+    return rows.map(function(s){
+      var x = s.crc;
+      var statusCell = x.taken
+        ? '<td class="num">'+x.taken+'</td><td class="num">'+x.passed+'</td>'
+        : '<td class="num muted" title="Started a test but never finished it — '+x.unfinished+' of 20 answered">0</td><td class="num muted">\u2014</td>';
+      return '<tr>'+
+        '<td>'+esc(s.name || '(no name)')+'</td>'+
+        '<td>'+esc(s.teacher || '\u2014')+'</td>'+
+        '<td>'+esc(s.klass || '\u2014')+'</td>'+
+        statusCell+
+        '<td class="num">'+(x.taken ? crcScoreCell(x) : '<span class="muted">unfinished ('+x.unfinished+'/20)</span>')+'</td>'+
+        '<td class="num">'+(x.items ? x.correct+'/'+x.items : '\u2014')+'</td>'+
+        CRC_STRANDS.map(function(c){ return crcStrandCell(x.strands[c.key]); }).join('')+
+        '<td>'+(x.weakest ? '<b>'+x.weakest.key+'</b> <span class="muted">'+Math.round(x.weakest.acc*100)+'%</span>' : '\u2014')+'</td>'+
+        '<td class="num muted">'+fmtDate(x.last)+'</td>'+
+      '</tr>';
+    }).join('');
+  }
 
   var SUMMARY_COLS = [
     {key:'name',     label:'Student',     get:function(s){ return s.name || '(no name)'; }},
@@ -471,7 +593,7 @@
       ? '<div class="warnBanner">'+badCount+' student record'+(badCount===1?'':'s')+' couldn\u2019t be read (corrupted saved data) \u2014 showing as zero progress until re-synced.</div>'
       : '';
 
-    var cols = view === 'summary' ? SUMMARY_COLS : DETAIL_COLS;
+    var cols = view === 'summary' ? SUMMARY_COLS : (view === 'crc' ? CRC_COLS : DETAIL_COLS);
     var st = sortState[view];
     var colDef = cols.filter(function(c){ return c.key === st.key; })[0] || cols[0];
 
@@ -479,6 +601,9 @@
     if (view === 'summary'){
       var rows = sortRows(students.slice(), st.dir, colDef.get);
       $('#repRows').innerHTML = renderSummaryRows(rows);
+    } else if (view === 'crc'){
+      var crows = sortRows(students.slice(), st.dir, colDef.get);
+      $('#repRows').innerHTML = renderCrcRows(crows);
     } else {
       var drows = sortRows(flattenDetail(students), st.dir, colDef.get);
       $('#repRows').innerHTML = renderDetailRows(drows);
@@ -502,7 +627,39 @@
   /* ---------------- CSV export (Detail grain, respects current filters) ---------------- */
 
   function csvEscape(v){ var s = (v==null) ? '' : String(v); return /[",\n]/.test(s) ? '"'+s.replace(/"/g,'""')+'"' : s; }
+
+  /* Practice-test export. One row per student, matching what the view shows.
+     score_is_estimate flags rows where the exact score was lost before the
+     Apps Script fix and only the 1-5 band survived. */
+  function downloadCrcCSV(){
+    var rows = filteredStudents().filter(function(s){ return !!s.crc; });
+    var headers = ['student_name','student_id','teacher','class_period','status',
+      'tests_taken','tests_at_or_above_950','score','score_is_estimate',
+      'raw_correct','raw_items','AR','QR','PSR','GSR','weakest_strand','last_test'];
+    var lines = [headers.map(csvEscape).join(',')];
+    rows.forEach(function(s){
+      var x = s.crc;
+      var cell = function(k){ return x.strands[k] ? x.strands[k].c+'/'+x.strands[k].n : ''; };
+      lines.push([
+        s.name, s.id, s.teacher, s.klass,
+        x.taken ? 'Completed' : 'Did not finish ('+x.unfinished+'/20)',
+        x.taken || 0, x.taken ? x.passed : '',
+        x.exact != null ? x.exact : (x.lo != null ? x.lo+'-'+x.hi : ''),
+        x.exact != null ? 'no' : (x.lo != null ? 'yes' : ''),
+        x.correct, x.items,
+        cell('AR'), cell('QR'), cell('PSR'), cell('GSR'),
+        x.weakest ? x.weakest.key : '', fmtDate(x.last)
+      ].map(csvEscape).join(','));
+    });
+    var blob = new Blob([lines.join('\n')], {type:'text/csv;charset=utf-8;'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'tsi_practice_tests.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
+  }
   function downloadCSV(){
+    if (view === 'crc') return downloadCrcCSV();
     var rows = flattenDetail(filteredStudents());
     var headers = ['student_name','student_id','teacher','class_period','standard','standard_name',
       'attempts','correct','overall_accuracy','recent_10_accuracy','hints','level','last_active','status'];
@@ -567,6 +724,7 @@
       subject = next;
       document.querySelectorAll('#subjectSwitch .viewBtn').forEach(function(x){ x.classList.toggle('is-active', x===b); });
       expandedIds = {};   // per-standard ids differ across subjects; collapse any open detail rows
+      syncCrcTab();
       if (studentsBySubject[subject]){
         // Already fetched this tab this session — swap in the cache, no network round trip.
         raw = studentsBySubject[subject];
@@ -578,6 +736,19 @@
       }
     });
   });
+  /* The practice test is a TSI feature; hide its tab on Algebra 1 and fall
+     back to Summary if it was the active view when the subject changed. */
+  function syncCrcTab(){
+    var isTsi = (subject === 'tsi');
+    $('#crcTab').style.display = isTsi ? '' : 'none';
+    if (!isTsi && view === 'crc'){
+      view = 'summary';
+      document.querySelectorAll('.viewBtn[data-view]').forEach(function(x){
+        x.classList.toggle('is-active', x.getAttribute('data-view') === 'summary');
+      });
+    }
+  }
+
   document.querySelectorAll('.viewBtn[data-view]').forEach(function(b){
     b.addEventListener('click', function(){
       view = b.getAttribute('data-view');
