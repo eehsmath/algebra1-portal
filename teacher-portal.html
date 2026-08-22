@@ -215,12 +215,12 @@
   var studentsBySubject = { algebra: null, tsi: null };  // cache: null = not fetched yet for that tab
   var raw = [];               // current subject's students, with rollups already attached
   var view = 'summary';       // 'summary' | 'detail' | 'crc'  (crc is TSI-only)
-  var sortState = { summary: {key:'name', dir:1}, detail: {key:'name', dir:1}, crc: {key:'score', dir:1} };
+  var sortState = { summary: {key:'name', dir:1}, detail: {key:'name', dir:1}, crc: {key:'score', dir:-1} };
 
   var VIEW_CAPTIONS = {
     summary: 'One row per student — overall roll-up across every standard. Click the <b>+</b> at the end of a row to spot-check that one student\u2019s per-standard detail without leaving Summary; click it again to collapse. Switch to Detail to see every student\u2019s breakdown at once instead.',
     detail:  'One row per student per standard they\u2019ve started \u2014 sort by \u201cStandard\u201d to compare the whole filtered group on one topic at a time.',
-    crc:     'One row per student who has taken the 20-question adaptive practice test. These numbers are kept separate from Mastered/Progress on purpose \u2014 the test targets roughly 50% difficulty, so mixing it into standards mastery would understate what students actually know. Sort by <b>Weakest</b> or a strand column to group students who need the same reteach.'
+    crc:     'One row per student with practice-test activity. <b>Only finished tests are counted</b> \u2014 a test still in progress shows as a chip and adds nothing to Raw or the strand columns until the student completes it. These numbers stay separate from Mastered/Progress on purpose: the test targets roughly 50% difficulty, so folding it into standards mastery would understate what students know. Sort by <b>Weakest</b> or a strand column to group students who need the same reteach. A <b>*</b> marks older records where the count may include unfinished work.'
   };
 
   /* ---------------- data shaping ---------------- */
@@ -346,24 +346,68 @@
     { key:'PSR', id:'CRC.PSR' }, { key:'GSR', id:'CRC.GSR' }
   ];
 
+  var RESUME_MAX_AGE_DAYS = 14;   // must match getResume() in portal-tsi.js
+
+  /* An unfinished test in the resume slot. Not counted anywhere — shown as its
+     own "in progress" state so a teacher can see who is mid-test without that
+     work inflating anyone's totals. Mirrors the client's expiry rule so a
+     lapsed test stops showing here too, even before the student next loads
+     the hub and it gets reaped for real. */
+  function openTestFor(d){
+    var r = d && d.resume;
+    if (!r || r.cleared || !r.at) return null;
+    if ((Date.now() - r.at) > RESUME_MAX_AGE_DAYS * 86400000) return null;
+    var n = r.n || (Array.isArray(r.picks) ? r.picks.length : 0);
+    if (!n) return null;
+    return { answered: n, at: r.at };
+  }
+
   function crcFor(d){
     d = d || {};
     var skills = d.skills || {};
     var t = skills['CRC.TEST'];
     var log = Array.isArray(d.tests) ? d.tests.slice().sort(function(x,y){ return (x.t||0)-(y.t||0); }) : [];
+    var open = openTestFor(d);
 
-    var strands = {}, items = 0, correct = 0, weakest = null, last = 0;
-    CRC_STRANDS.forEach(function(c){
-      var s = skills[c.id];
-      if (!s || !s.a) { strands[c.key] = null; return; }
-      strands[c.key] = { c: s.c, n: s.a, acc: s.c / s.a };
-      items += s.a; correct += s.c;
-      if (s.t > last) last = s.t;
-      if (!weakest || (s.c/s.a) < weakest.acc) weakest = { key: c.key, acc: s.c/s.a };
-    });
+    /* Counts come from the per-attempt log when we have it, because that is
+       finished tests only, by construction. Records from before the sync fix
+       have no log, so we fall back to the CRC.* counters and mark them — those
+       may still include questions from tests that were never finished. */
+    var strands = {}, items = 0, correct = 0, weakest = null, last = 0, estimated = false;
 
-    if (!t && !items) return null;                 // no practice-test activity at all
+    if (log.length){
+      CRC_STRANDS.forEach(function(c){ strands[c.key] = { c:0, n:0, acc:0 }; });
+      log.forEach(function(e){
+        var st = e.s || {};
+        CRC_STRANDS.forEach(function(c){
+          var pair = st[c.key];
+          if (!pair) return;
+          strands[c.key].c += (pair[0] || 0);
+          strands[c.key].n += (pair[1] || 0);
+        });
+        if (e.t > last) last = e.t;
+      });
+      CRC_STRANDS.forEach(function(c){
+        var v = strands[c.key];
+        if (!v.n) { strands[c.key] = null; return; }
+        v.acc = v.c / v.n; items += v.n; correct += v.c;
+        if (!weakest || v.acc < weakest.acc) weakest = { key: c.key, acc: v.acc };
+      });
+    } else {
+      estimated = true;
+      CRC_STRANDS.forEach(function(c){
+        var sk = skills[c.id];
+        if (!sk || !sk.a) { strands[c.key] = null; return; }
+        strands[c.key] = { c: sk.c, n: sk.a, acc: sk.c / sk.a };
+        items += sk.a; correct += sk.c;
+        if (sk.t > last) last = sk.t;
+        if (!weakest || (sk.c/sk.a) < weakest.acc) weakest = { key: c.key, acc: sk.c/sk.a };
+      });
+    }
+
+    if (!t && !items && !open) return null;        // no practice-test activity at all
     if (t && t.t > last) last = t.t;
+    if (open && open.at > last) last = open.at;
 
     var taken  = t ? t.a : 0;
     var passed = t ? t.c : 0;
@@ -380,7 +424,7 @@
       lo: band ? Math.max(910, Math.round(910 + (band-1.5)*20)) : null,
       hi: band ? Math.min(990, Math.round(910 + (band-0.5)*20)) : null,
       strands: strands, items: items, correct: correct,
-      unfinished: (!t && items > 0) ? items : 0,
+      open: open, estimated: estimated && items > 0,
       weakest: weakest, last: last
     };
   }
@@ -423,16 +467,19 @@
       'No practice-test activity for these filters yet.</td></tr>';
     return rows.map(function(s){
       var x = s.crc;
-      var statusCell = x.taken
-        ? '<td class="num">'+x.taken+'</td><td class="num">'+x.passed+'</td>'
-        : '<td class="num muted" title="Started a test but never finished it — '+x.unfinished+' of 20 answered">0</td><td class="num muted">\u2014</td>';
+      var progress = x.open
+        ? '<span class="chip-prog" title="Answered '+x.open.answered+' of 20. Not counted until they finish.">in progress '+x.open.answered+'/20</span>'
+        : '';
+      var scoreCell = x.taken ? crcScoreCell(x)
+                    : (x.open ? progress : '<span class="muted">\u2014</span>');
       return '<tr>'+
-        '<td>'+esc(s.name || '(no name)')+'</td>'+
+        '<td>'+esc(s.name || '(no name)')+(x.taken && x.open ? ' '+progress : '')+'</td>'+
         '<td>'+esc(s.teacher || '\u2014')+'</td>'+
         '<td>'+esc(s.klass || '\u2014')+'</td>'+
-        statusCell+
-        '<td class="num">'+(x.taken ? crcScoreCell(x) : '<span class="muted">unfinished ('+x.unfinished+'/20)</span>')+'</td>'+
-        '<td class="num">'+(x.items ? x.correct+'/'+x.items : '\u2014')+'</td>'+
+        '<td class="num'+(x.taken?'':' muted')+'">'+(x.taken||0)+'</td>'+
+        '<td class="num'+(x.taken?'':' muted')+'">'+(x.taken ? x.passed : '\u2014')+'</td>'+
+        '<td class="num">'+scoreCell+'</td>'+
+        '<td class="num">'+(x.items ? x.correct+'/'+x.items+(x.estimated?' <span class="muted" title="From before the sync fix — may include questions from tests that were never finished">*</span>':'') : '\u2014')+'</td>'+
         CRC_STRANDS.map(function(c){ return crcStrandCell(x.strands[c.key]); }).join('')+
         '<td>'+(x.weakest ? '<b>'+x.weakest.key+'</b> <span class="muted">'+Math.round(x.weakest.acc*100)+'%</span>' : '\u2014')+'</td>'+
         '<td class="num muted">'+fmtDate(x.last)+'</td>'+
@@ -568,11 +615,46 @@
   }
 
   function renderStats(students){
-    var n = students.length, totalAttempts = 0, progSum = 0, masteredSum = 0;
+    var n = students.length, cards;
+
+    if (view === 'crc'){
+      /* The practice test is not standards practice, so the standards tiles
+         say nothing useful here. Show what this view is actually about. */
+      var tested = 0, tests = 0, passed = 0, inProgress = 0, strandTot = {};
+      CRC_STRANDS.forEach(function(c){ strandTot[c.key] = {c:0, n:0}; });
+      students.forEach(function(s){
+        var x = s.crc; if (!x) return;
+        if (x.taken) { tested++; tests += x.taken; passed += x.passed; }
+        if (x.open) inProgress++;
+        CRC_STRANDS.forEach(function(c){
+          var v = x.strands[c.key]; if (!v) return;
+          strandTot[c.key].c += v.c; strandTot[c.key].n += v.n;
+        });
+      });
+      var weakest = null;
+      CRC_STRANDS.forEach(function(c){
+        var v = strandTot[c.key]; if (!v.n) return;
+        var acc = v.c / v.n;
+        if (!weakest || acc < weakest.acc) weakest = { key:c.key, acc:acc };
+      });
+      cards = [
+        {n: tested, l: 'Students with a finished test'},
+        {n: tests,  l: 'Tests completed'},
+        {n: tests ? Math.round(passed/tests*100)+'%' : '\u2014', l: 'Tests at or above 950'},
+        {n: weakest ? weakest.key + ' ' + Math.round(weakest.acc*100)+'%' : '\u2014', l: 'Weakest strand (group)'}
+      ];
+      if (inProgress) cards.push({n: inProgress, l: 'Tests in progress'});
+      $('#statRow').innerHTML = cards.map(function(c){
+        return '<div class="statCard"><div class="n">'+c.n+'</div><div class="l">'+c.l+'</div></div>';
+      }).join('');
+      return;
+    }
+
+    var totalAttempts = 0, progSum = 0, masteredSum = 0;
     students.forEach(function(s){
       totalAttempts += s.overall.attempts; progSum += s.overall.progress; masteredSum += s.overall.mastered;
     });
-    var cards = [
+    cards = [
       {n:n, l:'Students shown'},
       {n:n ? Math.round(progSum/n*100)+'%' : '\u2014', l:'Avg. progress'},
       {n:masteredSum, l:'Standards mastered (total)'},
@@ -635,18 +717,19 @@
     var rows = filteredStudents().filter(function(s){ return !!s.crc; });
     var headers = ['student_name','student_id','teacher','class_period','status',
       'tests_taken','tests_at_or_above_950','score','score_is_estimate',
-      'raw_correct','raw_items','AR','QR','PSR','GSR','weakest_strand','last_test'];
+      'raw_correct','raw_items','counts_may_include_unfinished',
+      'AR','QR','PSR','GSR','weakest_strand','last_test'];
     var lines = [headers.map(csvEscape).join(',')];
     rows.forEach(function(s){
       var x = s.crc;
       var cell = function(k){ return x.strands[k] ? x.strands[k].c+'/'+x.strands[k].n : ''; };
       lines.push([
         s.name, s.id, s.teacher, s.klass,
-        x.taken ? 'Completed' : 'Did not finish ('+x.unfinished+'/20)',
+        x.taken ? 'Completed' : (x.open ? 'In progress ('+x.open.answered+'/20)' : 'No finished test'),
         x.taken || 0, x.taken ? x.passed : '',
         x.exact != null ? x.exact : (x.lo != null ? x.lo+'-'+x.hi : ''),
         x.exact != null ? 'no' : (x.lo != null ? 'yes' : ''),
-        x.correct, x.items,
+        x.correct, x.items, x.estimated ? 'yes' : 'no',
         cell('AR'), cell('QR'), cell('PSR'), cell('GSR'),
         x.weakest ? x.weakest.key : '', fmtDate(x.last)
       ].map(csvEscape).join(','));
