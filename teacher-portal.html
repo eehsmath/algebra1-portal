@@ -36,6 +36,14 @@
 
   /* ---------- filter bar ---------- */
   .filterBar{display:flex; gap:10px; flex-wrap:wrap; align-items:flex-end}
+  /* The three inputs carried hard min-widths (200/170/170) and the tab group is
+     inline-flex, so the row had a minimum width nothing could give ground on.
+     Three tabs happened to fit; the fourth pushed the row past the page and the
+     whole document went wide, which reads as the report "shifted right".
+     Letting the fields shrink and the tab group wrap removes the floor entirely,
+     so the row can no longer widen the page no matter how many tabs exist. */
+  .filterBar > .field{flex:1 1 170px; min-width:0}
+  .filterBar > .field input, .filterBar > .field select{min-width:0; width:100%}
   .field{display:flex; flex-direction:column; gap:5px}
   .field label{font-size:11px; font-weight:900; letter-spacing:.6px; color:var(--muted); text-transform:uppercase}
   .field input, .field select{
