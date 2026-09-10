@@ -41,6 +41,27 @@
   }
   .switchLink:hover{color:var(--ink); border-color:#c3d0ff}
 
+  /* ---------- search ---------- */
+  .searchRow{margin-top:12px; position:relative}
+  .searchInput{
+    width:100%; height:48px; border:2px solid var(--ui); border-radius:14px;
+    padding:0 44px 0 16px; font:800 15px/1 inherit; color:var(--ink);
+    font-family:inherit; background:#fff;
+  }
+  .searchInput::placeholder{color:var(--muted); font-weight:700}
+  .searchClear{
+    position:absolute; right:8px; top:50%; transform:translateY(-50%);
+    width:32px; height:32px; border-radius:50%; border:0; background:transparent;
+    color:var(--muted); font-size:18px; font-weight:900; cursor:pointer; line-height:1;
+  }
+  .searchClear:hover{background:#eef3ff; color:var(--ink)}
+  .searchResultsWrap{
+    background:var(--panel); border:1px solid var(--ui); border-radius:18px;
+    box-shadow:var(--shadow); padding:16px 16px 6px; margin-bottom:14px;
+  }
+  .searchMeta{color:var(--muted); font-weight:800; font-size:13px; margin:2px 4px 12px}
+  .searchResultsWrap .glyph.code{font-size:12px; letter-spacing:.3px}
+
   .pills{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; align-items:center}
   .pill{
     display:inline-block; padding:7px 14px; border-radius:999px; border:1px solid var(--ui);
@@ -252,6 +273,12 @@
       <!-- identity display: "Tracking ID XXXXXX" / "Welcome back, NAME!" / guest -->
       <div class="idBox" id="idBox"></div>
     </div>
+    <div class="searchRow">
+      <input type="search" id="searchInput" class="searchInput" autocomplete="off"
+             placeholder="Search modules… try &quot;linear&quot;, &quot;sequence&quot;, &quot;function&quot;"
+             aria-label="Search practice modules" />
+      <button class="searchClear" id="searchClear" type="button" aria-label="Clear search" hidden>&times;</button>
+    </div>
     <div class="pills">
       <span class="pill">Answered <b id="tAttempts">0</b></span>
       <span class="pill">Accuracy <b id="tAcc">—</b></span>
@@ -262,6 +289,12 @@
       <button class="btn info" id="reportBtn">My report</button>
       <button class="btn" id="moreBtn">More practice</button>
     </div>
+  </div>
+
+  <!-- ============ search results (shown instead of the grid while searching) ============ -->
+  <div class="searchResultsWrap" id="searchResultsWrap" hidden>
+    <div class="searchMeta" id="searchMeta" aria-live="polite"></div>
+    <ul class="moreList" id="searchResults"></ul>
   </div>
 
   <!-- ============ four sections ============ -->
@@ -369,6 +402,7 @@
 </div>
 
 <script src="portal.js"></script>
+<script src="search-data.js"></script>
 <script>
 (function(){
   'use strict';
@@ -475,6 +509,91 @@
     $('#tAcc').textContent = t.attempts ? Math.round(100*t.correct/t.attempts)+'%' : '—';
     $('#tMastered').textContent = t.mastered;
   }
+
+  /* ---------- search ----------
+     Static index (search-data.js -> SEARCH_INDEX) of every practice
+     MODULE (the SEs inside each standard's app), flattened once into a
+     searchable corpus. Matches against the module's own short/title/
+     blurb plus its parent standard's code/name and section name, so
+     "linear"/"sequence"/"function" all find something relevant. Results
+     replace the path grid while a query is active; clearing the box (or
+     Escape) restores it. This never touches progress tracking. */
+  function buildSearchCorpus(){
+    var list = (typeof SEARCH_INDEX !== 'undefined') ? SEARCH_INDEX : [];
+    var secByIdx = {};
+    Portal.SECTIONS.forEach(function(s){ secByIdx[s.id] = s; });
+    var items = [];
+    list.forEach(function(std){
+      var sec = secByIdx[std.sec];
+      var secName = sec ? sec.name : '';
+      (std.modules || []).forEach(function(m){
+        var hay = [std.code, std.name, secName, m.short, m.title, m.blurb]
+          .join(' ').toLowerCase();
+        items.push({
+          code: std.code, file: std.file, secName: secName,
+          title: m.title || m.short || std.name,
+          blurb: m.blurb || m.short || '',
+          hay: hay
+        });
+      });
+    });
+    return items;
+  }
+  var SEARCH_CORPUS = buildSearchCorpus();
+
+  function runSearch(query){
+    var terms = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    if (!terms.length) return null; // no active query
+    return SEARCH_CORPUS.filter(function(item){
+      return terms.every(function(t){ return item.hay.indexOf(t) !== -1; });
+    });
+  }
+
+  function searchResultHTML(item){
+    return '<li><a class="moreItem" href="'+esc(item.file)+'">' +
+      '<span class="glyph code">'+esc(item.code)+'</span>' +
+      '<span class="info"><span class="nm">'+esc(item.title)+'</span>' +
+        '<span class="ds">'+esc(item.blurb)+'</span></span>' +
+      '<span class="go">Practice →</span>' +
+    '</a></li>';
+  }
+
+  function renderSearch(query){
+    var results = runSearch(query || '');
+    var sectionsHost = $('#sections');
+    var wrap = $('#searchResultsWrap');
+    $('#searchClear').hidden = !(query && query.length);
+    if (results === null){
+      wrap.hidden = true;
+      sectionsHost.hidden = false;
+      return;
+    }
+    sectionsHost.hidden = true;
+    wrap.hidden = false;
+    var q = query.trim();
+    if (!results.length){
+      $('#searchMeta').textContent = 'No modules found for “'+q+'” — try a different word.';
+      $('#searchResults').innerHTML = '';
+    } else {
+      $('#searchMeta').textContent = results.length + (results.length === 1 ? ' module' : ' modules') +
+        ' found for “'+q+'”';
+      $('#searchResults').innerHTML = results.map(searchResultHTML).join('');
+    }
+  }
+
+  var searchInputEl = $('#searchInput');
+  searchInputEl.addEventListener('input', function(){ renderSearch(searchInputEl.value); });
+  searchInputEl.addEventListener('keydown', function(e){
+    if (e.key === 'Escape' && searchInputEl.value){
+      searchInputEl.value = '';
+      renderSearch('');
+    }
+  });
+  $('#searchClear').addEventListener('click', function(){
+    searchInputEl.value = '';
+    renderSearch('');
+    searchInputEl.focus();
+  });
 
   /* ---------- identity display (header) ---------- */
   function updateIdentity(){
