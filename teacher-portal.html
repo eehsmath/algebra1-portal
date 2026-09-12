@@ -107,6 +107,16 @@
   }
   .miniDetailTable td{padding:6px 8px; border-bottom:1px solid #eef2ff; font-weight:800}
   .miniDetailEmpty{color:var(--muted); font-weight:700; font-size:12.5px; padding:4px 2px}
+  .testCode{
+    font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px;
+    background:#f2f5fc; border:1px solid var(--ui); border-radius:6px; padding:2px 7px;
+    letter-spacing:.3px; user-select:all;
+  }
+  .copyCodeBtn{
+    height:24px; border-radius:7px; border:1px solid var(--ui); background:#fff;
+    font-family:inherit; font-weight:900; font-size:11.5px; padding:0 9px; cursor:pointer; color:var(--blue);
+  }
+  .copyCodeBtn:hover{background:#eef4ff; border-color:#c3d0ff}
 
   .chip-ok{color:var(--ok); background:#eafff2; border:1px solid #bfeacc; border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
   .chip-prog{color:#7a5a00; background:#fff9d6; border:1px solid #ffe38a; border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
@@ -475,7 +485,7 @@
 
   function renderCrcRows(rows){
     rows = rows.filter(function(s){ return !!s.crc; });
-    if (!rows.length) return '<tr><td colspan="'+CRC_COLS.length+'" style="color:var(--muted)">'+
+    if (!rows.length) return '<tr><td colspan="'+(CRC_COLS.length+1)+'" style="color:var(--muted)">'+
       'No practice-test activity for these filters yet.</td></tr>';
     return rows.map(function(s){
       var x = s.crc;
@@ -483,20 +493,51 @@
         ? '<span class="chip-prog" title="Answered '+x.open.answered+' of 20. Not counted until they finish.">in progress '+x.open.answered+'/20</span>'
         : '';
       var scoreCell = x.taken ? crcScoreCell(x)
-                    : (x.open ? progress : '<span class="muted">\u2014</span>');
-      return '<tr>'+
+                    : (x.open ? progress : '<span class="muted">—</span>');
+      var crcId = 'crc:'+s.id;
+      var isOpen = !!expandedIds[crcId];
+      var who = esc(s.name || 'this student');
+      var mainRow = '<tr class="rosterRow">'+
         '<td>'+esc(s.name || '(no name)')+(x.taken && x.open ? ' '+progress : '')+'</td>'+
-        '<td>'+esc(s.teacher || '\u2014')+'</td>'+
-        '<td>'+esc(s.klass || '\u2014')+'</td>'+
+        '<td>'+esc(s.teacher || '—')+'</td>'+
+        '<td>'+esc(s.klass || '—')+'</td>'+
         '<td class="num'+(x.taken?'':' muted')+'">'+(x.taken||0)+'</td>'+
-        '<td class="num'+(x.taken?'':' muted')+'">'+(x.taken ? x.passed : '\u2014')+'</td>'+
+        '<td class="num'+(x.taken?'':' muted')+'">'+(x.taken ? x.passed : '—')+'</td>'+
         '<td class="num">'+scoreCell+'</td>'+
-        '<td class="num">'+(x.items ? x.correct+'/'+x.items+(x.estimated?' <span class="muted" title="From before the sync fix — may include questions from tests that were never finished">*</span>':'') : '\u2014')+'</td>'+
+        '<td class="num">'+(x.items ? x.correct+'/'+x.items+(x.estimated?' <span class="muted" title="From before the sync fix — may include questions from tests that were never finished">*</span>':'') : '—')+'</td>'+
         CRC_STRANDS.map(function(c){ return crcStrandCell(x.strands[c.key]); }).join('')+
-        '<td>'+(x.weakest ? '<b>'+x.weakest.key+'</b> <span class="muted">'+Math.round(x.weakest.acc*100)+'%</span>' : '\u2014')+'</td>'+
+        '<td>'+(x.weakest ? '<b>'+x.weakest.key+'</b> <span class="muted">'+Math.round(x.weakest.acc*100)+'%</span>' : '—')+'</td>'+
         '<td class="num muted">'+fmtDate(x.last)+'</td>'+
+        '<td class="expandCell"><button type="button" class="expandBtn'+(isOpen?' is-open':'')+'" '+
+          'data-id="'+esc(crcId)+'" aria-expanded="'+(isOpen?'true':'false')+'" '+
+          'title="'+(isOpen?'Collapse':'Show')+' '+who+'’s test codes">'+(isOpen?'−':'+')+'</button></td>'+
+      '</tr>';
+      if (!isOpen) return mainRow;
+      return mainRow + '<tr class="expandRow" data-expand-for="'+esc(crcId)+'">'+
+        '<td colspan="'+(CRC_COLS.length+1)+'">'+crcDetailHTML(s)+'</td></tr>';
+    }).join('');
+  }
+
+  /* Per-student list of finished CRC attempts with their resume/review codes,
+     newest first, each with a one-click copy so a teacher can pull a specific
+     test back up without retyping a 6-character code by hand. */
+  function crcDetailHTML(s){
+    var log = (s.crc && s.crc.log) || [];
+    if (!log.length) return '<div class="miniDetailEmpty">No finished practice tests logged for this student yet.</div>';
+    var body = log.slice().reverse().map(function(e){
+      var code = e.code || '';
+      return '<tr>'+
+        '<td class="num muted">'+fmtDate(e.t)+'</td>'+
+        '<td class="num">'+(e.score != null ? e.score : '—')+'</td>'+
+        '<td>'+(e.ready ? '<span class="chip-ok">Ready ✓</span>' : '<span class="chip-prog">Not yet</span>')+'</td>'+
+        '<td class="num">'+(e.right!=null && e.n!=null ? e.right+'/'+e.n : '—')+'</td>'+
+        '<td>'+(code ? '<span class="testCode">'+esc(code)+'</span>' : '<span class="muted">—</span>')+'</td>'+
+        '<td>'+(code ? '<button type="button" class="copyCodeBtn" data-code="'+esc(code)+'">Copy</button>' : '')+'</td>'+
       '</tr>';
     }).join('');
+    return '<table class="miniDetailTable"><thead><tr>'+
+      '<th>Date</th><th>Score</th><th>Result</th><th>Raw</th><th>Test code</th><th></th>'+
+      '</tr></thead><tbody>'+body+'</tbody></table>';
   }
 
   var SUMMARY_COLS = [
@@ -691,7 +732,7 @@
     var st = sortState[view];
     var colDef = cols.filter(function(c){ return c.key === st.key; })[0] || cols[0];
 
-    $('#repHead').innerHTML = renderHead(cols, st.key, st.dir, view==='summary' ? '<th class="expandHead"></th>' : '');
+    $('#repHead').innerHTML = renderHead(cols, st.key, st.dir, (view==='summary' || view==='crc') ? '<th class="expandHead"></th>' : '');
     if (view === 'summary'){
       var rows = sortRows(students.slice(), st.dir, colDef.get);
       $('#repRows').innerHTML = renderSummaryRows(rows);
@@ -852,6 +893,21 @@
     });
   });
   document.addEventListener('click', function(e){
+    var copyBtn = e.target.closest('.copyCodeBtn');
+    if (copyBtn){
+      var code = copyBtn.getAttribute('data-code') || '';
+      var showCopied = function(){
+        var prev = copyBtn.textContent;
+        copyBtn.textContent = 'Copied';
+        setTimeout(function(){ copyBtn.textContent = prev; }, 1200);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(code).then(showCopied, showCopied);
+      } else {
+        showCopied();
+      }
+      return;
+    }
     var expandBtn = e.target.closest('.expandBtn');
     if (expandBtn){
       var sid = expandBtn.getAttribute('data-id');
