@@ -324,8 +324,8 @@
     var q = ($('#qInput').value || '').trim().toLowerCase();
     var t = $('#teacherSel').value, c = $('#classSel').value;
     return raw.filter(function(s){
-      if (t && s.teacher !== t) return false;
-      if (c && s.klass !== c) return false;
+      if (t && (s.teacher || '(unassigned)') !== t) return false;
+      if (c && (s.klass || '(unassigned)') !== c) return false;
       if (q && s.name.toLowerCase().indexOf(q) === -1 && String(s.id).indexOf(q) === -1) return false;
       return true;
     });
