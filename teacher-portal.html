@@ -554,6 +554,29 @@
     {key:'hints',    label:'Hints',       get:function(s){ return s.overall.hints; }},
     {key:'last',     label:'Last Active', get:function(s){ return s.overall.last; }}
   ];
+
+  /* TSI-only receipt column — just "did they take it and what did they get,"
+     no mastery math, so it stays out of SUMMARY_COLS proper and only gets
+     appended when subject is 'tsi' (Algebra 1 has no CRC test to show). */
+  var CRC_SUMMARY_COL = {key:'crcTest', label:'Practice Test',
+    get:function(s){
+      if (!s.crc) return -4;
+      if (s.crc.exact != null) return s.crc.exact;
+      if (s.crc.taken) return s.crc.lo || -1;
+      if (s.crc.open) return -2;
+      return -3;
+    }};
+  function summaryCols(){
+    return (subject === 'tsi') ? SUMMARY_COLS.concat([CRC_SUMMARY_COL]) : SUMMARY_COLS;
+  }
+  function crcSummaryCell(s){
+    var x = s.crc;
+    if (!x) return '<td class="num muted">—</td>';
+    if (x.taken) return '<td class="num">'+crcScoreCell(x)+(x.taken>1 ? ' <span class="muted">×'+x.taken+'</span>' : '')+'</td>';
+    if (x.open) return '<td class="num"><span class="chip-prog" title="Answered '+x.open.answered+' of 20. Not counted until they finish.">in progress '+x.open.answered+'/20</span></td>';
+    return '<td class="num muted">—</td>';
+  }
+
   var DETAIL_COLS = [
     {key:'name',      label:'Student',     get:function(r){ return r.name || '(no name)'; }},
     {key:'teacher',   label:'Teacher',     get:function(r){ return r.teacher || '\u2014'; }},
@@ -625,7 +648,9 @@
   }
 
   function renderSummaryRows(rows){
-    if (!rows.length) return '<tr><td colspan="'+(SUMMARY_COLS.length+1)+'" style="color:var(--muted)">No students match these filters.</td></tr>';
+    var cols = summaryCols();
+    var isTsi = (subject === 'tsi');
+    if (!rows.length) return '<tr><td colspan="'+(cols.length+1)+'" style="color:var(--muted)">No students match these filters.</td></tr>';
     return rows.map(function(s){
       var warn = s.parseError ? '<span class="warnDot" title="Could not read this student\u2019s saved progress data \u2014 shown as zero"></span>' : '';
       var isOpen = !!expandedIds[s.id];
@@ -641,13 +666,14 @@
         '<td class="num">'+(s.overall.attempts ? pct(s.overall.accuracy) : '\u2014')+'</td>'+
         '<td class="num">'+s.overall.hints+'</td>'+
         '<td class="num muted">'+fmtDate(s.overall.last)+'</td>'+
+        (isTsi ? crcSummaryCell(s) : '')+
         '<td class="expandCell"><button type="button" class="expandBtn'+(isOpen?' is-open':'')+'" '+
           'data-id="'+esc(s.id)+'" aria-expanded="'+(isOpen?'true':'false')+'" '+
           'title="'+(isOpen?'Collapse':'Show')+' '+who+'\u2019s per-standard detail">'+(isOpen?'\u2212':'+')+'</button></td>'+
       '</tr>';
       if (!isOpen) return mainRow;
       return mainRow + '<tr class="expandRow" data-expand-for="'+esc(s.id)+'">'+
-        '<td colspan="'+(SUMMARY_COLS.length+1)+'">'+miniDetailHTML(s)+'</td></tr>';
+        '<td colspan="'+(cols.length+1)+'">'+miniDetailHTML(s)+'</td></tr>';
     }).join('');
   }
   function renderDetailRows(rows){
@@ -730,7 +756,7 @@
       ? '<div class="warnBanner">'+badCount+' student record'+(badCount===1?'':'s')+' couldn\u2019t be read (corrupted saved data) \u2014 showing as zero progress until re-synced.</div>'
       : '';
 
-    var cols = view === 'summary' ? SUMMARY_COLS : (view === 'crc' ? CRC_COLS : DETAIL_COLS);
+    var cols = view === 'summary' ? summaryCols() : (view === 'crc' ? CRC_COLS : DETAIL_COLS);
     var st = sortState[view];
     var colDef = cols.filter(function(c){ return c.key === st.key; })[0] || cols[0];
 
