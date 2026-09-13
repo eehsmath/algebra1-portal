@@ -701,7 +701,7 @@
   function miniDetailHTML(s){
     var rows = flattenDetail([s]);
     var practiceBlock = practiceTestBlockHTML(s);
-    if (!rows.length) return practiceBlock + '<div class="miniDetailEmpty">No practice recorded yet for this student.</div>';
+    if (!rows.length) return practiceBlock + '<div class="miniDetailEmpty">No standards modules started yet.</div>';
     var body = rows.map(function(r){
       return '<tr>'+
         '<td><b>'+esc(r.stdCode)+'</b></td>'+
@@ -750,7 +750,7 @@
     }).join('');
   }
   function renderDetailRows(rows){
-    if (!rows.length) return '<tr><td colspan="'+DETAIL_COLS.length+'" style="color:var(--muted)">No practice recorded yet for these filters.</td></tr>';
+    if (!rows.length) return '<tr><td colspan="'+DETAIL_COLS.length+'" style="color:var(--muted)">No standards modules started yet for these filters.</td></tr>';
     return rows.map(function(r){
       return '<tr class="rosterRow stdRow">'+
         '<td>'+esc(r.name || '(no name)')+'</td>'+
