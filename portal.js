@@ -47,12 +47,13 @@
   var ID_RE = /^\d{6}$/;               // valid student ID: exactly 6 digits
 
   /* ---------------- SECTIONS (the four function-family strands) ----------------
-     Names + strand titles use the official TEKS language. */
+     name is the full official TEKS language, shown on hover; short is the
+     card heading students actually read at a glance. */
   var SECTIONS = [
-    { id: 'linear',      name: 'Linear functions, equations, and inequalities', teks: 'TEKS A.2 \u2013 A.5',  accent: '#2f6cff' },
-    { id: 'quadratic',   name: 'Quadratic functions and equations',            teks: 'TEKS A.6 \u2013 A.8',  accent: '#8e78ff' },
-    { id: 'exponential', name: 'Exponential functions and equations',          teks: 'TEKS A.9',             accent: '#36c2a0' },
-    { id: 'methods',     name: 'Number and algebraic methods',                 teks: 'TEKS A.10 \u2013 A.12', accent: '#f4a531' }
+    { id: 'linear',      name: 'Linear functions, equations, and inequalities', short: 'Linear Functions',      teks: 'TEKS A.2 \u2013 A.5',  accent: '#2f6cff' },
+    { id: 'quadratic',   name: 'Quadratic functions and equations',            short: 'Quadratic Functions',   teks: 'TEKS A.6 \u2013 A.8',  accent: '#8e78ff' },
+    { id: 'exponential', name: 'Exponential functions and equations',          short: 'Exponential Functions', teks: 'TEKS A.9',             accent: '#36c2a0' },
+    { id: 'methods',     name: 'Number and algebraic methods',                 short: 'Algebraic Methods',     teks: 'TEKS A.10 \u2013 A.12', accent: '#f4a531' }
   ];
 
   /* ---------------- STANDARD REGISTRY ----------------

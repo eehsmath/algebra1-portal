@@ -29,6 +29,9 @@
   .hdr .toprow{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap}
   .hdr h1{margin:0; font-family:var(--font-display); font-size:clamp(22px,3.4vw,30px); font-weight:600; letter-spacing:.2px}
   .hdr .sub{color:var(--muted); font-weight:700; font-size:14px; margin-top:4px}
+  .switchNav{font-size:12.5px; font-weight:800; color:var(--muted); margin-top:8px}
+  .switchNav a{color:var(--blue); text-decoration:none; font-weight:900}
+  .switchNav a:hover{text-decoration:underline}
 
   /* ---------- identity display (replaces the old name box) ---------- */
   .idBox{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end}
@@ -103,6 +106,12 @@
   .sec .head.is-open .chev{transform:rotate(180deg)}
   .sec .eyebrow{font-family:var(--font-display); font-size:12px; font-weight:600; letter-spacing:.8px; color:var(--muted); text-transform:uppercase}
   .sec h2{margin:2px 0 0; font-family:var(--font-display); font-size:20px; font-weight:600}
+  /* Card heading shows a short name; the full official TEKS strand title
+     (e.g. "Linear functions, equations, and inequalities") shows on hover,
+     same pattern as a standard row's bubble. */
+  .secTitle{position:relative; display:inline-block}
+  .secTitle .bubble{left:0; bottom:calc(100% + 8px); transform:translateY(4px)}
+  .secTitle:hover .bubble, .secTitle:focus-within .bubble{opacity:1; transform:translateY(0)}
   .sec .mcount{font-size:12px; font-weight:800; color:var(--muted); margin-top:3px}
 
   /* progress ring */
@@ -121,20 +130,23 @@
      checkmark, or dimmed for a "coming soon" standard); the row shrinks to
      a short title, with the full official standard wording moved to a
      hover tooltip. */
+  /* 96px, not TSI's 68px — the busiest section here has 4 standards (TSI
+     ran up to 7 per row), so there's room for a noticeably bigger circle
+     without crowding a row. */
   .node{
-    width:68px; height:68px; flex:none; border-radius:50%; position:relative;
+    width:96px; height:96px; flex:none; border-radius:50%; position:relative;
     display:flex; align-items:center; justify-content:center;
-    font-family:var(--font-display); font-weight:600; font-size:18px;
+    font-family:var(--font-display); font-weight:600; font-size:25px;
     transition:background .3s, border-color .3s, color .3s;
   }
-  .node.notstarted{background:#fff; border:4px solid #edf2ff; color:var(--muted)}
-  .node.started{background:#fff; border:4px solid #edf2ff}
-  .node.started svg{position:absolute; inset:-4px; transform:rotate(-90deg)}
+  .node.notstarted{background:#fff; border:5px solid #edf2ff; color:var(--muted)}
+  .node.started{background:#fff; border:5px solid #edf2ff}
+  .node.started svg{position:absolute; inset:-5px; transform:rotate(-90deg)}
   .node.started .track{fill:none; stroke:#edf2ff; stroke-width:6}
   .node.started .fill{fill:none; stroke:var(--accent); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset .6s ease}
-  .node.started .pct{position:relative; font-size:13px; color:var(--accent)}
-  .node.mastered{background:var(--accent); border:4px solid var(--accent); color:#fff}
-  .node.soon{background:#fff; border:4px dashed #edf2ff; color:var(--muted)}
+  .node.started .pct{position:relative; font-size:17px; color:var(--accent)}
+  .node.mastered{background:var(--accent); border:5px solid var(--accent); color:#fff}
+  .node.soon{background:#fff; border:5px dashed #edf2ff; color:var(--muted)}
 
   .bubble{
     position:absolute; width:240px; max-width:70vw; background:var(--ink); color:#f5f8ff;
@@ -149,19 +161,19 @@
   /* collapsed: every node in one horizontal row, state visible at a glance.
      No flex-wrap — items share the row's width equally (flex:1 1 0), so a
      section with more standards divides that same row into narrower slots
-     instead of wrapping to a second row; the node is capped at 68px so a
+     instead of wrapping to a second row; the node is capped at 96px so a
      short row doesn't grow past the size that reads well. */
   .stripRow{list-style:none; margin:14px 0 0; padding:10px 4px 4px; position:relative; display:flex; gap:14px}
   .stripRow[hidden]{display:none}
-  .stripRow::before{content:""; position:absolute; left:34px; right:34px; top:44px; height:3px; background:#edf2ff; border-radius:3px; z-index:0}
+  .stripRow::before{content:""; position:absolute; left:48px; right:48px; top:58px; height:3px; background:#edf2ff; border-radius:3px; z-index:0}
   .stripItem{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; text-decoration:none; color:inherit; flex:1 1 0; min-width:0}
-  .stripItem .node{width:100%; max-width:68px; height:auto; aspect-ratio:1}
+  .stripItem .node{width:100%; max-width:96px; height:auto; aspect-ratio:1}
   .stripItem .code{font-size:11px; font-weight:900; color:var(--muted)}
   .stripItem.soon{opacity:.55; pointer-events:none}
 
   /* expanded: vertical list of the same big nodes, short title + state + hover detail */
   .listBig{list-style:none; margin:14px 0 4px; padding:0; position:relative}
-  .listBig::before{content:""; position:absolute; left:34px; top:8px; bottom:8px; width:3px; background:#edf2ff; border-radius:3px}
+  .listBig::before{content:""; position:absolute; left:48px; top:8px; bottom:8px; width:3px; background:#edf2ff; border-radius:3px}
   .listBig li{position:relative; margin-bottom:4px}
   .rowBig{display:flex; align-items:center; gap:16px; padding:8px 10px 8px 0; border-radius:14px; text-decoration:none; color:inherit; position:relative}
   .rowBig:hover{background:#f5f8ff}
@@ -577,7 +589,7 @@
       var html =
         '<div class="head'+(open?' is-open':'')+'" role="button" tabindex="0" aria-expanded="'+(open?'true':'false')+'"><div>' +
           '<div class="eyebrow">Section '+(si+1)+' · '+sec.teks+'</div>' +
-          '<h2>'+sec.name+'</h2>' +
+          '<div class="secTitle"><h2>'+sec.short+'</h2><div class="bubble">'+sec.name+'</div></div>' +
           '<div class="mcount">'+s.mastered+' of '+s.readyCount+' standards polished</div>' +
         '</div><div style="display:flex; align-items:center; gap:10px">' + ringSVG(s.progress, sec.accent) +
           '<span class="chev" aria-hidden="true">&#9662;</span></div></div>';
