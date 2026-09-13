@@ -107,6 +107,10 @@
   }
   .miniDetailTable td{padding:6px 8px; border-bottom:1px solid #eef2ff; font-weight:800}
   .miniDetailEmpty{color:var(--muted); font-weight:700; font-size:12.5px; padding:4px 2px}
+  .miniPracticeBlock{background:#f5f2ff; border:1px solid #e0d6ff; border-radius:10px; padding:9px 12px; margin-bottom:8px}
+  .miniPracticeRow{font-size:12.5px; font-weight:800}
+  .miniPracticeRow + .miniPracticeRow{margin-top:6px}
+  .miniLabel{display:inline-block; min-width:96px; font-size:10px; font-weight:900; letter-spacing:.5px; text-transform:uppercase; color:var(--vio)}
   .testCode{
     font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px;
     background:#f2f5fc; border:1px solid var(--ui); border-radius:6px; padding:2px 7px;
@@ -569,10 +573,20 @@
   function summaryCols(){
     return (subject === 'tsi') ? SUMMARY_COLS.concat([CRC_SUMMARY_COL]) : SUMMARY_COLS;
   }
+  /* Every finished score, not just the latest + a count — "950 ×2" told you
+     there were two tests but not whether the other one was a 910 or a 990. */
+  function crcScoreList(x){
+    if (x.log && x.log.length){
+      return x.log.map(function(e){
+        return e.score >= 950 ? '<b style="color:var(--ok)">'+e.score+'</b>' : String(e.score);
+      }).join(', ');
+    }
+    return crcScoreCell(x);   // pre-sync-fix record: no per-attempt log, just the band
+  }
   function crcSummaryCell(s){
     var x = s.crc;
     if (!x) return '<td class="num muted">—</td>';
-    if (x.taken) return '<td class="num">'+crcScoreCell(x)+(x.taken>1 ? ' <span class="muted">×'+x.taken+'</span>' : '')+'</td>';
+    if (x.taken) return '<td class="num">'+crcScoreList(x)+'</td>';
     if (x.open) return '<td class="num"><span class="chip-prog" title="Answered '+x.open.answered+' of 20. Not counted until they finish.">in progress '+x.open.answered+'/20</span></td>';
     return '<td class="num muted">—</td>';
   }
@@ -624,11 +638,70 @@
     }).join('') + (extraCellHTML || '') + '</tr>';
   }
 
+  /* Which REGISTRY section a CRC strand's weak result should point a
+     recommendation at — CRC.AR lives in the 'alg' section, etc. */
+  var SEC_FOR_CRC_STRAND = { AR:'alg', QR:'quant', GSR:'geo', PSR:'prob' };
+
+  /* First not-yet-mastered ready standard, optionally scoped to one section.
+     Same rule as portal-tsi.js's own nextOnPath(), just parameterized over
+     an explicit data blob (like statsForD) instead of always reading this
+     device's own data, and optionally narrowed to a section. */
+  function recommendedStandard(d, sec){
+    var p = activePortal();
+    for (var i = 0; i < p.ready.length; i++){
+      var r = p.ready[i];
+      if (sec && r.sec !== sec) continue;
+      if (!p.api.statsForD(d, r).mastered) return r;
+    }
+    return null;
+  }
+
+  /* Ties the practice test's weakest strand to a concrete standard to study:
+     prefer the first unmastered standard in that weak section, falling back
+     to the general next-on-path standard if that section is already clear. */
+  function practiceRecommendation(s){
+    var x = s.crc;
+    var weakSec = (x && x.weakest) ? SEC_FOR_CRC_STRAND[x.weakest.key] : null;
+    var rec = weakSec ? recommendedStandard(s.d, weakSec) : null;
+    var fromWeak = !!rec;
+    if (!rec) rec = recommendedStandard(s.d, null);
+    return { rec: rec, fromWeak: fromWeak };
+  }
+
+  /* Top-of-dropdown "receipt" — practice-test results and a study
+     recommendation, visible the instant a teacher expands a row instead of
+     needing a trip to the CRC tab. TSI only; Algebra 1 has no CRC test. */
+  function practiceTestBlockHTML(s){
+    if (subject !== 'tsi') return '';
+    var x = s.crc;
+    var testsHTML;
+    if (x && (x.taken || x.open)){
+      var parts = x.taken ? [crcScoreList(x)] : [];
+      if (x.open) parts.push('<span class="chip-prog" title="Answered '+x.open.answered+' of 20. Not counted until they finish.">in progress '+x.open.answered+'/20</span>');
+      testsHTML = parts.join(' ');
+      if (x.weakest) testsHTML += ' <span class="muted">(weakest: <b>'+esc(x.weakest.key)+'</b> '+Math.round(x.weakest.acc*100)+'%)</span>';
+    } else {
+      testsHTML = '<span class="muted">No practice test activity yet.</span>';
+    }
+
+    var rc = practiceRecommendation(s);
+    var recHTML = !rc.rec
+      ? '<span class="muted">All ready standards mastered — nothing to recommend.</span>'
+      : '<b>'+esc(rc.rec.code || rc.rec.id)+'</b> — '+esc(rc.rec.name)+
+        (rc.fromWeak ? ' <span class="muted">(their weakest test area)</span>' : '');
+
+    return '<div class="miniPracticeBlock">'+
+      '<div class="miniPracticeRow"><span class="miniLabel">Practice test</span>'+testsHTML+'</div>'+
+      '<div class="miniPracticeRow"><span class="miniLabel">Study next</span>'+recHTML+'</div>'+
+    '</div>';
+  }
+
   /* Compact per-standard breakdown for ONE student, reusing flattenDetail
      scoped to a single-element array — same rollup, no separate math. */
   function miniDetailHTML(s){
     var rows = flattenDetail([s]);
-    if (!rows.length) return '<div class="miniDetailEmpty">No practice recorded yet for this student.</div>';
+    var practiceBlock = practiceTestBlockHTML(s);
+    if (!rows.length) return practiceBlock + '<div class="miniDetailEmpty">No practice recorded yet for this student.</div>';
     var body = rows.map(function(r){
       return '<tr>'+
         '<td><b>'+esc(r.stdCode)+'</b></td>'+
@@ -641,7 +714,7 @@
         '<td class="num muted">'+fmtDate(r.st.last)+'</td>'+
       '</tr>';
     }).join('');
-    return '<table class="miniDetailTable"><thead><tr>'+
+    return practiceBlock + '<table class="miniDetailTable"><thead><tr>'+
       '<th>Standard</th><th>Progress</th><th>Mastered</th><th>Attempts</th>'+
       '<th>Correct</th><th>Recent 10</th><th>Hints</th><th>Last Active</th>'+
       '</tr></thead><tbody>'+body+'</tbody></table>';
