@@ -182,6 +182,10 @@
       </div>
     </div>
     <div class="viewCaption" id="viewCaption"></div>
+    <div class="viewSwitch" id="detailModeSwitch" role="tablist" aria-label="Detail layout" style="display:none; margin-top:8px">
+      <button class="viewBtn is-active" data-detail-mode="grouped" role="tab">Grouped by student</button>
+      <button class="viewBtn" data-detail-mode="flat" role="tab">Flat (sort by standard)</button>
+    </div>
   </div>
 
   <div class="card" id="statCardWrap" style="display:none">
@@ -619,6 +623,28 @@
     return out;
   }
 
+  /* Detail has two layouts sharing one dataset: flat (DETAIL_COLS, sortable
+     by Standard across every student at once) and grouped (one collapsed
+     row per student, click to expand — same interaction as Summary). Grouped
+     has nothing standard-shaped to sort by, so it gets its own column set. */
+  var detailGrouped = true;
+  var GROUPED_DETAIL_COLS = [
+    {key:'name',    label:'Student', get:function(g){ return g.name || '(no name)'; }},
+    {key:'id',      label:'ID',      get:function(g){ return g.id; }},
+    {key:'teacher', label:'Teacher', get:function(g){ return g.teacher || '—'; }},
+    {key:'klass',   label:'Period',  get:function(g){ return g.klass || '—'; }},
+    {key:'count',   label:'Standards Started', get:function(g){ return g.rows.length; }}
+  ];
+  function groupedDetailRows(students){
+    var byId = {};
+    flattenDetail(students).forEach(function(r){
+      var g = byId[r.id];
+      if (!g) g = byId[r.id] = {id:r.id, name:r.name, teacher:r.teacher, klass:r.klass, rows:[]};
+      g.rows.push(r);
+    });
+    return Object.keys(byId).map(function(id){ return byId[id]; });
+  }
+
   /* ---------------- rendering ---------------- */
 
   function statusChip(mastered, attempts){
@@ -696,12 +722,11 @@
     '</div>';
   }
 
-  /* Compact per-standard breakdown for ONE student, reusing flattenDetail
-     scoped to a single-element array — same rollup, no separate math. */
-  function miniDetailHTML(s){
-    var rows = flattenDetail([s]);
-    var practiceBlock = practiceTestBlockHTML(s);
-    if (!rows.length) return practiceBlock + '<div class="miniDetailEmpty">No standards modules started yet.</div>';
+  /* Per-standard breakdown table for one student's already-flattened rows —
+     shared by Summary's dropdown and Detail's grouped-by-student mode so
+     both render the exact same table instead of two copies of this markup. */
+  function standardsTableHTML(rows){
+    if (!rows.length) return '<div class="miniDetailEmpty">No standards modules started yet.</div>';
     var body = rows.map(function(r){
       return '<tr>'+
         '<td><b>'+esc(r.stdCode)+'</b></td>'+
@@ -714,10 +739,41 @@
         '<td class="num muted">'+fmtDate(r.st.last)+'</td>'+
       '</tr>';
     }).join('');
-    return practiceBlock + '<table class="miniDetailTable"><thead><tr>'+
+    return '<table class="miniDetailTable"><thead><tr>'+
       '<th>Standard</th><th>Progress</th><th>Mastered</th><th>Attempts</th>'+
       '<th>Correct</th><th>Recent 10</th><th>Hints</th><th>Last Active</th>'+
       '</tr></thead><tbody>'+body+'</tbody></table>';
+  }
+
+  /* Compact per-standard breakdown for ONE student, reusing flattenDetail
+     scoped to a single-element array — same rollup, no separate math. */
+  function miniDetailHTML(s){
+    return practiceTestBlockHTML(s) + standardsTableHTML(flattenDetail([s]));
+  }
+
+  /* Detail, grouped mode: one collapsed row per student — same expand
+     interaction as Summary, keyed 'detail:<id>' so it doesn't collide with
+     Summary's own expandedIds entries for the same student. */
+  function renderGroupedDetailRows(groups){
+    if (!groups.length) return '<tr><td colspan="'+(GROUPED_DETAIL_COLS.length+1)+'" style="color:var(--muted)">No standards modules started yet for these filters.</td></tr>';
+    return groups.map(function(g){
+      var key = 'detail:'+g.id;
+      var isOpen = !!expandedIds[key];
+      var who = esc(g.name || 'this student');
+      var mainRow = '<tr class="rosterRow">'+
+        '<td>'+esc(g.name || '(no name)')+'</td>'+
+        '<td class="num muted">'+esc(g.id)+'</td>'+
+        '<td>'+esc(g.teacher || '\u2014')+'</td>'+
+        '<td>'+esc(g.klass || '\u2014')+'</td>'+
+        '<td class="num">'+g.rows.length+'</td>'+
+        '<td class="expandCell"><button type="button" class="expandBtn'+(isOpen?' is-open':'')+'" '+
+          'data-id="'+esc(key)+'" aria-expanded="'+(isOpen?'true':'false')+'" '+
+          'title="'+(isOpen?'Collapse':'Show')+' '+who+'\u2019s per-standard detail">'+(isOpen?'\u2212':'+')+'</button></td>'+
+      '</tr>';
+      if (!isOpen) return mainRow;
+      return mainRow + '<tr class="expandRow" data-expand-for="'+esc(key)+'">'+
+        '<td colspan="'+(GROUPED_DETAIL_COLS.length+1)+'">'+standardsTableHTML(g.rows)+'</td></tr>';
+    }).join('');
   }
 
   function renderSummaryRows(rows){
@@ -829,17 +885,25 @@
       ? '<div class="warnBanner">'+badCount+' student record'+(badCount===1?'':'s')+' couldn\u2019t be read (corrupted saved data) \u2014 showing as zero progress until re-synced.</div>'
       : '';
 
-    var cols = view === 'summary' ? summaryCols() : (view === 'crc' ? CRC_COLS : DETAIL_COLS);
+    $('#detailModeSwitch').style.display = (view === 'detail') ? '' : 'none';
+
+    var cols = view === 'summary' ? summaryCols()
+             : view === 'crc' ? CRC_COLS
+             : detailGrouped ? GROUPED_DETAIL_COLS
+             : DETAIL_COLS;
     var st = sortState[view];
     var colDef = cols.filter(function(c){ return c.key === st.key; })[0] || cols[0];
 
-    $('#repHead').innerHTML = renderHead(cols, st.key, st.dir, (view==='summary' || view==='crc') ? '<th class="expandHead"></th>' : '');
+    $('#repHead').innerHTML = renderHead(cols, st.key, st.dir, (view==='summary' || view==='crc' || (view==='detail' && detailGrouped)) ? '<th class="expandHead"></th>' : '');
     if (view === 'summary'){
       var rows = sortRows(students.slice(), st.dir, colDef.get);
       $('#repRows').innerHTML = renderSummaryRows(rows);
     } else if (view === 'crc'){
       var crows = sortRows(students.slice(), st.dir, colDef.get);
       $('#repRows').innerHTML = renderCrcRows(crows);
+    } else if (detailGrouped){
+      var grows = sortRows(groupedDetailRows(students), st.dir, colDef.get);
+      $('#repRows').innerHTML = renderGroupedDetailRows(grows);
     } else {
       var drows = sortRows(flattenDetail(students), st.dir, colDef.get);
       $('#repRows').innerHTML = renderDetailRows(drows);
@@ -990,6 +1054,13 @@
     b.addEventListener('click', function(){
       view = b.getAttribute('data-view');
       document.querySelectorAll('.viewBtn[data-view]').forEach(function(x){ x.classList.toggle('is-active', x===b); });
+      render();
+    });
+  });
+  document.querySelectorAll('#detailModeSwitch .viewBtn').forEach(function(b){
+    b.addEventListener('click', function(){
+      detailGrouped = (b.getAttribute('data-detail-mode') === 'grouped');
+      document.querySelectorAll('#detailModeSwitch .viewBtn').forEach(function(x){ x.classList.toggle('is-active', x===b); });
       render();
     });
   });
