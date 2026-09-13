@@ -540,6 +540,7 @@ var SE_A11A = {
   id:'A.11A', letter:'A', short:'Simplify Radicals',
   title:'Simplify Radical Expressions',
   blurb:'Simplify numerical radical expressions involving square roots.',
+  variantOf:function(p){ return p.kind; }, variantOptions:['simplify','multiply','addsub'],
 
   gen:function(){
     var kind=(cMode11A==='mix')?rc(['simplify','multiply','addsub']):cMode11A;
@@ -700,6 +701,10 @@ var SE_A11B = {
   id:'A.11B', letter:'B', short:'Laws of Exponents',
   title:'Laws of Exponents',
   blurb:'Simplify numeric and algebraic expressions using the laws of exponents, including integral and rational exponents.',
+  /* Gates on the outer TYPE toggle only (alg/combined/posExp/numeric) — the
+     nested LAW sub-toggle (mul/div/pow/negExp/rational, only shown when
+     TYPE=alg) is the more cosmetic dimension and is intentionally ignored. */
+  variantOf:function(p){ return p.kind; }, variantOptions:['alg','combined','posExp','numeric'],
 
   gen:function(){
     var kind, p;
@@ -1112,7 +1117,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

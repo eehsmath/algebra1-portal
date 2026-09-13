@@ -548,6 +548,7 @@ var SES=[
   title:'Graph &amp; Identify Key Attributes',
   blurb:'Graph a quadratic function and read its intercepts, zeros, vertex, axis of symmetry, and max/min from the graph.',
   gen:genA,
+  variantOf:function(p){ return p.kind; }, variantOptions:['vertex','zeros','axis','yint','minmax'],
   prompt:function(p){
     var body='From the graph of the quadratic below, determine its <b>'+A_LABEL[p.kind]+'</b>.'+
       '<div class="given">'+quadHTML(p.a,p.b,p.c)+'</div><br>'+
@@ -670,6 +671,7 @@ var SES=[
   title:'Linear Factors &amp; Zeros',
   blurb:'Connect the linear factors of a quadratic to the zeros of its function: each factor (x \u2212 r) gives a zero at x = r.',
   gen:genB,
+  variantOf:function(p){ return p.kind; }, variantOptions:['zeros','factors'],
   prompt:function(p){
     var body;
     if(p.kind==='zeros'){
@@ -731,6 +733,7 @@ var SES=[
   title:'Transformations of f(x) = x\u00b2',
   blurb:'Describe and write transformations of the parent function using af(x), f(x) + d, f(x \u2212 c), and f(bx).',
   gen:genC,
+  variantOf:function(p){ return p.kind; }, variantOptions:['describe','write'],
   prompt:function(p){
     var sel=segWrap('MODE','cSeg',cMode,[['mix','Mixed'],['describe','Describe'],['write','Write it']]);
     if(p.kind==='describe'){
@@ -848,7 +851,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

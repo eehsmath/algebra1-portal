@@ -618,6 +618,7 @@ var SE_A12A = {
   id:'A.12A', letter:'A', short:'Is It a Function?',
   title:'Is It a Function?',
   blurb:'Decide whether relations represented as mapping diagrams, tables, graphs, and equations define a function.',
+  variantOf:function(p){ return p.kind; }, variantOptions:['table','map','graph','symbolic'],
 
   gen:function(){
     var kind=(cMode12A==='mix')?rc(['table','map','graph','symbolic']):cMode12A;
@@ -778,6 +779,7 @@ var SE_A12B = {
   id:'A.12B', letter:'B', short:'Evaluate Functions',
   title:'Evaluate Functions',
   blurb:'Evaluate functions, expressed in function notation, given one or more elements in their domains.',
+  variantOf:function(p){ return p.mode; }, variantOptions:['numeric','compare'],
 
   gen:function(){ return genB12B(); },
   prompt:function(p){
@@ -1015,6 +1017,7 @@ var SE_A12D = {
   id:'A.12D', letter:'D', short:'nth-Term Formula',
   title:'Write the nth-Term Formula',
   blurb:'Write a formula for the nth term of arithmetic and geometric sequences, given the value of several of their terms.',
+  variantOf:function(p){ return p.type; }, variantOptions:['arith','geom'],
 
   gen:function(){ return genD12D(); },
   prompt:function(p){
@@ -1103,6 +1106,7 @@ var SE_A12E = {
   id:'A.12E', letter:'E', short:'Literal Equations',
   title:'Solve Literal Equations',
   blurb:'Solve mathematic and scientific formulas, and other literal equations, for a specified variable.',
+  variantOf:function(p){ return p.shape; }, variantOptions:['oneVarNumeric','twoTermStandardForm','slopeIntercept'],
 
   gen:function(){
     var kind=(cMode12E==='mix')?rc(['oneVarNumeric','twoTermStandardForm','slopeIntercept']):cMode12E;
@@ -1240,7 +1244,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

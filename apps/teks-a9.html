@@ -572,6 +572,7 @@ function genExpoLab(level){
   do{ g=genExpoShape(shapeLvl); tries++; } while(!answerableExpo(g)&&tries<60);
   if(!answerableExpo(g)) g=fallbackExpoShape(shapeLvl);
   g.rep=rep;
+  g.level=lvl;
   g.domainAnswer=graphDomainOfExpo(g);
   g.rangeAnswer=graphRangeOfExpo(g);
   return g;
@@ -1243,6 +1244,7 @@ var SE_A9A = {
   id:'A.9A', letter:'A', short:'Domain/Range',
   title:'Domain &amp; Range of Exponential Functions',
   blurb:'Determine the domain and range of exponential functions of the form f(x) = ab\u02e3 and represent the domain and range using inequalities.',
+  variantOf:function(p){ return p.graph.level; }, variantOptions:['segment','ray','full','equation'],
 
   gen:function(){ curG=newLabGraph(); return {se:'A.9A', graph:curG}; },
   prompt:labPromptBody,
@@ -1597,7 +1599,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

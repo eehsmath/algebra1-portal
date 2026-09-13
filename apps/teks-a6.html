@@ -1378,6 +1378,7 @@ var SES=[
     title:'Write Quadratics in Vertex &amp; Standard Form',
     blurb:'Write a quadratic in vertex form f(x) = a(x \u2212 h)\u00b2 + k from a vertex and a point, and rewrite vertex form as standard form.',
     gen:genA6B, prompt:promptA6B, answerHTML:answerA6B, read:function(p){return readA6B(p);},
+    variantOf:function(p){ return p.kind; }, variantOptions:['write','expand'],
     check:checkA6B, steps:stepsA6B, hints:hintsA6B,
     emptyMsg:'Fill in every box \u2014 fractions like 3/4 are fine.',
     init:function(){
@@ -1389,6 +1390,7 @@ var SES=[
     title:'Write Quadratics from Solutions &amp; Graphs',
     blurb:'Write a quadratic function given its real solutions or the graph of its related equation.',
     gen:genA6C, prompt:promptA6C, answerHTML:answerA6C, read:function(p){return readA6C(p);},
+    variantOf:function(p){ return p.form; }, variantOptions:['factored','standard'],
     check:checkA6C, steps:stepsA6C, hints:hintsA6C,
     emptyMsg:'Fill in every box \u2014 fractions like 3/4 are fine.',
     init:function(){
@@ -1454,7 +1456,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

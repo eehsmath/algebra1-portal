@@ -1191,6 +1191,7 @@ var SES=[
 { id:'A.3A', letter:'A', short:'Slope', title:'Determine the Slope of a Line',
   blurb:'Determine the slope of a line given a table of values, a graph, two points on the line, and an equation written in various forms, including y = mx + b, Ax + By = C, and y \u2212 y\u2081 = m(x \u2212 x\u2081).',
   gen:genA, prompt:promptA,
+  variantOf:function(p){ return p.mode; }, variantOptions:['pts','table','graph','equation'],
   init:function(){ wireSeg('aSeg', aMode, function(v){ aMode=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:function(){ return slopeBoxHTML; },
   read:readA, check:checkA,
@@ -1208,6 +1209,7 @@ var SES=[
 { id:'A.3B', letter:'B', short:'Rate of Change', title:'Rate of Change in Context',
   blurb:'Calculate the rate of change of a linear function represented tabularly, graphically, or algebraically in context of mathematical and real-world problems.',
   gen:genB, prompt:promptB,
+  variantOf:function(p){ return p.mode; }, variantOptions:['words','table','graph'],
   init:function(){ wireSeg('bSeg', bMode, function(v){ bMode=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:answerB, read:readB, check:checkB,
   hints:function(){ return ['Rate of change = (change in the output) \u00f7 (change in the input).',
@@ -1217,6 +1219,7 @@ var SES=[
 { id:'A.3C', letter:'C', short:'Key Features', title:'Graph & Identify Key Features',
   blurb:'Graph linear functions on the coordinate plane and identify key features, including x-intercept, y-intercept, zeros, and slope, in mathematical and real-world problems.',
   gen:genC, prompt:promptC,
+  variantOf:function(p){ return p.mode; }, variantOptions:['equation','graph'],
   init:function(){ wireSeg('cSeg', cMode, function(v){ cMode=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:answerC, read:readC, check:checkC,
   emptyMsg:'Fill in the slope and both intercepts \u2014 write each intercept as a full coordinate pair (x, y).',
@@ -1237,6 +1240,7 @@ var SES=[
 { id:'A.3E', letter:'E', short:'Transformations', title:'Transform the Parent Function f(x) = x',
   blurb:'Determine the effects on the graph of the parent function f(x) = x when f(x) is replaced by af(x), f(x) + d, f(x \u2212 c), and f(bx) for specific values of a, b, c, and d.',
   gen:genE, prompt:promptE,
+  variantOf:function(p){ return p.mode; }, variantOptions:['write','identify'],
   init:function(p){ wireSeg('eSeg', eMode, function(v){ eMode=v; newProblem(); }); initE(p); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:answerE, read:readE, check:checkE, reveal:revealE,
   emptyMsg:'Enter the transformed equation, or tap the effect that matches.',
@@ -1250,6 +1254,10 @@ var SES=[
 { id:'A.3F', letter:'F', short:'Solve Systems', title:'Graph Systems of Equations',
   blurb:'Graph systems of two linear equations in two variables on the coordinate plane and determine the solutions if they exist.',
   gen:genF, prompt:promptF,
+  /* Toggle picks a display form (std/si) applied independently to each of
+     the system's two lines (form1, form2 both drawn from it) — form1 is
+     representative of which form was in play for this attempt. */
+  variantOf:function(p){ return p.form1; }, variantOptions:['std','si'],
   init:function(){ wireSeg('fFormSeg', fFormMode, function(v){ fFormMode=v; newProblem(); }); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   answerHTML:answerF, read:readF, check:checkF,
   emptyMsg:'Choose the solution type \u2014 and if there\u2019s one point, type its coordinates.',
@@ -1271,6 +1279,9 @@ var SES=[
 { id:'A.3H', letter:'H', short:'Systems of Inequalities', title:'Graph Systems of Inequalities',
   blurb:'Graph the solution set of systems of two linear inequalities in two variables on the coordinate plane.',
   gen:genH, prompt:promptH, init:function(){ initH(); }, answerHTML:answerH, read:readH, check:checkH, reveal:revealH,
+  /* hFormSeg toggle (si/std) is applied independently to each of the two
+     inequalities (form1, form2) — form1 is representative. */
+  variantOf:function(p){ return p.form1; }, variantOptions:['si','std'],
   emptyMsg:'Set both boundary styles and decide whether the point lies in the overlap.',
   hints:function(){ return ['Graph each inequality; the solution set of the system is the region where the two shadings overlap.',
     '\u2264/\u2265 \u2192 solid boundary, &lt;/&gt; \u2192 dashed. A point solves the system only if it satisfies BOTH inequalities.',
@@ -1334,7 +1345,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

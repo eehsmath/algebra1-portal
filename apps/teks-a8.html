@@ -429,6 +429,7 @@ var SE_A8A = {
   id:'A.8A', letter:'A', short:'Solve Quad.',
   title:'Solve Quadratic Equations',
   blurb:'Solve quadratic equations having real solutions by factoring, taking square roots, completing the square, and applying the quadratic formula.',
+  variantOf:function(p){ return p.kind; }, variantOptions:['factor','sqrt','cts','formula'],
 
   gen:function(){
     var kind=(cModeA==='mix')?rc(['factor','sqrt','cts','formula']):cModeA;
@@ -662,7 +663,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

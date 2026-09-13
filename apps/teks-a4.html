@@ -967,6 +967,7 @@ var SES=[
 { id:'A.4A', letter:'A', short:'Correlation r', title:'Correlation Coefficient (r)',
   blurb:'Calculate, using technology, the correlation coefficient between two quantitative variables and interpret this quantity as a measure of the strength of the linear association.',
   gen:genA, prompt:promptA, answerHTML:answerA, read:readA, check:checkA, reveal:revealA,
+  variantOf:function(p){ return p.mode; }, variantOptions:['match','describe','interpret'],
   init:function(p){ wireSeg('aSeg', aMode, function(v){ aMode=v; newProblem(); }); initA(p); },
   emptyMsg:'Pick the matching r \u2014 or choose a strength (then a direction, unless it\u2019s \u201cNo correlation\u201d).',
   hints:hintsA, steps:stepsA },
@@ -981,6 +982,7 @@ var SES=[
 { id:'A.4C', letter:'C', short:'Fit & Predict', title:'Line of Best Fit \u00b7 Predictions',
   blurb:'Write, with and without technology, linear functions that provide a reasonable fit to data to estimate solutions and make predictions for real-world problems.',
   gen:genC, prompt:promptC, answerHTML:answerC, read:readC, check:checkC, reveal:revealC,
+  variantOf:function(p){ return p.mode; }, variantOptions:['predict','solve','slope','intercept'],
   init:function(p){ wireSeg('cSeg', cMode, function(v){ cMode=v; newProblem(); }); initC(p); wireSharedKbd(document.getElementById('answerArea'), 'sharedKbdBtn', 'sharedKbdPop'); },
   emptyMsg:'Enter your prediction \u2014 or tap the interpretation that fits.',
   hints:hintsC, steps:stepsC }
@@ -1041,7 +1043,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

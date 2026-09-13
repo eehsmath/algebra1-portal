@@ -646,6 +646,7 @@ var SES=[
     id:'A.5A', letter:'A', short:'Equations', title:'Solve Linear Equations in One Variable',
     blurb:'Solve linear equations in one variable, including those needing the distributive property and variables on both sides.',
     gen:genEq,
+    variantOf:function(p){ return p.kind; }, variantOptions:['basic','dist','both'],
     prompt:function(p){
       return segWrap('TYPE','eqSeg',eqMode,[['mix','Mixed'],['basic','Basic'],['dist','Distributive'],['both','Both sides']])
         + 'Solve the equation for <b>x</b>.<br>'
@@ -665,6 +666,7 @@ var SES=[
     id:'A.5B', letter:'B', short:'Inequalities', title:'Solve Linear Inequalities in One Variable',
     blurb:'Solve linear inequalities in one variable, including those needing the distributive property and variables on both sides.',
     gen:genIneq,
+    variantOf:function(p){ return p.kind; }, variantOptions:['basic','dist','both'],
     prompt:function(p){
       return segWrap('TYPE','ineqSeg',ineqMode,[['mix','Mixed'],['basic','Basic'],['dist','Distributive'],['both','Both sides']])
         + 'Solve the inequality for <b>x</b>. Give your answer as x&nbsp;(symbol)&nbsp;number.<br>'
@@ -695,6 +697,10 @@ var SES=[
     id:'A.5C', letter:'C', short:'Systems', title:'Solve Systems of Two Linear Equations',
     blurb:'Solve systems of two linear equations with two variables for mathematical and real-world problems.',
     gen:genSys,
+    /* Two independent toggles here: TYPE (graph/elim/word — genuinely
+       different problem kinds) and FORM (std/si — display formatting).
+       Gate on TYPE, the meaningful content dimension; ignore FORM. */
+    variantOf:function(p){ return p.flavor; }, variantOptions:['graph','elim','word'],
     prompt:function(p){
       var head=segWrap('TYPE','sysSeg',sysMode,[['mix','Mixed'],['graph','Graph'],['elim','Algebra'],['word','Word']])
         + formWrap('sysFormSeg',sysFormMode,[['mix','Mixed'],['std','Standard'],['si','Slope-intercept']]);
@@ -792,7 +798,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');

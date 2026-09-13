@@ -530,10 +530,18 @@ var SE_A10C = {
   id:'A.10C', letter:'C', short:'Divide',
   title:'Divide Polynomials',
   blurb:'Determine the quotient of a polynomial of degree one and a polynomial of degree two when divided by a polynomial of degree one or degree two, where the divisor\u2019s degree does not exceed the dividend\u2019s.',
+  /* The toggle's own 3-way pick (simple/synthetic/long), not the internal
+     4-way p.mode shape (linbylin/quadbyquad/quadbylin/long) \u2014 "synthetic"
+     always produces mode:'quadbylin', so gating on p.mode directly would
+     make a student who only ever picks "Synthetic Division" unable to
+     reach a majority no matter how much they practice. */
+  variantOf:function(p){ return p.selKind; }, variantOptions:['simple','synthetic','long'],
 
   gen:function(){
     var kind = (cModeC==='mix') ? rc(['simple','synthetic','long']) : cModeC;
-    return genC10C(kind);
+    var p = genC10C(kind);
+    p.selKind = kind;
+    return p;
   },
   prompt:function(p){
     var selector = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
@@ -757,6 +765,7 @@ var SE_A10E = {
   id:'A.10E', letter:'E', short:'Factor Trinomials',
   title:'Factor Trinomials',
   blurb:'Factor, if possible, trinomials with real factors in the form ax\u00b2 + bx + c, including perfect square trinomials of degree two.',
+  variantOf:function(p){ return p.kind; }, variantOptions:['a1','aNot1','perfect'],
 
   gen:function(){
     var kind = (cModeE==='mix') ? rc(['a1','aNot1','perfect']) : cModeE;
@@ -859,6 +868,15 @@ var SE_A10F = {
   id:'A.10F', letter:'F', short:'Diff. of Squares',
   title:'Difference of Two Squares',
   blurb:'Decide if a binomial can be written as the difference of two squares and, if possible, use that structure to rewrite the binomial.',
+  /* NOT wired for variant tracking (see report): unlike every other toggle
+     in this file, "mix" here is coded as its own wider numeric range
+     (m spans 1..9) rather than a discrete random pick between "basic" and
+     "intermediate" — see the comment on genF10F below, which documents
+     this as intentional. Forcing a discrete label onto "mix" would change
+     that documented behavior, and there's no clean post-hoc way to
+     classify a generated problem as basic/intermediate anyway: the
+     diffNotSquare branch doesn't use m/mLo/mHi at all, so a chunk of
+     generated problems have no m-based category to fall back on either. */
 
   gen:function(){ return genF10F(fModeF); },
   prompt:function(p){
@@ -1013,7 +1031,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fb').className='fb '+(ok?'ok':'bad');
