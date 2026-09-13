@@ -375,10 +375,9 @@
       <span class="pill">Accuracy <b id="tAcc">—</b></span>
       <span class="pill">Standards polished <b id="tMastered">0</b></span>
       <span style="flex:1"></span>
-      <button class="btn gold" id="resourcesBtn">Resources</button>
-      <button class="btn primary" id="continueBtn">Continue my path →</button>
-      <button class="btn info" id="reportBtn">My report</button>
       <button class="btn" id="moreBtn">More practice</button>
+      <button class="btn gold" id="resourcesBtn">Resources</button>
+      <button class="btn info" id="reportBtn">My report</button>
     </div>
   </div>
 
@@ -805,12 +804,6 @@
     render();
     openIntro();
   }
-
-  /* ---------- continue my path ---------- */
-  $('#continueBtn').addEventListener('click', function(){
-    var next = Portal.nextOnPath();
-    if(next){ location.href = next.file; }
-  });
 
   /* ---------- report ----------
      For each standard the student has touched, emit ONE standard row (the
