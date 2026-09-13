@@ -1693,6 +1693,10 @@ var SES=[
 { id:'A.2B', letter:'B', short:'Point & Slope', title:'Write Equations from Points & Slope',
   blurb:'Write linear equations in two variables in various forms, including y = mx + b, Ax + By = C, and y \u2212 y\u2081 = m(x \u2212 x\u2081), given one point and the slope and given two points.',
   gen:genB,
+  /* FORM toggle (si/ps/std) resolves per-question even under "mix" \u2014 p.form
+     always ends up one of the three, so this is the per-attempt variant
+     for the majority-of-types mastery gate (see portal.js record/computeStats). */
+  variantOf:function(p){ return p.form; }, variantOptions:['si','ps','std'],
   prompt:function(p){
     var pick = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px">'+
         '<span style="font-size:12px;font-weight:900;letter-spacing:.4px;color:var(--muted)">FORM</span>'+
@@ -2082,7 +2086,11 @@ function onCheck(){
     if(!current.stepsShown){
       session.a++; if(ok) session.c++;
       $('#sesScore').textContent=session.c+' / '+session.a;
-      if(window.Portal && Portal.record) Portal.record(se.id, ok);
+      if(window.Portal && Portal.record){
+        var recOpts = {};
+        if(se.variantOf){ recOpts.variant = se.variantOf(current.p); recOpts.variantOptions = se.variantOptions; }
+        Portal.record(se.id, ok, recOpts);
+      }
     }
   }
   $('#fbMsg').className='fb '+(ok?'ok':'bad');

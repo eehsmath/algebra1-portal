@@ -195,7 +195,17 @@
   /*  CORE API — recording answers                                      */
   /* ================================================================== */
 
-  /* Call once per graded answer. skillId is the MODULE id (e.g. 'A.2C'). */
+  /* Call once per graded answer. skillId is the MODULE id (e.g. 'A.2C').
+     opts.variant / opts.variantOptions: for a module whose toggle can narrow
+     which problem type is asked (e.g. A.2B's SI/PS/STD equation forms),
+     the CALLER resolves "mix" down to the concrete type actually generated
+     for this question and passes it as opts.variant, plus the toggle's
+     full option list (excluding "mix" itself) as opts.variantOptions so
+     computeStats knows the denominator. Passing these is what lets mastery
+     require a spread of types instead of just volume + accuracy on
+     whichever one type a student happened to grind. A module with no
+     toggle simply never passes these — variantsTotal stays 0 and the
+     variety gate never applies to it. */
   function record(skillId, correct, opts) {
     opts = opts || {};
     var d = load();
@@ -207,6 +217,13 @@
     if (s.h.length > 20) s.h.shift();          // keep last 20 only
     if (opts.level) s.lv = opts.level;
     s.t = Date.now();
+    if (opts.variant) {
+      if (!s.variants) s.variants = {};
+      var v = s.variants[opts.variant] || (s.variants[opts.variant] = { a: 0, c: 0 });
+      v.a += 1;
+      if (correct) v.c += 1;
+    }
+    if (opts.variantOptions && opts.variantOptions.length) s.variantOptions = opts.variantOptions.slice();
     // Stamp attempts-at-mastery the first time this SE crosses the threshold.
     // Never overwritten — this records the effort it took to get there, not the
     // count today. Absent when not yet mastered.
@@ -236,20 +253,34 @@
   /* Mastery model (gentle, no penalties), per module:
        recentAcc = accuracy over the last 10 answers
        mastered  = at least 15 total attempts AND recentAcc >= 80%
-       progress  = (attempts capped at 15 / 15) x recentAcc  -> 0..1 */
+                   AND (if the module has a type toggle) a MAJORITY of its
+                   types have been attempted at least once — not all of
+                   them, but more than half, so mastery can't come from
+                   grinding a single narrow type
+       progress  = (attempts capped at 15 / 15) x recentAcc x varietyRatio
+   variantsNeeded uses the standard strict-majority formula floor(n/2)+1 —
+   for a 2-option toggle that works out to "both", which is unavoidable
+   with only two types to choose from. */
   function computeStats(s) {
     if (!s || !s.a) {
-      return { attempts: 0, correct: 0, recentAcc: 0, mastered: false, progress: 0, level: 1, last: 0, hints: 0, attemptsToMastery: null };
+      return { attempts: 0, correct: 0, recentAcc: 0, mastered: false, progress: 0, level: 1, last: 0, hints: 0,
+        attemptsToMastery: null, variantsSeen: 0, variantsTotal: 0, variantsNeeded: 0 };
     }
     var last10 = s.h.slice(-10);
     var recentAcc = last10.length ? last10.reduce(function (x, y) { return x + y; }, 0) / last10.length : 0;
-    var mastered = s.a >= 15 && last10.length >= 10 && recentAcc >= 0.8;
-    var progress = Math.min(1, s.a / 15) * recentAcc;
+    var variantsTotal = (s.variantOptions || []).length;
+    var variantsSeen = s.variants ? Object.keys(s.variants).length : 0;
+    var variantsNeeded = variantsTotal > 1 ? Math.floor(variantsTotal / 2) + 1 : 0;
+    var varietyOK = variantsNeeded === 0 || variantsSeen >= variantsNeeded;
+    var varietyRatio = variantsNeeded > 0 ? Math.min(1, variantsSeen / variantsNeeded) : 1;
+    var mastered = s.a >= 15 && last10.length >= 10 && recentAcc >= 0.8 && varietyOK;
+    var progress = Math.min(1, s.a / 15) * recentAcc * varietyRatio;
     return {
       attempts: s.a, correct: s.c, recentAcc: recentAcc,
       mastered: mastered, progress: progress,
       level: s.lv || 1, last: s.t || 0, hints: s.hints || 0,
-      attemptsToMastery: (s.am != null ? s.am : null)
+      attemptsToMastery: (s.am != null ? s.am : null),
+      variantsSeen: variantsSeen, variantsTotal: variantsTotal, variantsNeeded: variantsNeeded
     };
   }
 
