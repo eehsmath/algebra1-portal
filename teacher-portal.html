@@ -121,6 +121,12 @@
     font-family:inherit; font-weight:900; font-size:11.5px; padding:0 9px; cursor:pointer; color:var(--blue);
   }
   .copyCodeBtn:hover{background:#eef4ff; border-color:#c3d0ff}
+  .clearItemBtn{
+    width:24px; height:24px; border-radius:7px; border:1px solid #f3c9c9; background:#fff;
+    font-family:inherit; font-weight:900; font-size:14px; line-height:1; color:#c23a3a; cursor:pointer;
+  }
+  .clearItemBtn:hover{background:#fff0f0; border-color:#e59a9a}
+  .clearItemBtn[disabled]{opacity:.5; cursor:default}
 
   .chip-ok{color:var(--ok); background:#eafff2; border:1px solid #bfeacc; border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
   .chip-prog{color:#7a5a00; background:#fff9d6; border:1px solid #ffe38a; border-radius:999px; padding:3px 10px; font-size:11.5px; font-weight:900; white-space:nowrap}
@@ -543,10 +549,12 @@
         '<td class="num">'+(e.right!=null && e.n!=null ? e.right+'/'+e.n : '—')+'</td>'+
         '<td>'+(code ? '<span class="testCode">'+esc(code)+'</span>' : '<span class="muted">—</span>')+'</td>'+
         '<td>'+(code ? '<button type="button" class="copyCodeBtn" data-code="'+esc(code)+'">Copy</button>' : '')+'</td>'+
+        '<td class="expandCell"><button type="button" class="clearItemBtn" title="Delete this test attempt" '+
+          'data-student="'+esc(s.id)+'" data-kind="test" data-key="'+esc(e.t)+'" data-label="the '+fmtDate(e.t)+' test">×</button></td>'+
       '</tr>';
     }).join('');
     return '<table class="miniDetailTable"><thead><tr>'+
-      '<th>Date</th><th>Score</th><th>Result</th><th>Raw</th><th>Test code</th><th></th>'+
+      '<th>Date</th><th>Score</th><th>Result</th><th>Raw</th><th>Test code</th><th></th><th></th>'+
       '</tr></thead><tbody>'+body+'</tbody></table>';
   }
 
@@ -617,7 +625,7 @@
         var st = p.api.statsForD(s.d, r);
         if (!st.attempts) return;   // matches the student-side report's own "skip untouched standards" rule
         out.push({name:s.name, id:s.id, teacher:s.teacher, klass:s.klass,
-          stdCode:(r.code||r.id), stdName:r.name, st:st});
+          stdCode:(r.code||r.id), stdId:r.id, stdName:r.name, st:st});
       });
     });
     return out;
@@ -737,11 +745,13 @@
         '<td class="num">'+(r.st.attempts ? pct(r.st.recentAcc) : '\u2014')+'</td>'+
         '<td class="num">'+r.st.hints+'</td>'+
         '<td class="num muted">'+fmtDate(r.st.last)+'</td>'+
+        '<td class="expandCell"><button type="button" class="clearItemBtn" title="Delete this module\u2019s data" '+
+          'data-student="'+esc(r.id)+'" data-kind="skill" data-key="'+esc(r.stdId)+'" data-label="'+esc(r.stdCode)+'">\u00d7</button></td>'+
       '</tr>';
     }).join('');
     return '<table class="miniDetailTable"><thead><tr>'+
       '<th>Standard</th><th>Progress</th><th>Mastered</th><th>Attempts</th>'+
-      '<th>Correct</th><th>Recent 10</th><th>Hints</th><th>Last Active</th>'+
+      '<th>Correct</th><th>Recent 10</th><th>Hints</th><th>Last Active</th><th></th>'+
       '</tr></thead><tbody>'+body+'</tbody></table>';
   }
 
@@ -1018,6 +1028,27 @@
     });
   }
 
+  /* Delete one item — a single skill's data or a single CRC test-log entry
+     — for one student. Mirrors portal.js's own sync POST exactly (same
+     URL, same text/plain content-type to avoid a CORS preflight) so this
+     reuses a request shape already proven to work cross-origin against
+     this exact Apps Script deployment. On success, updates the already-
+     fetched in-memory copy directly (no network round trip) so the row
+     disappears immediately instead of waiting on a full report refetch. */
+  function postClearItem(kind, studentId, key, onDone){
+    fetch(REPORT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action:'clearItem', portal:subject, id:studentId, kind:kind, key:key })
+    })
+      .then(function(r){ return r.json(); })
+      .then(function(res){
+        if (res && res.ok) { onDone(); }
+        else { alert('Couldn’t delete that — '+((res && res.error) || 'unknown error')+'. Refresh and try again.'); }
+      })
+      .catch(function(err){ alert('Couldn’t reach the server to delete that. ('+err+')'); });
+  }
+
   /* ---------------- wiring ---------------- */
 
   $('#refreshBtn').addEventListener('click', function(){ fetchReport(subject); });
@@ -1092,6 +1123,25 @@
       var sid = expandBtn.getAttribute('data-id');
       if (expandedIds[sid]) delete expandedIds[sid]; else expandedIds[sid] = true;
       render();
+      return;
+    }
+    var clearBtn = e.target.closest('.clearItemBtn');
+    if (clearBtn){
+      var studentId = clearBtn.getAttribute('data-student');
+      var kind = clearBtn.getAttribute('data-kind');
+      var key = clearBtn.getAttribute('data-key');
+      var label = clearBtn.getAttribute('data-label') || key;
+      if (!confirm('Delete '+label+' for student '+studentId+'? This cannot be undone.')) return;
+      clearBtn.disabled = true;
+      postClearItem(kind, studentId, key, function(){
+        var s = raw.filter(function(x){ return x.id === studentId; })[0];
+        if (s && s.d){
+          if (kind === 'skill' && s.d.skills) delete s.d.skills[key];
+          if (kind === 'test' && s.d.tests) s.d.tests = s.d.tests.filter(function(t){ return String(t.t) !== String(key); });
+          recomputeOverall();
+        }
+        render();
+      });
       return;
     }
     var th = e.target.closest('th[data-key]'); if (!th) return;
