@@ -469,6 +469,7 @@
 
   var CRC_COLS = [
     {key:'name',    label:'Student',   get:function(s){ return s.name || '(no name)'; }},
+    {key:'id',      label:'ID',        get:function(s){ return s.id; }},
     {key:'teacher', label:'Teacher',   get:function(s){ return s.teacher || '\u2014'; }},
     {key:'klass',   label:'Period',    get:function(s){ return s.klass || '\u2014'; }},
     {key:'taken',   label:'Tests',     get:function(s){ return s.crc ? s.crc.taken : -1; }},
@@ -499,6 +500,7 @@
       var who = esc(s.name || 'this student');
       var mainRow = '<tr class="rosterRow">'+
         '<td>'+esc(s.name || '(no name)')+(x.taken && x.open ? ' '+progress : '')+'</td>'+
+        '<td>'+esc(s.id)+'</td>'+
         '<td>'+esc(s.teacher || '—')+'</td>'+
         '<td>'+esc(s.klass || '—')+'</td>'+
         '<td class="num'+(x.taken?'':' muted')+'">'+(x.taken||0)+'</td>'+
