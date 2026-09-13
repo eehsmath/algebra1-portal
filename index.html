@@ -7,7 +7,7 @@
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=Fredoka:wght@500;600;700&display=swap');
   :root{
-    --bg:#e8f4ec; --panel:#fff; --ui:#cde3d5; --ink:#0f2340; --muted:#5b6f96;
+    --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
     --blue:#2f6cff; --vio:#8e78ff; --teal:#36c2a0; --gold:#f4a531;
     --ok:#0b6b2f; --shadow:0 8px 20px rgba(25,40,80,.06);
     --font-body:'Nunito', ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -37,7 +37,7 @@
   .idBox{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end}
   .idPill{
     display:inline-flex; align-items:center; gap:8px; padding:9px 14px; border-radius:999px;
-    border:1px solid var(--ui); background:#eaf5ee; font-weight:900; font-size:15px; color:var(--ink);
+    border:1px solid var(--ui); background:#f5f8ff; font-weight:900; font-size:15px; color:var(--ink);
   }
   .idPill.guest{background:#fff8e8; border-color:#ffe38a; color:#7a5a00}
   .switchLink{
@@ -45,7 +45,7 @@
     font-weight:900; font-size:12.5px; border-radius:999px; padding:7px 12px; cursor:pointer;
     font-family:inherit;
   }
-  .switchLink:hover{color:var(--ink); border-color:#a9d6b8}
+  .switchLink:hover{color:var(--ink); border-color:#c3d0ff}
 
   /* ---------- search ---------- */
   .searchRow{margin-top:12px; position:relative}
@@ -60,7 +60,7 @@
     width:32px; height:32px; border-radius:50%; border:0; background:transparent;
     color:var(--muted); font-size:18px; font-weight:900; cursor:pointer; line-height:1;
   }
-  .searchClear:hover{background:#e8f4ec; color:var(--ink)}
+  .searchClear:hover{background:#eef3ff; color:var(--ink)}
   .searchResultsWrap{
     background:var(--panel); border:1px solid var(--ui); border-radius:18px;
     box-shadow:var(--shadow); padding:16px 16px 6px; margin-bottom:14px;
@@ -101,7 +101,7 @@
     display:flex; justify-content:space-between; align-items:center; gap:12px;
     margin:-8px -8px 6px; padding:8px; border-radius:14px; cursor:pointer;
   }
-  .sec .head:hover{background:#eaf5ee}
+  .sec .head:hover{background:#f5f8ff}
   .sec .head .chev{font-size:20px; color:var(--muted); transition:transform .2s ease; flex:none}
   .sec .head.is-open .chev{transform:rotate(180deg)}
   .sec .eyebrow{font-family:var(--font-display); font-size:12px; font-weight:600; letter-spacing:.8px; color:var(--muted); text-transform:uppercase}
@@ -117,7 +117,7 @@
   /* progress ring */
   .ring{width:64px; height:64px; flex:none}
   .ring svg{width:64px; height:64px; transform:rotate(-90deg)}
-  .ring .track{fill:none; stroke:#e3f1e8; stroke-width:8}
+  .ring .track{fill:none; stroke:#edf2ff; stroke-width:8}
   .ring .fill{fill:none; stroke:var(--accent); stroke-width:8; stroke-linecap:round; transition:stroke-dashoffset .6s ease}
   .ring .pct{
     position:relative; top:-64px; height:64px; display:flex; align-items:center; justify-content:center;
@@ -139,17 +139,17 @@
     font-family:var(--font-display); font-weight:600; font-size:25px;
     transition:background .3s, border-color .3s, color .3s;
   }
-  .node.notstarted{background:#fff; border:5px solid #e3f1e8; color:var(--muted)}
-  .node.started{background:#fff; border:5px solid #e3f1e8}
+  .node.notstarted{background:#fff; border:5px solid #edf2ff; color:var(--muted)}
+  .node.started{background:#fff; border:5px solid #edf2ff}
   .node.started svg{position:absolute; inset:-5px; transform:rotate(-90deg)}
-  .node.started .track{fill:none; stroke:#e3f1e8; stroke-width:6}
+  .node.started .track{fill:none; stroke:#edf2ff; stroke-width:6}
   .node.started .fill{fill:none; stroke:var(--accent); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset .6s ease}
   .node.started .pct{position:relative; font-size:17px; color:var(--accent)}
   .node.mastered{background:var(--accent); border:5px solid var(--accent); color:#fff}
-  .node.soon{background:#fff; border:5px dashed #e3f1e8; color:var(--muted)}
+  .node.soon{background:#fff; border:5px dashed #edf2ff; color:var(--muted)}
 
   .bubble{
-    position:absolute; width:240px; max-width:70vw; background:var(--ink); color:#eaf5ee;
+    position:absolute; width:240px; max-width:70vw; background:var(--ink); color:#f5f8ff;
     font-size:12.5px; font-weight:700; line-height:1.45; padding:10px 12px; border-radius:10px;
     opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:5;
   }
@@ -165,7 +165,7 @@
      short row doesn't grow past the size that reads well. */
   .stripRow{list-style:none; margin:14px 0 0; padding:10px 4px 4px; position:relative; display:flex; gap:14px}
   .stripRow[hidden]{display:none}
-  .stripRow::before{content:""; position:absolute; left:48px; right:48px; top:58px; height:3px; background:#e3f1e8; border-radius:3px; z-index:0}
+  .stripRow::before{content:""; position:absolute; left:48px; right:48px; top:58px; height:3px; background:#edf2ff; border-radius:3px; z-index:0}
   .stripItem{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; text-decoration:none; color:inherit; flex:1 1 0; min-width:0}
   .stripItem .node{width:100%; max-width:96px; height:auto; aspect-ratio:1}
   .stripItem .code{font-size:11px; font-weight:900; color:var(--muted)}
@@ -173,10 +173,10 @@
 
   /* expanded: vertical list of the same big nodes, short title + state + hover detail */
   .listBig{list-style:none; margin:14px 0 4px; padding:0; position:relative}
-  .listBig::before{content:""; position:absolute; left:48px; top:8px; bottom:8px; width:3px; background:#e3f1e8; border-radius:3px}
+  .listBig::before{content:""; position:absolute; left:48px; top:8px; bottom:8px; width:3px; background:#edf2ff; border-radius:3px}
   .listBig li{position:relative; margin-bottom:4px}
   .rowBig{display:flex; align-items:center; gap:16px; padding:8px 10px 8px 0; border-radius:14px; text-decoration:none; color:inherit; position:relative}
-  .rowBig:hover{background:#eaf5ee}
+  .rowBig:hover{background:#f5f8ff}
   .rowBig .info{flex:1; min-width:0}
   .rowBig .nm{font-weight:800; font-size:15px}
   .rowBig .state{font-size:12px; font-weight:800; color:var(--muted); margin-top:2px}
@@ -190,7 +190,7 @@
   .stateLegend{display:flex; gap:18px; flex-wrap:wrap; margin:0 0 14px 2px; font-size:12px; font-weight:800; color:var(--muted)}
   .stateLegend span{display:inline-flex; align-items:center; gap:6px}
   .stateLegend i{width:12px; height:12px; border-radius:50%; display:inline-block}
-  .stateLegend i.notstarted{background:#fff; border:2px solid #e3f1e8}
+  .stateLegend i.notstarted{background:#fff; border:2px solid #edf2ff}
   .stateLegend i.started{background:#fff; border:2px solid var(--blue)}
   .stateLegend i.mastered{background:var(--blue)}
 
@@ -198,16 +198,16 @@
   .path{list-style:none; margin:10px 0 0; padding:0; position:relative}
   .path::before{
     content:""; position:absolute; left:19px; top:14px; bottom:14px; width:0;
-    border-left:3px dotted #cde8d6;
+    border-left:3px dotted #d5deff;
   }
   .stone{
     position:relative; display:flex; align-items:center; gap:12px;
     padding:7px 8px 7px 0; border-radius:12px; text-decoration:none; color:inherit;
   }
-  a.stone:hover{background:#eaf5ee}
+  a.stone:hover{background:#f5f8ff}
   .stone .dot{
     width:40px; height:40px; flex:none; border-radius:50%;
-    border:3px solid #cde8d6; background:#fff; z-index:1;
+    border:3px solid #d5deff; background:#fff; z-index:1;
     display:flex; align-items:center; justify-content:center;
     font-weight:900; font-size:15px; color:var(--muted);
     transition:background .3s, border-color .3s, color .3s;
@@ -217,9 +217,9 @@
   .stone .info{flex:1; min-width:0}
   .stone .nm{font-weight:800; font-size:13.5px; line-height:1.4}
   .stone .code{display:inline-block; font-weight:900; font-size:12px; color:var(--accent);
-    background:#e6f5ea; border:1px solid var(--ui); border-radius:6px; padding:1px 7px; margin-right:6px; vertical-align:1px}
+    background:#eef4ff; border:1px solid var(--ui); border-radius:6px; padding:1px 7px; margin-right:6px; vertical-align:1px}
   .stone .bar{
-    height:6px; border-radius:999px; background:#e3f1e8; margin-top:5px; overflow:hidden; max-width:260px;
+    height:6px; border-radius:999px; background:#edf2ff; margin-top:5px; overflow:hidden; max-width:260px;
   }
   .stone .bar i{display:block; height:100%; border-radius:999px; background:var(--accent); transition:width .5s ease}
   .stone .meta{font-size:11.5px; font-weight:800; color:var(--muted); margin-top:3px}
@@ -239,29 +239,29 @@
   .modalCard{margin:24px 0; width:min(860px,96vw); background:#fff; border:1px solid var(--ui);
     border-radius:24px; box-shadow:0 40px 80px rgba(2,6,23,.25)}
   .modalHead{display:flex; justify-content:space-between; align-items:center; gap:10px;
-    padding:16px 20px; border-bottom:1px dashed #dbe9df}
+    padding:16px 20px; border-bottom:1px dashed #e5e7eb}
   .modalHead h3{margin:0; font-family:var(--font-display); font-size:20px; font-weight:600}
   .modalBody{padding:18px 20px}
   table{width:100%; border-collapse:collapse; font-size:14px}
   th{ text-align:left; font-size:11px; letter-spacing:.7px; text-transform:uppercase; color:var(--muted);
-    padding:8px 10px; border-bottom:2px solid #e3f1e8}
-  td{padding:9px 10px; border-bottom:1px solid #e9f5ec; font-weight:800}
+    padding:8px 10px; border-bottom:2px solid #edf2ff}
+  td{padding:9px 10px; border-bottom:1px solid #f1f5ff; font-weight:800}
   td.num{font-variant-numeric:tabular-nums}
   .chip-ok{color:var(--ok); background:#eafff2; border:1px solid #bfeacc; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
   .chip-prog{color:#7a5a00; background:#fff9d6; border:1px solid #ffe38a; border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
-  .chip-none{color:var(--muted); background:#eaf5ee; border:1px solid var(--ui); border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
+  .chip-none{color:var(--muted); background:#f2f5fc; border:1px solid var(--ui); border-radius:999px; padding:3px 10px; font-size:12px; font-weight:900}
   /* Two-view report:
      - Summary : standard rows only (SE rows hidden by CSS)
      - Detail  : standard + SE rows, plus extra columns (hints, level, attempts-to-mastery)
      View is driven by data-view on #reportModal; row visibility follows. */
-  tr.std-row td{background:#eaf5ee}
+  tr.std-row td{background:#f5f8ff}
   tr.std-row td:first-child{border-left:3px solid var(--blue)}
-  tr.se-row td{padding-top:5px; padding-bottom:5px; font-size:12.5px; color:var(--muted); border-bottom:1px dashed #e9f5ec}
+  tr.se-row td{padding-top:5px; padding-bottom:5px; font-size:12.5px; color:var(--muted); border-bottom:1px dashed #f1f5ff}
   tr.se-row td.se-label{padding-left:32px; font-weight:800; color:var(--ink)}
   tr.se-row td.num{color:var(--ink)}
   #reportModal[data-view="summary"] tr.se-row{display:none}
   /* View switcher tabs */
-  .viewSwitch{display:inline-flex; gap:4px; padding:4px; background:#e8f4ec; border:1px solid var(--ui);
+  .viewSwitch{display:inline-flex; gap:4px; padding:4px; background:#eef3ff; border:1px solid var(--ui);
     border-radius:12px; margin-bottom:6px}
   .viewBtn{border:0; background:transparent; font-family:inherit; font-weight:900; font-size:13px;
     color:var(--muted); padding:7px 14px; border-radius:8px; cursor:pointer}
@@ -283,9 +283,9 @@
     display:flex; align-items:center; gap:14px; padding:14px 16px; border:1px solid var(--ui);
     border-radius:14px; text-decoration:none; color:inherit; background:#fbfdff;
   }
-  .moreItem:hover{background:#eaf5ee; border-color:#a9d6b8}
+  .moreItem:hover{background:#f2f6ff; border-color:#c3d0ff}
   .moreItem .glyph{
-    width:42px; height:42px; flex:none; border-radius:12px; background:#e6f5ea;
+    width:42px; height:42px; flex:none; border-radius:12px; background:#eef4ff;
     display:flex; align-items:center; justify-content:center; font-weight:900; font-size:17px; color:var(--blue);
   }
   .moreItem .info{flex:1; min-width:0}
@@ -306,7 +306,7 @@
   .modeBlock h4{margin:0 0 4px; font-size:16px; font-weight:900}
   .modeBlock .hint{color:var(--muted); font-weight:700; font-size:13px; margin:0 0 12px}
   /* ID block: keep it aligned with the portal's primary blue action color. */
-  .modeBlock-id{border-color:#a9d6b8; background:#eaf5ee}
+  .modeBlock-id{border-color:#bcd0ff; background:#f5f8ff}
   /* Guest block: warm amber accent so it reads as a genuinely different choice,
      not a second copy of the ID block. */
   .modeBlock-guest{border-color:#ffdb8a; background:#fffaf0}
