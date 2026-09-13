@@ -5,16 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Algebra 1 Practice Portal — EEHS Math</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&family=Fredoka:wght@500;600;700&display=swap');
   :root{
     --bg:#eef3ff; --panel:#fff; --ui:#dfe6ff; --ink:#0f2340; --muted:#5b6f96;
     --blue:#2f6cff; --vio:#8e78ff; --teal:#36c2a0; --gold:#f4a531;
     --ok:#0b6b2f; --shadow:0 8px 20px rgba(25,40,80,.06);
+    --font-body:'Nunito', ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    --font-display:'Fredoka', ui-rounded, system-ui, sans-serif;
   }
   *{box-sizing:border-box}
   html,body{min-height:100dvh}
   body{
     margin:0; background:var(--bg); color:var(--ink); overflow:auto;
-    font-family:ui-rounded, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-family:var(--font-body);
   }
   .wrap{width:min(1240px,100%); margin:18px auto; padding:0 12px;}
 
@@ -24,7 +27,7 @@
     box-shadow:var(--shadow); padding:18px 20px; margin-bottom:14px;
   }
   .hdr .toprow{display:flex; justify-content:space-between; align-items:flex-start; gap:14px; flex-wrap:wrap}
-  .hdr h1{margin:0; font-size:clamp(22px,3.4vw,30px); font-weight:900; letter-spacing:.2px}
+  .hdr h1{margin:0; font-family:var(--font-display); font-size:clamp(22px,3.4vw,30px); font-weight:600; letter-spacing:.2px}
   .hdr .sub{color:var(--muted); font-weight:700; font-size:14px; margin-top:4px}
 
   /* ---------- identity display (replaces the old name box) ---------- */
@@ -80,7 +83,10 @@
   .btn:focus-visible, input:focus-visible{outline:3px solid #59c6ff; outline-offset:2px}
 
   /* ---------- section grid ---------- */
-  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px}
+  /* align-items:start (not the grid default "stretch") so an expanded
+     section can't force its still-collapsed neighbor in the same row to
+     grow to match height. */
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start}
   @media (max-width:900px){ .grid{grid-template-columns:1fr} }
 
   .sec{
@@ -88,9 +94,15 @@
     box-shadow:var(--shadow); padding:16px; display:flex; flex-direction:column;
     border-top:5px solid var(--accent);
   }
-  .sec .head{display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:6px}
-  .sec .eyebrow{font-size:12px; font-weight:900; letter-spacing:.8px; color:var(--muted); text-transform:uppercase}
-  .sec h2{margin:2px 0 0; font-size:20px; font-weight:900}
+  .sec .head{
+    display:flex; justify-content:space-between; align-items:center; gap:12px;
+    margin:-8px -8px 6px; padding:8px; border-radius:14px; cursor:pointer;
+  }
+  .sec .head:hover{background:#f5f8ff}
+  .sec .head .chev{font-size:20px; color:var(--muted); transition:transform .2s ease; flex:none}
+  .sec .head.is-open .chev{transform:rotate(180deg)}
+  .sec .eyebrow{font-family:var(--font-display); font-size:12px; font-weight:600; letter-spacing:.8px; color:var(--muted); text-transform:uppercase}
+  .sec h2{margin:2px 0 0; font-family:var(--font-display); font-size:20px; font-weight:600}
   .sec .mcount{font-size:12px; font-weight:800; color:var(--muted); margin-top:3px}
 
   /* progress ring */
@@ -102,6 +114,73 @@
     position:relative; top:-64px; height:64px; display:flex; align-items:center; justify-content:center;
     font-weight:900; font-size:14px;
   }
+
+  /* ---------- big path nodes (section cards only — search keeps its own
+     .moreItem/.glyph styling untouched) ----------
+     The node carries the mastery state (outline / filling ring / solid
+     checkmark, or dimmed for a "coming soon" standard); the row shrinks to
+     a short title, with the full official standard wording moved to a
+     hover tooltip. */
+  .node{
+    width:68px; height:68px; flex:none; border-radius:50%; position:relative;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:600; font-size:18px;
+    transition:background .3s, border-color .3s, color .3s;
+  }
+  .node.notstarted{background:#fff; border:4px solid #edf2ff; color:var(--muted)}
+  .node.started{background:#fff; border:4px solid #edf2ff}
+  .node.started svg{position:absolute; inset:-4px; transform:rotate(-90deg)}
+  .node.started .track{fill:none; stroke:#edf2ff; stroke-width:6}
+  .node.started .fill{fill:none; stroke:var(--accent); stroke-width:6; stroke-linecap:round; transition:stroke-dashoffset .6s ease}
+  .node.started .pct{position:relative; font-size:13px; color:var(--accent)}
+  .node.mastered{background:var(--accent); border:4px solid var(--accent); color:#fff}
+  .node.soon{background:#fff; border:4px dashed #edf2ff; color:var(--muted)}
+
+  .bubble{
+    position:absolute; width:240px; max-width:70vw; background:var(--ink); color:#f5f8ff;
+    font-size:12.5px; font-weight:700; line-height:1.45; padding:10px 12px; border-radius:10px;
+    opacity:0; pointer-events:none; transition:opacity .15s ease, transform .15s ease; z-index:5;
+  }
+  .stripItem .bubble{left:50%; bottom:calc(100% + 10px); transform:translateX(-50%) translateY(4px)}
+  .stripItem:hover .bubble, .stripItem:focus-visible .bubble{opacity:1; transform:translateX(-50%) translateY(0)}
+  .rowBig .bubble{left:0; bottom:calc(100% + 8px); transform:translateY(4px)}
+  .rowBig:hover .bubble, .rowBig:focus-visible .bubble{opacity:1; transform:translateY(0)}
+
+  /* collapsed: every node in one horizontal row, state visible at a glance.
+     No flex-wrap — items share the row's width equally (flex:1 1 0), so a
+     section with more standards divides that same row into narrower slots
+     instead of wrapping to a second row; the node is capped at 68px so a
+     short row doesn't grow past the size that reads well. */
+  .stripRow{list-style:none; margin:14px 0 0; padding:10px 4px 4px; position:relative; display:flex; gap:14px}
+  .stripRow[hidden]{display:none}
+  .stripRow::before{content:""; position:absolute; left:34px; right:34px; top:44px; height:3px; background:#edf2ff; border-radius:3px; z-index:0}
+  .stripItem{position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; gap:6px; text-decoration:none; color:inherit; flex:1 1 0; min-width:0}
+  .stripItem .node{width:100%; max-width:68px; height:auto; aspect-ratio:1}
+  .stripItem .code{font-size:11px; font-weight:900; color:var(--muted)}
+  .stripItem.soon{opacity:.55; pointer-events:none}
+
+  /* expanded: vertical list of the same big nodes, short title + state + hover detail */
+  .listBig{list-style:none; margin:14px 0 4px; padding:0; position:relative}
+  .listBig::before{content:""; position:absolute; left:34px; top:8px; bottom:8px; width:3px; background:#edf2ff; border-radius:3px}
+  .listBig li{position:relative; margin-bottom:4px}
+  .rowBig{display:flex; align-items:center; gap:16px; padding:8px 10px 8px 0; border-radius:14px; text-decoration:none; color:inherit; position:relative}
+  .rowBig:hover{background:#f5f8ff}
+  .rowBig .info{flex:1; min-width:0}
+  .rowBig .nm{font-weight:800; font-size:15px}
+  .rowBig .state{font-size:12px; font-weight:800; color:var(--muted); margin-top:2px}
+  .rowBig .state.st-mastered{color:var(--ok)}
+  .rowBig .go{flex:none; font-weight:900; color:var(--accent); font-size:13.5px; padding:8px 14px; border-radius:999px; border:1px solid var(--ui); background:#fff}
+  .rowBig.soon{opacity:.55; pointer-events:none}
+  .rowBig.soon .go{color:var(--muted)}
+
+  /* one shared key for what a node's outline/ring/fill means, above all
+     four section cards rather than repeated inside each one */
+  .stateLegend{display:flex; gap:18px; flex-wrap:wrap; margin:0 0 14px 2px; font-size:12px; font-weight:800; color:var(--muted)}
+  .stateLegend span{display:inline-flex; align-items:center; gap:6px}
+  .stateLegend i{width:12px; height:12px; border-radius:50%; display:inline-block}
+  .stateLegend i.notstarted{background:#fff; border:2px solid #edf2ff}
+  .stateLegend i.started{background:#fff; border:2px solid var(--blue)}
+  .stateLegend i.mastered{background:var(--blue)}
 
   /* ---------- stepping-stone path ---------- */
   .path{list-style:none; margin:10px 0 0; padding:0; position:relative}
@@ -149,7 +228,7 @@
     border-radius:24px; box-shadow:0 40px 80px rgba(2,6,23,.25)}
   .modalHead{display:flex; justify-content:space-between; align-items:center; gap:10px;
     padding:16px 20px; border-bottom:1px dashed #e5e7eb}
-  .modalHead h3{margin:0; font-size:20px; font-weight:900}
+  .modalHead h3{margin:0; font-family:var(--font-display); font-size:20px; font-weight:600}
   .modalBody{padding:18px 20px}
   table{width:100%; border-collapse:collapse; font-size:14px}
   th{ text-align:left; font-size:11px; letter-spacing:.7px; text-transform:uppercase; color:var(--muted);
@@ -298,6 +377,11 @@
   </div>
 
   <!-- ============ four sections ============ -->
+  <div class="stateLegend" id="stateLegend">
+    <span><i class="notstarted"></i>Not started</span>
+    <span><i class="started"></i>In progress</span>
+    <span><i class="mastered"></i>Polished</span>
+  </div>
   <div class="grid" id="sections"></div>
 
   <div class="foot">Enter your ID to save progress across devices. Guest mode does not save your work.</div>
@@ -354,16 +438,6 @@
         <thead id="repHead"></thead>
         <tbody id="repRows"></tbody>
       </table>
-      <div class="codeBox noprint">
-        <div style="flex:1">
-          <div style="font-size:11px; font-weight:900; letter-spacing:.5px; color:var(--muted); text-transform:uppercase; margin-bottom:5px">
-            Backup only — progress already saves automatically to your ID
-          </div>
-          <textarea id="repCode" readonly aria-label="Backup code"></textarea>
-        </div>
-        <button class="btn info" id="copyCode">Copy code</button>
-      </div>
-
     </div>
   </div>
 </div>
@@ -456,6 +530,36 @@
       '<div class="pct">'+Math.round(pct*100)+'%</div></div>';
   }
 
+  /* Per-standard node ring — same idea as ringSVG, sized for the bigger
+     68px node, colored via the .node .track/.fill classes (inheriting
+     --accent from the .sec card). */
+  function nodeRingSVG(pct){
+    var r = 30, C = 2*Math.PI*r, off = C*(1-pct);
+    return '<svg viewBox="0 0 68 68" aria-hidden="true">' +
+      '<circle class="track" cx="34" cy="34" r="'+r+'"></circle>' +
+      '<circle class="fill" cx="34" cy="34" r="'+r+'" stroke-dasharray="'+C+'" stroke-dashoffset="'+off+'"></circle>' +
+    '</svg>';
+  }
+  function nodeState(st, soon){
+    if (soon) return 'soon';
+    return st.mastered ? 'mastered' : st.attempts ? 'started' : 'notstarted';
+  }
+  function nodeInnerHTML(st, r, soon){
+    var state = nodeState(st, soon);
+    if (state === 'mastered') return '&#10003;';
+    if (state === 'started') return nodeRingSVG(st.progress) + '<span class="pct">'+Math.round(st.progress*100)+'%</span>';
+    return r.code ? r.code.replace(/^A\./,'') : '';
+  }
+
+  /* Which sections are expanded, keyed by section id — starts empty
+     (every section collapsed) on a fresh load, persists across re-renders
+     within the same visit (ID switch, guest start, pageshow). */
+  var expandedSections = {};
+  function toggleSection(id){
+    expandedSections[id] = !expandedSections[id];
+    render();
+  }
+
   function render(){
     var host = $('#sections');
     host.innerHTML = '';
@@ -464,43 +568,59 @@
     Portal.SECTIONS.forEach(function(sec, si){
       var skills = Portal.REGISTRY.filter(function(r){ return r.sec === sec.id; });
       var s = sum[sec.id];
+      var open = !!expandedSections[sec.id];
 
       var card = document.createElement('div');
       card.className = 'sec';
       card.style.setProperty('--accent', sec.accent);
 
       var html =
-        '<div class="head"><div>' +
+        '<div class="head'+(open?' is-open':'')+'" role="button" tabindex="0" aria-expanded="'+(open?'true':'false')+'"><div>' +
           '<div class="eyebrow">Section '+(si+1)+' · '+sec.teks+'</div>' +
           '<h2>'+sec.name+'</h2>' +
           '<div class="mcount">'+s.mastered+' of '+s.readyCount+' standards polished</div>' +
-        '</div>' + ringSVG(s.progress, sec.accent) + '</div>';
+        '</div><div style="display:flex; align-items:center; gap:10px">' + ringSVG(s.progress, sec.accent) +
+          '<span class="chev" aria-hidden="true">&#9662;</span></div></div>';
 
-      html += '<ul class="path">';
+      // Collapsed: every node in one horizontal row — state visible at a glance.
+      html += '<div class="stripRow"'+(open?' hidden':'')+'>';
       skills.forEach(function(r, i){
         var st = Portal.skill(r.id);
         var soon = r.status !== 'ready';
-        var cls = 'stone' + (soon ? ' soon' : st.mastered ? ' mastered' : st.attempts ? ' started' : '');
-        var dot = st.mastered ? '✓' : (r.code ? r.code.replace(/^A\./,'') : (i+1));
-        var meta = soon ? 'coming soon'
-                 : st.attempts ? st.attempts+' answered · '+Math.round(st.recentAcc*100)+'% recent'
-                 : 'not started';
-        var tag = soon ? '<span class="tagSoon">SOON</span>' : '';
-        var open = soon ? '<span class="'+cls+'" style="--accent:'+sec.accent+'">'
-                        : '<a class="'+cls+'" style="--accent:'+sec.accent+'" href="'+r.file+'">';
-        var close = soon ? '</span>' : '</a>';
-        var codeBadge = r.code ? '<span class="code">'+r.code+'</span> ' : '';
-        html += '<li>' + open +
-          '<span class="dot">'+dot+'</span>' +
-          '<span class="info"><span class="nm">'+codeBadge+r.name+tag+'</span>' +
-            '<span class="bar"><i style="width:'+Math.round(st.progress*100)+'%"></i></span>' +
-            '<span class="meta">'+meta+'</span></span>' +
+        var tag = soon ? ' href="#" onclick="return false"' : ' href="'+r.file+'"';
+        html += '<a class="stripItem'+(soon?' soon':'')+'"'+tag+'>' +
+          '<div class="node '+nodeState(st, soon)+'">'+nodeInnerHTML(st, r, soon)+'</div>' +
+          '<span class="code">'+(r.code||r.id)+'</span>' +
+          '<div class="bubble">'+r.name+(soon?' (coming soon)':'')+'</div>' +
+        '</a>';
+      });
+      html += '</div>';
+
+      // Expanded: same nodes, stacked, short title + state + hover detail.
+      html += '<ul class="listBig"'+(open?'':' hidden')+'>';
+      skills.forEach(function(r, i){
+        var st = Portal.skill(r.id);
+        var soon = r.status !== 'ready';
+        var stateLabel = soon ? '<span class="state">Coming soon</span>'
+                        : st.mastered ? '<span class="state st-mastered">Polished &#10003;</span>'
+                        : st.attempts ? '<span class="state">'+st.attempts+' answered &middot; '+Math.round(st.recentAcc*100)+'% recent</span>'
+                        : '<span class="state">Not started</span>';
+        var tag = soon ? ' href="#" onclick="return false"' : ' href="'+r.file+'"';
+        html += '<li><a class="rowBig'+(soon?' soon':'')+'"'+tag+'>' +
+          '<div class="node '+nodeState(st, soon)+'">'+nodeInnerHTML(st, r, soon)+'</div>' +
+          '<div class="info"><div class="nm">'+(r.code||r.id)+' &middot; '+(r.short||r.name)+'</div>'+stateLabel+'</div>' +
           '<span class="go">'+(soon?'· · ·':'Practice')+'</span>' +
-          close + '</li>';
+          '<div class="bubble">'+r.name+(soon?' (coming soon)':'')+'</div>' +
+        '</a></li>';
       });
       html += '</ul>';
 
       card.innerHTML = html;
+      var headEl = card.querySelector('.head');
+      headEl.addEventListener('click', function(){ toggleSection(sec.id); });
+      headEl.addEventListener('keydown', function(e){
+        if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleSection(sec.id); }
+      });
       host.appendChild(card);
     });
 
@@ -566,9 +686,11 @@
     if (results === null){
       wrap.hidden = true;
       sectionsHost.hidden = false;
+      $('#stateLegend').hidden = false;
       return;
     }
     sectionsHost.hidden = true;
+    $('#stateLegend').hidden = true;
     wrap.hidden = false;
     var q = query.trim();
     if (!results.length){
@@ -847,7 +969,6 @@
   var _view = 'summary';   // current view, remembered across opens
   function openReport(){
     $('#repName').textContent = Portal.studentName() ? '· '+Portal.studentName() : '';
-    $('#repCode').value = Portal.reportCode();
     renderReport(_view);
     $('#reportModal').classList.add('show');
   }
@@ -931,12 +1052,6 @@
   });
   $('#closeResources').addEventListener('click', function(){ $('#resourcesModal').classList.remove('show'); });
   $('#resourcesModal').addEventListener('click', function(e){ if(e.target===e.currentTarget) e.currentTarget.classList.remove('show'); });
-  $('#copyCode').addEventListener('click', function(){
-    var ta = $('#repCode'); ta.select();
-    try{ navigator.clipboard.writeText(ta.value); }catch(e){ document.execCommand('copy'); }
-    $('#copyCode').textContent = 'Copied ✓';
-    setTimeout(function(){ $('#copyCode').textContent = 'Copy code'; }, 1500);
-  });
 
   /* ---------- init ---------- */
   function init(){
