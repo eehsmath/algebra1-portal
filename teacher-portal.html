@@ -860,14 +860,21 @@
       return;
     }
 
-    var totalAttempts = 0, progSum = 0, masteredSum = 0;
+    var totalAttempts = 0, progSum = 0, masteredSum = 0, testsCount = 0;
     students.forEach(function(s){
       totalAttempts += s.overall.attempts; progSum += s.overall.progress; masteredSum += s.overall.mastered;
+      if (s.crc && s.crc.taken) testsCount += s.crc.taken;
     });
+    /* Summary already has its own dedicated Practice Test column now, so its
+       stat row leads with that instead of Standards mastered \u2014 Detail is
+       where standards mastery belongs. TSI only; Algebra 1 has no test. */
+    var thirdCard = (view === 'summary' && subject === 'tsi')
+      ? {n: testsCount, l: 'Practice tests completed'}
+      : {n: masteredSum, l: 'Standards mastered (total)'};
     cards = [
       {n:n, l:'Students shown'},
       {n:n ? Math.round(progSum/n*100)+'%' : '\u2014', l:'Avg. progress'},
-      {n:masteredSum, l:'Standards mastered (total)'},
+      thirdCard,
       {n:totalAttempts, l:'Total attempts'}
     ];
     $('#statRow').innerHTML = cards.map(function(c){
