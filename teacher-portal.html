@@ -180,6 +180,13 @@
         <label for="classSel">Class period</label>
         <select id="classSel"></select>
       </div>
+      <div class="field">
+        <label for="activitySel" title="Active = practice or test activity in the last 3 hours">Show</label>
+        <select id="activitySel" title="Active = practice or test activity in the last 3 hours">
+          <option value="active">Active now</option>
+          <option value="all">All students</option>
+        </select>
+      </div>
       <div style="flex:1"></div>
       <div class="viewSwitch" role="tablist" aria-label="Report view">
         <button class="viewBtn is-active" data-view="summary" role="tab">Summary</button>
@@ -334,13 +341,26 @@
       if (keys.indexOf(cur) !== -1) sel.value = cur;
     });
   }
+  /* "Active now" default — with a couple hundred students, showing everyone
+     at once by default was becoming the busy case, not the useful one.
+     Most recent of standards-practice activity and (TSI) CRC test activity,
+     since a student mid-practice-test wouldn't show as active by
+     standards-practice timestamps alone — exactly the moment this filter
+     needs to catch during a testing session. */
+  var ACTIVE_WINDOW_HOURS = 3;
+  function lastActiveTs(s){
+    return Math.max(s.overall.last || 0, (s.crc && s.crc.last) || 0);
+  }
   function filteredStudents(){
     var q = ($('#qInput').value || '').trim().toLowerCase();
     var t = $('#teacherSel').value, c = $('#classSel').value;
+    var activeOnly = $('#activitySel').value !== 'all';
+    var cutoff = Date.now() - ACTIVE_WINDOW_HOURS * 3600000;
     return raw.filter(function(s){
       if (t && (s.teacher || '(unassigned)') !== t) return false;
       if (c && (s.klass || '(unassigned)') !== c) return false;
       if (q && s.name.toLowerCase().indexOf(q) === -1 && String(s.id).indexOf(q) === -1) return false;
+      if (activeOnly && !q && !t && !c && lastActiveTs(s) < cutoff) return false;
       return true;
     });
   }
@@ -1056,6 +1076,7 @@
   $('#qInput').addEventListener('input', render);
   $('#teacherSel').addEventListener('change', render);
   $('#classSel').addEventListener('change', render);
+  $('#activitySel').addEventListener('change', render);
   document.querySelectorAll('#subjectSwitch .viewBtn').forEach(function(b){
     b.addEventListener('click', function(){
       var next = b.getAttribute('data-subject');
