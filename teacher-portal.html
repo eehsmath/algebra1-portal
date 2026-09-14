@@ -134,6 +134,9 @@
   .warnDot{display:inline-block; width:7px; height:7px; border-radius:50%; background:#e5484d; margin-left:6px; vertical-align:2px; cursor:help}
 
   .state{padding:46px 20px; text-align:center; color:var(--muted); font-weight:700}
+  .chooserPrompt{padding:64px 20px; text-align:center}
+  .chooserPrompt h2{margin:0 0 10px; font-size:23px; font-weight:900; color:var(--ink)}
+  .chooserPrompt p{margin:0; color:var(--muted); font-weight:700; font-size:14.5px}
   .state.err{color:#b21f2d}
   .state h3{color:var(--ink); margin:0 0 6px; font-size:17px}
 
@@ -183,6 +186,7 @@
       <div class="field">
         <label for="activitySel" title="Active = practice or test activity in the last 3 hours">Show</label>
         <select id="activitySel" title="Active = practice or test activity in the last 3 hours">
+          <option value="" selected>Choose…</option>
           <option value="active">Active now</option>
           <option value="all">All students</option>
         </select>
@@ -341,11 +345,19 @@
       if (keys.indexOf(cur) !== -1) sel.value = cur;
     });
   }
-  /* "Active now" default — with a couple hundred students, showing everyone
-     at once by default was becoming the busy case, not the useful one.
-     Most recent of standards-practice activity and (TSI) CRC test activity,
+  /* Nothing renders until the teacher actually picks something — with a
+     couple hundred students, a default list (even "active only") turned out
+     to still not be the useful starting point in the classroom. hasChosen()
+     is the single gate render() checks before showing the table at all;
+     typing a search or picking Teacher/Class counts as choosing, same as
+     explicitly picking a Show option. */
+  function hasChosen(){
+    return !!($('#qInput').value || '').trim() || !!$('#teacherSel').value ||
+           !!$('#classSel').value || !!$('#activitySel').value;
+  }
+  /* Most recent of standards-practice activity and (TSI) CRC test activity,
      since a student mid-practice-test wouldn't show as active by
-     standards-practice timestamps alone — exactly the moment this filter
+     standards-practice timestamps alone — exactly the moment "Active now"
      needs to catch during a testing session. */
   var ACTIVE_WINDOW_HOURS = 3;
   function lastActiveTs(s){
@@ -354,7 +366,7 @@
   function filteredStudents(){
     var q = ($('#qInput').value || '').trim().toLowerCase();
     var t = $('#teacherSel').value, c = $('#classSel').value;
-    var activeOnly = $('#activitySel').value !== 'all';
+    var activeOnly = $('#activitySel').value === 'active';
     var cutoff = Date.now() - ACTIVE_WINDOW_HOURS * 3600000;
     return raw.filter(function(s){
       if (t && (s.teacher || '(unassigned)') !== t) return false;
@@ -913,6 +925,22 @@
   }
 
   function render(){
+    if (!hasChosen()){
+      $('#statCardWrap').style.display = 'none';
+      $('#tableWrap').style.display = 'none';
+      $('#warnBanner').innerHTML = '';
+      $('#viewCaption').innerHTML = '';
+      $('#detailModeSwitch').style.display = 'none';
+      $('#stateArea').innerHTML = '<div class="chooserPrompt">'+
+        '<h2>Search for a student, or choose a filter above</h2>'+
+        '<p>Type a name or ID, or pick a Teacher, Class period, or a "Show" option to load students.</p>'+
+      '</div>';
+      return;
+    }
+    $('#statCardWrap').style.display = '';
+    $('#tableWrap').style.display = '';
+    $('#stateArea').innerHTML = '';
+
     var students = filteredStudents();
     renderStats(students);
     $('#viewCaption').innerHTML = VIEW_CAPTIONS[view];
