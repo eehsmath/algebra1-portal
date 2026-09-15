@@ -153,6 +153,17 @@
   .node.mastered{background:var(--accent); border:5px solid var(--accent); color:#fff}
   .node.soon{background:#fff; border:5px dashed #edf2ff; color:var(--muted)}
 
+  /* per-section watermark icon, sitting behind the number/ring/checkmark
+     inside each node — DOM order (icon markup first) keeps it painted
+     under the content added after it, no z-index juggling needed. */
+  .nodeIcon{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    pointer-events:none; color:#0f2340; opacity:.16;
+  }
+  .nodeIcon svg{width:54%; height:54%; overflow:visible}
+  .node.mastered .nodeIcon{color:#fff; opacity:.3}
+  .node.soon .nodeIcon{opacity:.1}
+
   .bubble{
     position:absolute; width:240px; max-width:70vw; background:var(--ink); color:#f5f8ff;
     font-size:12.5px; font-weight:700; line-height:1.45; padding:10px 12px; border-radius:10px;
@@ -561,6 +572,35 @@
     if (soon) return 'soon';
     return st.mastered ? 'mastered' : st.attempts ? 'started' : 'notstarted';
   }
+
+  /* Faint background glyph per section — a visual hint at the family of
+     function the standard belongs to (line / parabola / growth curve /
+     a radical for algebraic methods), stroked with currentColor so the
+     mastered-state CSS override (white on solid accent) just works. */
+  var NODE_ICONS = {
+    linear:
+      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">' +
+        '<line x1="12" y1="48" x2="52" y2="14"/>' +
+        '<circle cx="12" cy="48" r="3.2" fill="currentColor" stroke="none"/>' +
+        '<circle cx="52" cy="14" r="3.2" fill="currentColor" stroke="none"/>' +
+      '</svg>',
+    quadratic:
+      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M10,20 Q32,58 54,20"/>' +
+      '</svg>',
+    exponential:
+      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">' +
+        '<path d="M8,50 C22,50 30,46 36,34 C42,22 46,10 56,8"/>' +
+      '</svg>',
+    methods:
+      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M9,34 L18,43 L28,13 L55,13"/>' +
+      '</svg>'
+  };
+  function iconHTML(secId){
+    var svg = NODE_ICONS[secId];
+    return svg ? '<span class="nodeIcon" aria-hidden="true">'+svg+'</span>' : '';
+  }
   function nodeInnerHTML(st, r, soon){
     var state = nodeState(st, soon);
     if (state === 'mastered') return '&#10003;';
@@ -607,7 +647,7 @@
         var soon = r.status !== 'ready';
         var tag = soon ? ' href="#" onclick="return false"' : ' href="'+r.file+'"';
         html += '<a class="stripItem'+(soon?' soon':'')+'"'+tag+'>' +
-          '<div class="node '+nodeState(st, soon)+'">'+nodeInnerHTML(st, r, soon)+'</div>' +
+          '<div class="node '+nodeState(st, soon)+'">'+iconHTML(sec.id)+nodeInnerHTML(st, r, soon)+'</div>' +
           '<span class="code">'+(r.code||r.id)+'</span>' +
           '<div class="bubble">'+r.name+(soon?' (coming soon)':'')+'</div>' +
         '</a>';
@@ -625,7 +665,7 @@
                         : '<span class="state">Not started</span>';
         var tag = soon ? ' href="#" onclick="return false"' : ' href="'+r.file+'"';
         html += '<li><a class="rowBig'+(soon?' soon':'')+'"'+tag+'>' +
-          '<div class="node '+nodeState(st, soon)+'">'+nodeInnerHTML(st, r, soon)+'</div>' +
+          '<div class="node '+nodeState(st, soon)+'">'+iconHTML(sec.id)+nodeInnerHTML(st, r, soon)+'</div>' +
           '<div class="info"><div class="nm">'+(r.code||r.id)+' &middot; '+(r.short||r.name)+'</div>'+stateLabel+'</div>' +
           '<span class="go">'+(soon?'· · ·':'Practice')+'</span>' +
           '<div class="bubble">'+r.name+(soon?' (coming soon)':'')+'</div>' +
