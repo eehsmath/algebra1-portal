@@ -160,7 +160,7 @@
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
     pointer-events:none; color:#0f2340; opacity:.16;
   }
-  .nodeIcon svg{width:54%; height:54%; overflow:visible}
+  .nodeIcon svg{width:76%; height:76%; overflow:visible}
   .node.mastered .nodeIcon{color:#fff; opacity:.3}
   .node.soon .nodeIcon{opacity:.1}
 
@@ -579,22 +579,25 @@
      mastered-state CSS override (white on solid accent) just works. */
   var NODE_ICONS = {
     linear:
-      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">' +
-        '<line x1="12" y1="48" x2="52" y2="14"/>' +
-        '<circle cx="12" cy="48" r="3.2" fill="currentColor" stroke="none"/>' +
-        '<circle cx="52" cy="14" r="3.2" fill="currentColor" stroke="none"/>' +
+      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">' +
+        '<line x1="10" y1="54" x2="54" y2="10"/>' +
+        '<polygon points="0,-4.5 10,0 0,4.5" fill="currentColor" stroke="none" transform="translate(54,10) rotate(-45)"/>' +
+        '<polygon points="0,-4.5 10,0 0,4.5" fill="currentColor" stroke="none" transform="translate(10,54) rotate(135)"/>' +
       '</svg>',
     quadratic:
-      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M10,20 Q32,58 54,20"/>' +
+      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M9,15 C9,42 22,54 32,54 C42,54 55,42 55,15"/>' +
+        '<polygon points="0,-4.5 10,0 0,4.5" fill="currentColor" stroke="none" transform="translate(9,15) rotate(-112)"/>' +
+        '<polygon points="0,-4.5 10,0 0,4.5" fill="currentColor" stroke="none" transform="translate(55,15) rotate(-68)"/>' +
       '</svg>',
     exponential:
-      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round">' +
-        '<path d="M8,50 C22,50 30,46 36,34 C42,22 46,10 56,8"/>' +
+      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M7,52 C20,52 27,50 31,42 C35,33 37,16 55,9"/>' +
+        '<polygon points="0,-4.5 10,0 0,4.5" fill="currentColor" stroke="none" transform="translate(55,9) rotate(-25)"/>' +
       '</svg>',
     methods:
-      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">' +
-        '<path d="M9,34 L18,43 L28,13 L55,13"/>' +
+      '<svg viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M11,33 L19,41 L27,15 L48,15"/>' +
       '</svg>'
   };
   function iconHTML(secId){
