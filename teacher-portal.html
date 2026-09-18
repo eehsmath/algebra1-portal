@@ -1056,24 +1056,50 @@
     $('#warnBanner').innerHTML = '';
     $('#stateArea').innerHTML = '<div class="state'+(isErr?' err':'')+'">'+html+'</div>';
   }
-  function fetchReport(portalKey){
+  /* Retries with backoff and cache-busts every attempt (cache:'no-store' plus
+     a unique _ts param) before giving up. Two real failure modes look
+     identical from here \u2014 a transient Apps Script error under concurrent
+     load (common at morning peak usage), and a caching layer between the
+     browser and Google (a school's content-filtering proxy, or the browser
+     itself) serving back a stale bad response to everyone hitting this same
+     URL \u2014 and both are fixed the same way: never let it be the same request
+     twice, and don't treat one failure as final. */
+  function fetchReport(portalKey, attempt){
     portalKey = portalKey || subject;
+    attempt = attempt || 1;
     if (!REPORT_URL || REPORT_URL.indexOf('PASTE_') === 0){
       showState('<h3>Not connected yet</h3>Paste the same Apps Script URL used for SYNC_URL in portal.js into the REPORT_URL constant near the top of this page\u2019s script \u2014 the report reuses that deployment\u2019s doGet with a ?report=all param (see Code.gs).', true);
       return;
     }
-    showState('Loading ' + PORTALS[portalKey].label + ' report\u2026');
-    var url = REPORT_URL + (REPORT_URL.indexOf('?')===-1 ? '?' : '&') + 'report=all&portal=' + encodeURIComponent(portalKey);
-    fetch(url)
-      .then(function(r){ return r.json(); }).then(function(res){
-      if (!res || !res.ok){
-        showState('<h3>Couldn\u2019t load the report</h3>'+esc((res && res.error) || 'Unknown error')+'. Check the Apps Script has the report=all addition (and the '+esc(PORTALS[portalKey].label)+' tab exists) and was redeployed as a new version.', true);
-        return;
-      }
-      loadStudents(portalKey, res.students || []);
-    }).catch(function(err){
-      showState('<h3>Couldn\u2019t reach the report</h3>Check the URL matches SYNC_URL and the Apps Script was redeployed after adding the report branch.<br>('+esc(err)+')', true);
-    });
+    var MAX_ATTEMPTS = 4;
+    showState('Loading ' + PORTALS[portalKey].label + ' report\u2026' + (attempt > 1 ? ' (retry ' + (attempt - 1) + '/' + (MAX_ATTEMPTS - 1) + ')' : ''));
+    var url = REPORT_URL + (REPORT_URL.indexOf('?')===-1 ? '?' : '&') + 'report=all&portal=' + encodeURIComponent(portalKey) + '&_ts=' + Date.now();
+    fetch(url, { cache: 'no-store' })
+      .then(function(r){
+        return r.text().then(function(text){
+          var res;
+          try { res = JSON.parse(text); }
+          catch (e) { throw new Error('server sent back ' + (r.headers.get('content-type') || 'unknown content') + ' instead of JSON \u2014 starts with "' + esc(text.slice(0, 40)) + '"'); }
+          return res;
+        });
+      })
+      .then(function(res){
+        if (!res || !res.ok){
+          showState('<h3>Couldn\u2019t load the report</h3>'+esc((res && res.error) || 'Unknown error')+'. Check the Apps Script has the report=all addition (and the '+esc(PORTALS[portalKey].label)+' tab exists) and was redeployed as a new version.', true);
+          return;
+        }
+        loadStudents(portalKey, res.students || []);
+      })
+      .catch(function(err){
+        if (attempt < MAX_ATTEMPTS){
+          setTimeout(function(){ fetchReport(portalKey, attempt + 1); }, attempt * 1200);
+          return;
+        }
+        showState('<h3>Couldn\u2019t reach the report after ' + MAX_ATTEMPTS + ' tries</h3>' +
+          'This means Google\u2019s Apps Script deployment itself is failing or overloaded right now \u2014 not a caching problem, since every retry used a fresh, unique request. ' +
+          'Open the Apps Script project \u2192 <b>Executions</b> (left sidebar) and look at what happened during this time; that log shows the real error. ' +
+          'A brief wait and reload also often clears it, since Apps Script throttles a deployment under heavy simultaneous use (e.g. many students syncing at once).<br>('+esc(err)+')', true);
+      });
   }
 
   /* Delete one item — a single skill's data or a single CRC test-log entry
